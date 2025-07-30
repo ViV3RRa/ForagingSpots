@@ -23,8 +23,6 @@ export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: 
   };
 
   const avatarUrl = getAvatarUrl(user);
-  console.log('Avatar URL:', avatarUrl);
-  console.log('User.avatar:', user.avatar);
 
   return (
     <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">

@@ -4,19 +4,17 @@ import FloatingActionButton from './FloatingActionButton';
 import AddEditModal from './AddEditModal';
 import PinDetailsDrawer from './PinDetailsDrawer';
 import MapView from './MapView';
-import type { User as NewUser, ForagingSpot as NewForagingSpot, ForagingType, Coordinates } from '../lib/types';
-import type { ForagingSpot as OldForagingSpot } from './types';
-import { newSpotsToOld, newUserToOld } from '../lib/compatibility';
+import type { User as NewUser, ForagingSpot, ForagingType, Coordinates } from '../lib/types';
 import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
 
 interface MainMapScreenProps {
   user: NewUser;
-  foragingSpots: NewForagingSpot[];
+  foragingSpots: ForagingSpot[];
   onSignOut: () => void;
-  onAddSpot: (spot: Omit<NewForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => void;
-  onUpdateSpot: (spotId: string, updates: Partial<NewForagingSpot>) => void;
+  onAddSpot: (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => void;
+  onUpdateSpot: (spotId: string, updates: Partial<ForagingSpot>) => void;
   onDeleteSpot: (spotId: string) => void;
 }
 
@@ -29,15 +27,15 @@ export default function MainMapScreen({
   onDeleteSpot 
 }: MainMapScreenProps) {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSpot, setSelectedSpot] = useState<OldForagingSpot | null>(null);
-  const [editingSpot, setEditingSpot] = useState<OldForagingSpot | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
+  const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
   const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(
     new Set(['chanterelle', 'blueberry', 'lingonberry', 'cloudberry', 'other'])
   );
-  const [centerOnSpot, setCenterOnSpot] = useState<OldForagingSpot | null>(null);
+  const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
   
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
@@ -102,12 +100,13 @@ export default function MainMapScreen({
     onAddSpot({
       type,
       coordinates: currentPosition,
-      notes
+      notes,
+      sharedWith: []
     });
     setShowAddModal(false);
   };
 
-  const handleEditSpot = (spot: OldForagingSpot, type: ForagingType, notes: string) => {
+  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string) => {
     onUpdateSpot(spot.id, { type, notes });
     setEditingSpot(null);
   };
@@ -116,7 +115,7 @@ export default function MainMapScreen({
   //   setSelectedSpot(spot);
   // };
 
-  const handleSpotClick = (spot: OldForagingSpot) => {
+  const handleSpotClick = (spot: ForagingSpot) => {
     setSelectedSpot(spot);
   };
 
@@ -135,7 +134,7 @@ export default function MainMapScreen({
     setActiveFilters(filters);
   };
 
-  const handleViewOnMap = (spot: OldForagingSpot) => {
+  const handleViewOnMap = (spot: ForagingSpot) => {
     setViewMode('map');
     // Add a small delay to ensure the map component has mounted before setting centerOnSpot
     setTimeout(() => {
@@ -150,11 +149,6 @@ export default function MainMapScreen({
   };
 
   const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
-  
-  // Convert new types to old types for compatibility with existing components
-  const oldUser = newUserToOld(user);
-  const oldSpots = newSpotsToOld(foragingSpots);
-  const oldFilteredSpots = newSpotsToOld(filteredSpots);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -169,10 +163,10 @@ export default function MainMapScreen({
         {viewMode === 'map' ? (
           <>
             <MapView 
-              foragingSpots={oldFilteredSpots}
+              foragingSpots={filteredSpots}
               currentPosition={currentPosition}
-              onPinClick={handleSpotClick}
-              centerOnSpot={centerOnSpot}
+              onPinClick={setSelectedSpot}
+              centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
               initialViewState={mapViewState}
               onViewStateChange={handleMapViewStateChange}
             />
@@ -185,7 +179,7 @@ export default function MainMapScreen({
           </>
         ) : (
           <SpotListView
-            foragingSpots={oldSpots}
+            foragingSpots={filteredSpots}
             activeFilters={activeFilters}
             onSpotClick={handleSpotClick}
             onEdit={(spot) => setEditingSpot(spot)}
@@ -220,7 +214,7 @@ export default function MainMapScreen({
       {selectedSpot && (
         <PinDetailsDrawer
           spot={selectedSpot}
-          currentUser={oldUser}
+          currentUser={user}
           onClose={() => setSelectedSpot(null)}
           onEdit={() => {
             setEditingSpot(selectedSpot);

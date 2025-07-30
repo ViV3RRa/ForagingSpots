@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, NavigationControl, GeolocateControl, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
-import type{ ForagingSpot, Coordinates } from './types';
+import type { ForagingSpot, Coordinates } from '../lib/types';
 import { TreePine } from 'lucide-react';
 import ChanterelleIcon from './ChanterelleIcon';
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';

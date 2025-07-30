@@ -43,6 +43,7 @@ export const ForagingSpotSchema = z.object({
   notes: z.string().optional(),
   created: z.string(),
   updated: z.string(),
+  sharedWith: z.array(z.string()).default([]), // Array of email addresses for sharing
   // Pocketbase expand fields (populated when using expand query)
   expand: z.object({
     user: UserSchema.optional(),
@@ -54,6 +55,7 @@ export const ForagingSpotCreateSchema = z.object({
   type: ForagingTypeSchema,
   coordinates: CoordinatesSchema,
   notes: z.string().optional(),
+  sharedWith: z.array(z.string()).default([]),
 });
 
 // Foraging spot update schema (for form validation)

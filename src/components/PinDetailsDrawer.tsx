@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import { Separator } from './ui/separator';
 import { useIsMobile } from './ui/use-mobile';
 import { Edit, Trash2, Share, MapPin, Minus } from 'lucide-react';
-import type{ ForagingSpot, User } from './types';
+import type { ForagingSpot, User } from '../lib/types';
 import ChanterelleIcon from './ChanterelleIcon';
 
 interface PinDetailsDrawerProps {
@@ -60,7 +60,7 @@ export default function PinDetailsDrawer({
   const [isSharing, setIsSharing] = useState(false);
   const isMobile = useIsMobile();
 
-  const isOwner = spot.userId === currentUser.id;
+  const isOwner = spot.user === currentUser.id;
 
   const handleShare = () => {
     if (shareEmail.trim() && isOwner) {
@@ -88,7 +88,7 @@ export default function PinDetailsDrawer({
             <div>
               <div className="text-lg font-semibold">{getForagingTitle(spot.type)}</div>
               <div className="text-sm text-gray-500 font-normal">
-                {spot.timestamp.toLocaleDateString()} at {spot.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(spot.created).toLocaleDateString()} at {new Date(spot.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
           </SheetTitle>

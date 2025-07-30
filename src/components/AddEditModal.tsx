@@ -5,11 +5,10 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { MapPin } from 'lucide-react';
-import type{ ForagingSpot, ForagingType, Coordinates } from './types';
+import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
 import ChanterelleIcon from './ChanterelleIcon';
 
 interface AddEditModalProps {
-  // mode: 'add' | 'edit';
   spot?: ForagingSpot;
   coordinates: Coordinates;
   onSave: (type: ForagingType, notes: string) => void;

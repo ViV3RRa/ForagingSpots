@@ -6,7 +6,7 @@ import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Search, MoreVertical, Edit, Trash2, Share, MapPin, Calendar, StickyNote, SlidersHorizontal } from 'lucide-react';
-import type{ ForagingSpot, ForagingType } from './types';
+import type { ForagingSpot, ForagingType } from '../lib/types';
 import ChanterelleIcon from './ChanterelleIcon';
 
 interface SpotListViewProps {
@@ -59,10 +59,10 @@ export default function SpotListView({
     // Sort spots
     switch (sortBy) {
       case 'newest':
-        filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        filtered.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
         break;
       case 'oldest':
-        filtered.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        filtered.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
         break;
       case 'type':
         filtered.sort((a, b) => typeConfig[a.type].label.localeCompare(typeConfig[b.type].label));
@@ -231,7 +231,7 @@ export default function SpotListView({
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Calendar className="h-3 w-3" />
-                            <span>{formatDate(spot.timestamp)}</span>
+                            <span>{formatDate(new Date(spot.created))}</span>
                           </div>
                         </div>
                       </div>
