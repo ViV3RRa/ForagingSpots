@@ -74,7 +74,7 @@ export function useCreateSpot() {
       // Return a context object with the snapshotted value
       return { previousSpots };
     },
-    onError: (error, newSpot, context) => {
+    onError: (error, _newSpot, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousSpots) {
         queryClient.setQueryData(queryKeys.foragingSpots.all, context.previousSpots);
@@ -182,7 +182,7 @@ export function useDeleteSpot() {
 
       return { previousSpots };
     },
-    onError: (error, id, context) => {
+    onError: (error, _id, context) => {
       // Roll back the optimistic update
       if (context?.previousSpots) {
         queryClient.setQueryData(queryKeys.foragingSpots.all, context.previousSpots);
