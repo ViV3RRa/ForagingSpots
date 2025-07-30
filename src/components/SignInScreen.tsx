@@ -10,7 +10,7 @@ interface SignInScreenProps {
   onSignUp: () => void;
 }
 
-export default function SignInScreen({ onSignIn, onBack, onSignUp }: SignInScreenProps) {
+export default function SignInScreen({ onSignIn, onBack }: SignInScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -84,7 +84,7 @@ export default function SignInScreen({ onSignIn, onBack, onSignUp }: SignInScree
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-12 rounded-lg bg-white/80 border-green-200 focus:border-green-400"
-                placeholder="••••••••"
+                placeholder="••••••"
                 required
               />
             </div>

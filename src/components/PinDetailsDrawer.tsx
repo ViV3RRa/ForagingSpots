@@ -35,15 +35,15 @@ const getForagingIcon = (type: string) => {
 const getForagingTitle = (type: string) => {
   switch (type) {
     case 'chanterelle':
-      return 'Chanterelles found';
+      return 'Kantareller fundet';
     case 'blueberry':
-      return 'Blueberries found';
+      return 'Blåbær fundet';
     case 'lingonberry':
-      return 'Lingonberries found';
+      return 'Tyttebær fundet';
     case 'cloudberry':
-      return 'Cloudberries found';
+      return 'Multebær fundet';
     default:
-      return 'Foraging find';
+      return 'Noget spændende fundet';
   }
 };
 
@@ -99,7 +99,7 @@ export default function PinDetailsDrawer({
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">GPS Coordinates</span>
+              <span className="text-sm font-medium text-gray-700">GPS lokation</span>
             </div>
             <div className="text-sm text-gray-600 font-mono">
               {spot.coordinates.lat.toFixed(6)}, {spot.coordinates.lng.toFixed(6)}
@@ -109,7 +109,7 @@ export default function PinDetailsDrawer({
           {/* Notes */}
           {spot.notes && (
             <div>
-              <h4 className="font-medium text-gray-700 mb-2">Notes</h4>
+              <h4 className="font-medium text-gray-700 mb-2">Note</h4>
               <p className="text-gray-600 bg-gray-50 rounded-lg p-3">
                 {spot.notes}
               </p>
@@ -122,11 +122,11 @@ export default function PinDetailsDrawer({
               <div className="flex gap-3">
                 <Button onClick={onEdit} variant="outline" className="flex-1">
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  Rediger
                 </Button>
                 <Button onClick={onDelete} variant="outline" className="flex-1 text-red-600 hover:text-red-700">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  Slet
                 </Button>
               </div>
 
@@ -135,20 +135,20 @@ export default function PinDetailsDrawer({
               {/* Sharing section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-700">Sharing</h4>
+                  <h4 className="font-medium text-gray-700">Deling</h4>
                   <Button
                     onClick={() => setIsSharing(!isSharing)}
                     variant="outline"
                     size="sm"
                   >
                     <Share className="h-4 w-4 mr-2" />
-                    Share
+                    Del
                   </Button>
                 </div>
 
                 {isSharing && (
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <Label htmlFor="shareEmail" className="text-sm">Share with email:</Label>
+                    <Label htmlFor="shareEmail" className="text-sm">Del med email:</Label>
                     <div className="flex gap-2 mt-2">
                       <Input
                         id="shareEmail"
@@ -159,7 +159,7 @@ export default function PinDetailsDrawer({
                         className="flex-1"
                       />
                       <Button onClick={handleShare} size="sm" disabled={!shareEmail.trim()}>
-                        Add
+                        Tilføj
                       </Button>
                     </div>
                   </div>
@@ -168,7 +168,7 @@ export default function PinDetailsDrawer({
                 {/* Shared with list */}
                 {spot.sharedWith.length > 0 && (
                   <div>
-                    <div className="text-sm text-gray-600 mb-2">Shared with:</div>
+                    <div className="text-sm text-gray-600 mb-2">Delt med:</div>
                     <div className="space-y-2">
                       {spot.sharedWith.map((email) => (
                         <div key={email} className="flex items-center justify-between bg-gray-50 rounded px-3 py-2">
@@ -188,7 +188,7 @@ export default function PinDetailsDrawer({
                 )}
 
                 {spot.sharedWith.length === 0 && !isSharing && (
-                  <p className="text-sm text-gray-500">Not shared with anyone</p>
+                  <p className="text-sm text-gray-500">Ikke delt med nogen</p>
                 )}
               </div>
             </>

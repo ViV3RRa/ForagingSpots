@@ -20,7 +20,7 @@ export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: 
           <div className="flex items-center text-green-700 mr-3">
             <TreePine className="h-6 w-6" />
           </div>
-          <h1 className="text-lg font-bold text-gray-800">My Spots</h1>
+          <h1 className="text-lg font-bold text-gray-800">Mine Skatte</h1>
         </div>
 
         {/* View Toggle and User menu */}
@@ -74,7 +74,7 @@ export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: 
             </div>
             <DropdownMenuItem onClick={onSignOut} className="text-red-600 focus:text-red-600">
               <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              Log ud
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
