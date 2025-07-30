@@ -156,34 +156,6 @@ export default function MapView({ foragingSpots, currentPosition, onPinClick }: 
     return { clusters, supercluster };
   }, [foragingSpots, viewState]);
 
-  // Show empty state when no spots
-  if (foragingSpots.length === 0) {
-    return (
-      <div className="h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-        <div className="text-center max-w-sm px-6">
-          <div className="mb-6 flex justify-center">
-            <div className="relative">
-              <TreePine className="h-16 w-16 text-green-400 opacity-60" />
-              <div className="absolute -top-2 -right-2 h-8 w-8 bg-white rounded-full flex items-center justify-center shadow-lg">
-                <ChanterelleIcon size={20} />
-              </div>
-            </div>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
-            No spots yet
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Hit the plus button to add your first foraging find!
-          </p>
-          <div className="inline-flex items-center px-4 py-2 bg-white/60 backdrop-blur rounded-full text-sm text-gray-600">
-            <span className="mr-2">📍</span>
-            Current location ready
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Show error state if Mapbox token is not configured
   if (mapError) {
     return (

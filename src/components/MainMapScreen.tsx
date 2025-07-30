@@ -5,6 +5,8 @@ import AddEditModal from './AddEditModal';
 import PinDetailsDrawer from './PinDetailsDrawer';
 import MapView from './MapView';
 import type{ User, ForagingSpot, ForagingType, Coordinates } from './types';
+import FilterButton from './FilterButton';
+import FilterDialog from './FilterDialog';
 
 interface MainMapScreenProps {
   user: User;
@@ -27,6 +29,10 @@ export default function MainMapScreen({
   const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
   const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
+  const [showFilterDialog, setShowFilterDialog] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(
+    new Set(['chanterelle', 'blueberry', 'lingonberry', 'cloudberry', 'other'])
+  );
 
   // Get real GPS position
   useEffect(() => {
@@ -94,15 +100,27 @@ export default function MainMapScreen({
     }
   };
 
+  const handleApplyFilters = (filters: Set<ForagingType>) => {
+    setActiveFilters(filters);
+  };
+
+  const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <TopBar user={user} onSignOut={onSignOut} />
       
       <div className="flex-1 relative">
         <MapView 
-          foragingSpots={foragingSpots}
+          foragingSpots={filteredSpots}
           currentPosition={currentPosition}
           onPinClick={handlePinClick}
+        />
+        
+        <FilterButton
+          onClick={() => setShowFilterDialog(true)}
+          activeFilters={activeFilters}
+          totalTypes={5}
         />
         
         <FloatingActionButton onClick={() => setShowAddModal(true)} />
@@ -142,6 +160,13 @@ export default function MainMapScreen({
           onUnshare={handleUnshare}
         />
       )}
+
+      <FilterDialog
+        open={showFilterDialog}
+        onOpenChange={setShowFilterDialog}
+        activeFilters={activeFilters}
+        onApplyFilters={handleApplyFilters}
+      />
     </div>
   );
 }
