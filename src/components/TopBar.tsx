@@ -1,8 +1,9 @@
 import { Button } from './ui/button';
-import { Avatar, AvatarFallback } from './ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { TreePine, LogOut, Map, List } from 'lucide-react';
-import type{ User } from './types';
+import type { User } from '../lib/types';
+import pb from '../lib/pocketbase';
 
 interface TopBarProps {
   user: User;
@@ -12,6 +13,19 @@ interface TopBarProps {
 }
 
 export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: TopBarProps) {
+  // Helper function to get avatar URL from Pocketbase
+  const getAvatarUrl = (user: User) => {
+    if (user.avatar) {
+      const baseUrl = pb.baseUrl;
+      return `${baseUrl}/api/files/users/${user.id}/${user.avatar}?thumb=60x60`;
+    }
+    return null;
+  };
+
+  const avatarUrl = getAvatarUrl(user);
+  console.log('Avatar URL:', avatarUrl);
+  console.log('User.avatar:', user.avatar);
+
   return (
     <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -59,6 +73,13 @@ export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: 
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
               <Avatar className="h-10 w-10">
+                {avatarUrl && (
+                  <AvatarImage 
+                    src={avatarUrl} 
+                    alt={user.name}
+                    className="object-cover"
+                  />
+                )}
                 <AvatarFallback className="bg-green-100 text-green-700">
                   {user.name.charAt(0).toUpperCase()}
                 </AvatarFallback>

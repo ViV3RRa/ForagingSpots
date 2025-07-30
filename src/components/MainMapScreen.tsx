@@ -159,7 +159,7 @@ export default function MainMapScreen({
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <TopBar 
-        user={oldUser} 
+        user={user} 
         onSignOut={onSignOut}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
