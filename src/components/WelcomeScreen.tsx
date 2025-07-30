@@ -3,10 +3,9 @@ import { Leaf, TreePine } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onSignIn: () => void;
-  onSignUp: () => void;
 }
 
-export default function WelcomeScreen({ onSignIn, onSignUp }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onSignIn }: WelcomeScreenProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex flex-col">
       {/* Header with forest illustration */}

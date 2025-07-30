@@ -1,89 +1,57 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import WelcomeScreen from './components/WelcomeScreen';
 import SignInScreen from './components/SignInScreen';
-import SignUpScreen from './components/SignUpScreen';
 import MainMapScreen from './components/MainMapScreen';
-import type{ ForagingSpot, User } from './components/types';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
+import type { ForagingSpot } from './lib/types';
 import './styles/tokens.css'
 
-// Mock users database
-const mockUsers: User[] = [
-  { id: '1', email: 'demo@forager.com', name: 'Demo User', password: 'demo123' },
-];
-
-export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'signup' | 'map'>('welcome');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+function AppContent() {
+  const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'map'>('welcome');
   const [foragingSpots, setForagingSpots] = useState<ForagingSpot[]>([]);
 
-  navigator.permissions.query({ name: 'geolocation' }).then((permissionStatus) => console.log('Geolocation permission status:', permissionStatus.state));
-
-  // Mock foraging spots for demo user
-  const mockSpots: ForagingSpot[] = useMemo(() => [
-    {
-      id: '1',
-      userId: '1',
-      type: 'chanterelle',
-      coordinates: { lat: 60.1695, lng: 24.9354 },
-      notes: 'Found near old oak trees, good size specimens',
-      timestamp: new Date('2024-07-15T10:30:00'),
-      sharedWith: []
-    },
-    {
-      id: '2',
-      userId: '1',
-      type: 'blueberry',
-      coordinates: { lat: 60.1705, lng: 24.9374 },
-      notes: 'Small patch but very sweet berries',
-      timestamp: new Date('2024-07-20T15:45:00'),
-      sharedWith: []
-    }
-  ], []);
-
+  // Check geolocation permission
   useEffect(() => {
-    // Initialize with mock data if demo user is signed in
-    if (currentUser?.id === '1') {
-      setForagingSpots(mockSpots);
-    }
-  }, [currentUser, mockSpots]);
+    navigator.permissions.query({ name: 'geolocation' }).then((permissionStatus) => 
+      console.log('Geolocation permission status:', permissionStatus.state)
+    );
+  }, []);
 
-  const handleSignIn = (email: string, password: string): boolean => {
-    const user = mockUsers.find(u => u.email === email && u.password === password);
-    if (user) {
-      setCurrentUser(user);
+  // Update screen based on authentication state
+  useEffect(() => {
+    if (isAuthenticated && user) {
       setCurrentScreen('map');
-      return true;
+    } else if (!isLoading) {
+      setCurrentScreen('welcome');
     }
-    return false;
+  }, [isAuthenticated, user, isLoading]);
+
+  const handleSignIn = async (email: string, password: string): Promise<boolean> => {
+    const success = await signIn(email, password);
+    if (success) {
+      setCurrentScreen('map');
+    }
+    return success;
   };
 
-  const handleSignUp = (name: string, email: string, password: string): boolean => {
-    // In a real app, this would create a new user account
-    const newUser: User = {
-      id: Math.random().toString(36),
-      email,
-      name,
-      password
-    };
-    setCurrentUser(newUser);
-    setCurrentScreen('map');
-    return true;
-  };
-
-  const handleSignOut = () => {
-    setCurrentUser(null);
+  const handleSignOut = async () => {
+    await signOut();
     setForagingSpots([]);
     setCurrentScreen('welcome');
   };
 
-  const addForagingSpot = (spot: Omit<ForagingSpot, 'id' | 'userId' | 'timestamp'>) => {
-    if (!currentUser) return;
+  // Temporary mock data functions - will be replaced with TanStack Query in step 5
+  const addForagingSpot = (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => {
+    if (!user) return;
     
     const newSpot: ForagingSpot = {
       ...spot,
       id: Math.random().toString(36),
-      userId: currentUser.id,
-      timestamp: new Date()
+      user: user.id,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
     };
     
     setForagingSpots(prev => [...prev, newSpot]);
@@ -92,7 +60,7 @@ export default function App() {
   const updateForagingSpot = (spotId: string, updates: Partial<ForagingSpot>) => {
     setForagingSpots(prev => 
       prev.map(spot => 
-        spot.id === spotId ? { ...spot, ...updates } : spot
+        spot.id === spotId ? { ...spot, ...updates, updated: new Date().toISOString() } : spot
       )
     );
   };
@@ -101,11 +69,22 @@ export default function App() {
     setForagingSpots(prev => prev.filter(spot => spot.id !== spotId));
   };
 
+  // Show loading screen while initializing auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (currentScreen === 'welcome') {
     return (
       <WelcomeScreen 
         onSignIn={() => setCurrentScreen('signin')}
-        onSignUp={() => setCurrentScreen('signup')}
       />
     );
   }
@@ -115,29 +94,36 @@ export default function App() {
       <SignInScreen 
         onSignIn={handleSignIn}
         onBack={() => setCurrentScreen('welcome')}
-        onSignUp={() => setCurrentScreen('signup')}
       />
     );
   }
 
-  if (currentScreen === 'signup') {
+  // Show map screen if authenticated
+  if (isAuthenticated && user) {
     return (
-      <SignUpScreen 
-        onSignUp={handleSignUp}
-        onBack={() => setCurrentScreen('welcome')}
-        onSignIn={() => setCurrentScreen('signin')}
+      <MainMapScreen 
+        user={user}
+        foragingSpots={foragingSpots}
+        onSignOut={handleSignOut}
+        onAddSpot={addForagingSpot}
+        onUpdateSpot={updateForagingSpot}
+        onDeleteSpot={deleteForagingSpot}
       />
     );
   }
 
+  // Fallback to welcome screen
   return (
-    <MainMapScreen 
-      user={currentUser!}
-      foragingSpots={foragingSpots}
-      onSignOut={handleSignOut}
-      onAddSpot={addForagingSpot}
-      onUpdateSpot={updateForagingSpot}
-      onDeleteSpot={deleteForagingSpot}
+    <WelcomeScreen 
+      onSignIn={() => setCurrentScreen('signin')}
     />
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

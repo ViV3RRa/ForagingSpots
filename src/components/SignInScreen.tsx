@@ -5,9 +5,8 @@ import { Label } from './ui/label';
 import { ArrowLeft, TreePine, Leaf } from 'lucide-react';
 
 interface SignInScreenProps {
-  onSignIn: (email: string, password: string) => boolean;
+  onSignIn: (email: string, password: string) => Promise<boolean>;
   onBack: () => void;
-  onSignUp: () => void;
 }
 
 export default function SignInScreen({ onSignIn, onBack }: SignInScreenProps) {
@@ -21,14 +20,17 @@ export default function SignInScreen({ onSignIn, onBack }: SignInScreenProps) {
     setError('');
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const success = onSignIn(email, password);
-    if (!success) {
-      setError('Invalid email or password');
+    try {
+      const success = await onSignIn(email, password);
+      if (!success) {
+        setError('Invalid email or password');
+      }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      setError('An error occurred during sign in');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -103,24 +105,6 @@ export default function SignInScreen({ onSignIn, onBack }: SignInScreenProps) {
               {isLoading ? 'Logger ind...' : 'Log ind'}
             </Button>
           </form>
-
-          {/* <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              Don't have an account?{' '}
-              <button 
-                onClick={onSignUp}
-                className="text-green-600 hover:text-green-700 font-medium"
-              >
-                Sign up
-              </button>
-            </p>
-          </div> */}
-
-          {/* Demo hint */}
-          <div className="mt-8 p-4 bg-white/60 backdrop-blur rounded-lg text-center text-sm text-gray-600">
-            <p className="font-medium mb-1">Demo credentials:</p>
-            <p>demo@forager.com / demo123</p>
-          </div>
         </div>
       </div>
     </div>

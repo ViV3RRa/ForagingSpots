@@ -1,0 +1,226 @@
+{
+  "collections": [
+    {
+      "id": "users",
+      "name": "users",
+      "type": "auth",
+      "system": false,
+      "schema": [
+        {
+          "id": "users_name",
+          "name": "name",
+          "type": "text",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "min": 1,
+            "max": 100,
+            "pattern": ""
+          }
+        },
+        {
+          "id": "users_avatar",
+          "name": "avatar",
+          "type": "file",
+          "system": false,
+          "required": false,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "maxSelect": 1,
+            "maxSize": 5242880,
+            "mimeTypes": [
+              "image/jpeg",
+              "image/png",
+              "image/svg+xml",
+              "image/gif",
+              "image/webp"
+            ],
+            "thumbs": [
+              "100x100"
+            ],
+            "protected": false
+          }
+        }
+      ],
+      "indexes": [],
+      "listRule": "id = @request.auth.id",
+      "viewRule": "id = @request.auth.id",
+      "createRule": "",
+      "updateRule": "id = @request.auth.id",
+      "deleteRule": "id = @request.auth.id",
+      "options": {
+        "allowEmailAuth": true,
+        "allowOAuth2Auth": false,
+        "allowUsernameAuth": false,
+        "exceptEmailDomains": null,
+        "manageRule": null,
+        "minPasswordLength": 6,
+        "onlyEmailDomains": null,
+        "requireEmail": true
+      }
+    },
+    {
+      "id": "foraging_spots",
+      "name": "foraging_spots",
+      "type": "base",
+      "system": false,
+      "schema": [
+        {
+          "id": "foraging_spots_user",
+          "name": "user",
+          "type": "relation",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "collectionId": "users",
+            "cascadeDelete": true,
+            "minSelect": null,
+            "maxSelect": 1,
+            "displayFields": [
+              "name",
+              "email"
+            ]
+          }
+        },
+        {
+          "id": "foraging_spots_type",
+          "name": "type",
+          "type": "select",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "maxSelect": 1,
+            "values": [
+              "chanterelle",
+              "blueberry",
+              "lingonberry",
+              "cloudberry",
+              "other"
+            ]
+          }
+        },
+        {
+          "id": "foraging_spots_coordinates",
+          "name": "coordinates",
+          "type": "json",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "maxSize": 1000
+          }
+        },
+        {
+          "id": "foraging_spots_notes",
+          "name": "notes",
+          "type": "text",
+          "system": false,
+          "required": false,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "min": null,
+            "max": 1000,
+            "pattern": ""
+          }
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_foraging_spots_user ON foraging_spots (user)",
+        "CREATE INDEX idx_foraging_spots_type ON foraging_spots (type)",
+        "CREATE INDEX idx_foraging_spots_created ON foraging_spots (created)"
+      ],
+      "listRule": "@request.auth.id != \"\" && user = @request.auth.id",
+      "viewRule": "@request.auth.id != \"\" && user = @request.auth.id",
+      "createRule": "@request.auth.id != \"\" && user = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && user = @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && user = @request.auth.id",
+      "options": {}
+    },
+    {
+      "id": "shared_spots",
+      "name": "shared_spots",
+      "type": "base",
+      "system": false,
+      "schema": [
+        {
+          "id": "shared_spots_spot",
+          "name": "spot",
+          "type": "relation",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "collectionId": "foraging_spots",
+            "cascadeDelete": true,
+            "minSelect": null,
+            "maxSelect": 1,
+            "displayFields": [
+              "type",
+              "created"
+            ]
+          }
+        },
+        {
+          "id": "shared_spots_shared_with",
+          "name": "shared_with",
+          "type": "relation",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "collectionId": "users",
+            "cascadeDelete": true,
+            "minSelect": null,
+            "maxSelect": 1,
+            "displayFields": [
+              "name",
+              "email"
+            ]
+          }
+        },
+        {
+          "id": "shared_spots_shared_by",
+          "name": "shared_by",
+          "type": "relation",
+          "system": false,
+          "required": true,
+          "presentable": false,
+          "unique": false,
+          "options": {
+            "collectionId": "users",
+            "cascadeDelete": true,
+            "minSelect": null,
+            "maxSelect": 1,
+            "displayFields": [
+              "name",
+              "email"
+            ]
+          }
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_shared_spots_spot ON shared_spots (spot)",
+        "CREATE INDEX idx_shared_spots_shared_with ON shared_spots (shared_with)",
+        "CREATE INDEX idx_shared_spots_shared_by ON shared_spots (shared_by)",
+        "CREATE UNIQUE INDEX idx_shared_spots_unique ON shared_spots (spot, shared_with)"
+      ],
+      "listRule": "@request.auth.id != \"\" && (shared_with = @request.auth.id || shared_by = @request.auth.id)",
+      "viewRule": "@request.auth.id != \"\" && (shared_with = @request.auth.id || shared_by = @request.auth.id)",
+      "createRule": "@request.auth.id != \"\" && shared_by = @request.auth.id",
+      "updateRule": "@request.auth.id != \"\" && shared_by = @request.auth.id",
+      "deleteRule": "@request.auth.id != \"\" && shared_by = @request.auth.id",
+      "options": {}
+    }
+  ]
+}

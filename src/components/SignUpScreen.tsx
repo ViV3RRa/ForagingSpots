@@ -5,7 +5,7 @@ import { Label } from './ui/label';
 import { ArrowLeft, TreePine, Leaf } from 'lucide-react';
 
 interface SignUpScreenProps {
-  onSignUp: (name: string, email: string, password: string) => boolean;
+  onSignUp: (name: string, email: string, password: string) => Promise<boolean>;
   onBack: () => void;
   onSignIn: () => void;
 }
@@ -14,17 +14,25 @@ export default function SignUpScreen({ onSignUp, onBack, onSignIn }: SignUpScree
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    onSignUp(name, email, password);
-    setIsLoading(false);
+    try {
+      const success = await onSignUp(name, email, password);
+      if (!success) {
+        setError('Failed to create account. Please try again.');
+      }
+    } catch (error) {
+      console.error('Sign up error:', error);
+      setError('An error occurred during sign up');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,6 +106,12 @@ export default function SignUpScreen({ onSignUp, onBack, onSignIn }: SignUpScree
                 minLength={6}
               />
             </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                {error}
+              </div>
+            )}
 
             <Button 
               type="submit" 

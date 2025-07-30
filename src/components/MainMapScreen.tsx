@@ -4,17 +4,19 @@ import FloatingActionButton from './FloatingActionButton';
 import AddEditModal from './AddEditModal';
 import PinDetailsDrawer from './PinDetailsDrawer';
 import MapView from './MapView';
-import type{ User, ForagingSpot, ForagingType, Coordinates } from './types';
+import type { User as NewUser, ForagingSpot as NewForagingSpot, ForagingType, Coordinates } from '../lib/types';
+import type { ForagingSpot as OldForagingSpot } from './types';
+import { newSpotsToOld, newUserToOld } from '../lib/compatibility';
 import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
 
 interface MainMapScreenProps {
-  user: User;
-  foragingSpots: ForagingSpot[];
+  user: NewUser;
+  foragingSpots: NewForagingSpot[];
   onSignOut: () => void;
-  onAddSpot: (spot: Omit<ForagingSpot, 'id' | 'userId' | 'timestamp'>) => void;
-  onUpdateSpot: (spotId: string, updates: Partial<ForagingSpot>) => void;
+  onAddSpot: (spot: Omit<NewForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => void;
+  onUpdateSpot: (spotId: string, updates: Partial<NewForagingSpot>) => void;
   onDeleteSpot: (spotId: string) => void;
 }
 
@@ -27,15 +29,15 @@ export default function MainMapScreen({
   onDeleteSpot 
 }: MainMapScreenProps) {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
-  const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<OldForagingSpot | null>(null);
+  const [editingSpot, setEditingSpot] = useState<OldForagingSpot | null>(null);
   const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(
     new Set(['chanterelle', 'blueberry', 'lingonberry', 'cloudberry', 'other'])
   );
-  const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
+  const [centerOnSpot, setCenterOnSpot] = useState<OldForagingSpot | null>(null);
   
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
@@ -88,6 +90,7 @@ export default function MainMapScreen({
       setCurrentPosition(null);
       setHasInitializedUserPosition(true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
   const handleAddSpot = (type: ForagingType, notes: string) => {
@@ -99,46 +102,40 @@ export default function MainMapScreen({
     onAddSpot({
       type,
       coordinates: currentPosition,
-      notes,
-      sharedWith: []
+      notes
     });
     setShowAddModal(false);
   };
 
-  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string) => {
+  const handleEditSpot = (spot: OldForagingSpot, type: ForagingType, notes: string) => {
     onUpdateSpot(spot.id, { type, notes });
     setEditingSpot(null);
   };
 
-  // const handlePinClick = (spot: ForagingSpot) => {
+  // const handlePinClick = (spot: OldForagingSpot) => {
   //   setSelectedSpot(spot);
   // };
 
-  const handleSpotClick = (spot: ForagingSpot) => {
+  const handleSpotClick = (spot: OldForagingSpot) => {
     setSelectedSpot(spot);
   };
 
-  const handleShare = (spotId: string, email: string) => {
-    const spot = foragingSpots.find(s => s.id === spotId);
-    if (spot) {
-      const updatedSharedWith = [...spot.sharedWith, email];
-      onUpdateSpot(spotId, { sharedWith: updatedSharedWith });
-    }
+  // Sharing functionality temporarily disabled - will be implemented with shared_spots collection
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleShare = (_spotId: string, _email: string) => {
+    console.log('Sharing functionality will be implemented in step 5 with TanStack Query');
   };
 
-  const handleUnshare = (spotId: string, email: string) => {
-    const spot = foragingSpots.find(s => s.id === spotId);
-    if (spot) {
-      const updatedSharedWith = spot.sharedWith.filter(e => e !== email);
-      onUpdateSpot(spotId, { sharedWith: updatedSharedWith });
-    }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleUnshare = (_spotId: string, _email: string) => {
+    console.log('Unsharing functionality will be implemented in step 5 with TanStack Query');
   };
 
   const handleApplyFilters = (filters: Set<ForagingType>) => {
     setActiveFilters(filters);
   };
 
-  const handleViewOnMap = (spot: ForagingSpot) => {
+  const handleViewOnMap = (spot: OldForagingSpot) => {
     setViewMode('map');
     // Add a small delay to ensure the map component has mounted before setting centerOnSpot
     setTimeout(() => {
@@ -153,11 +150,16 @@ export default function MainMapScreen({
   };
 
   const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
+  
+  // Convert new types to old types for compatibility with existing components
+  const oldUser = newUserToOld(user);
+  const oldSpots = newSpotsToOld(foragingSpots);
+  const oldFilteredSpots = newSpotsToOld(filteredSpots);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <TopBar 
-        user={user} 
+        user={oldUser} 
         onSignOut={onSignOut}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -167,7 +169,7 @@ export default function MainMapScreen({
         {viewMode === 'map' ? (
           <>
             <MapView 
-              foragingSpots={filteredSpots}
+              foragingSpots={oldFilteredSpots}
               currentPosition={currentPosition}
               onPinClick={handleSpotClick}
               centerOnSpot={centerOnSpot}
@@ -183,7 +185,7 @@ export default function MainMapScreen({
           </>
         ) : (
           <SpotListView
-            foragingSpots={foragingSpots}
+            foragingSpots={oldSpots}
             activeFilters={activeFilters}
             onSpotClick={handleSpotClick}
             onEdit={(spot) => setEditingSpot(spot)}
@@ -218,7 +220,7 @@ export default function MainMapScreen({
       {selectedSpot && (
         <PinDetailsDrawer
           spot={selectedSpot}
-          currentUser={user}
+          currentUser={oldUser}
           onClose={() => setSelectedSpot(null)}
           onEdit={() => {
             setEditingSpot(selectedSpot);
