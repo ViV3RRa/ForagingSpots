@@ -1,15 +1,17 @@
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { TreePine, LogOut } from 'lucide-react';
+import { TreePine, LogOut, Map, List } from 'lucide-react';
 import type{ User } from './types';
 
 interface TopBarProps {
   user: User;
   onSignOut: () => void;
+  viewMode: 'map' | 'list';
+  onViewModeChange: (mode: 'map' | 'list') => void;
 }
 
-export default function TopBar({ user, onSignOut }: TopBarProps) {
+export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: TopBarProps) {
   return (
     <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -19,6 +21,37 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
             <TreePine className="h-6 w-6" />
           </div>
           <h1 className="text-lg font-bold text-gray-800">My Spots</h1>
+        </div>
+
+        {/* View Toggle and User menu */}
+        <div className="flex items-center gap-3">
+          {/* View Toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('map')}
+              className={`h-8 px-3 ${viewMode === 'map' 
+                ? 'bg-forest-green text-white shadow-sm' 
+                : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Map className="h-4 w-4 mr-1" />
+              Kort
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('list')}
+              className={`h-8 px-3 ${viewMode === 'list' 
+                ? 'bg-forest-green text-white shadow-sm' 
+                : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <List className="h-4 w-4 mr-1" />
+              Liste
+            </Button>
+          </div>
         </div>
 
         {/* User menu */}

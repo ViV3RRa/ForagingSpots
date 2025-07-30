@@ -10,6 +10,9 @@ interface MapViewProps {
   foragingSpots: ForagingSpot[];
   currentPosition: Coordinates | null;
   onPinClick: (spot: ForagingSpot) => void;
+  centerOnSpot?: ForagingSpot | null;
+  initialViewState?: { longitude: number; latitude: number; zoom: number };
+  onViewStateChange?: (viewState: { longitude: number; latitude: number; zoom: number }) => void;
 }
 
 const getForagingIcon = (type: string) => {
@@ -40,22 +43,31 @@ const getForagingColor = (type: string) => {
   }
 };
 
-export default function MapView({ foragingSpots, currentPosition, onPinClick }: MapViewProps) {
+export default function MapView({ 
+  foragingSpots, 
+  currentPosition, 
+  onPinClick, 
+  centerOnSpot, 
+  initialViewState,
+  onViewStateChange 
+}: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
   
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
   const denmarkZoom = 6;
   
-  const [viewState, setViewState] = useState({
-    longitude: currentPosition?.lng || denmarkCenter.lng,
-    latitude: currentPosition?.lat || denmarkCenter.lat,
-    zoom: currentPosition ? DEFAULT_MAP_CONFIG.zoom : denmarkZoom
-  });
+  // Use provided initial view state or fallback to defaults
+  const [viewState, setViewState] = useState(
+    initialViewState || {
+      longitude: denmarkCenter.lng,
+      latitude: denmarkCenter.lat,
+      zoom: denmarkZoom
+    }
+  );
 
-  // Track previous position to only fly when changing from null to a value
-  const prevPositionRef = useRef<Coordinates | null>(null);
 
   // Hide Mapbox attribution control
   useEffect(() => {
@@ -68,46 +80,55 @@ export default function MapView({ foragingSpots, currentPosition, onPinClick }: 
     };
   }, []);
 
-  // Update view state when current position changes from null to a value
-  useEffect(() => {
-    const wasNull = prevPositionRef.current === null;
-    const hasValue = currentPosition !== null;
-    
-    if (wasNull && hasValue && currentPosition) {
-      if (mapRef.current) {
-        mapRef.current.flyTo({
-          center: [currentPosition.lng, currentPosition.lat],
-          zoom: DEFAULT_MAP_CONFIG.zoom,
-          duration: 1000
-        });
-      } else {
-        setViewState(prev => ({
-          ...prev,
-          longitude: currentPosition.lng,
-          latitude: currentPosition.lat
-        }));
-      }
-    }
-    
-    prevPositionRef.current = currentPosition;
-  }, [currentPosition]);
-
   useEffect(() => {
     if (!validateMapboxToken()) {
       setMapError('Mapbox access token is not configured. Please check your .env file.');
     }
   }, []);
 
-  // Update view state when current position changes
+  // Update view state when initialViewState changes (e.g., when user location is obtained)
   useEffect(() => {
-    if (currentPosition) {
-      setViewState(prev => ({
-        ...prev,
-        longitude: currentPosition.lng,
-        latitude: currentPosition.lat
-      }));
+    if (initialViewState && mapRef.current && mapLoaded) {
+      // Check if the new view state is significantly different from current state
+      const isSignificantChange = 
+        Math.abs(initialViewState.longitude - viewState.longitude) > 0.01 ||
+        Math.abs(initialViewState.latitude - viewState.latitude) > 0.01 ||
+        Math.abs(initialViewState.zoom - viewState.zoom) > 1;
+
+      if (isSignificantChange) {
+        // Use flyTo for smooth animation to user's location
+        mapRef.current.flyTo({
+          center: [initialViewState.longitude, initialViewState.latitude],
+          zoom: initialViewState.zoom,
+          duration: 2000 // 2 second smooth animation
+        });
+        
+        // Also update local state
+        setViewState(initialViewState);
+      }
+    } else if (initialViewState && !mapLoaded) {
+      // If map isn't loaded yet, just update the state
+      setViewState(initialViewState);
     }
-  }, [currentPosition]);
+  }, [initialViewState, mapLoaded, viewState.longitude, viewState.latitude, viewState.zoom]);
+
+  // Center on specific spot when requested - only after map is loaded
+  useEffect(() => {
+    if (centerOnSpot && mapRef.current && mapLoaded) {
+      // Add a small delay to ensure map is fully ready
+      const timer = setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.flyTo({
+            center: [centerOnSpot.coordinates.lng, centerOnSpot.coordinates.lat],
+            zoom: 15, // Zoom in closer to see the specific spot
+            duration: 1500 // Slightly longer animation for better UX
+          });
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [centerOnSpot, mapLoaded]);
 
   // Create supercluster instance and process spots
   const { clusters, supercluster } = useMemo(() => {
@@ -200,7 +221,18 @@ export default function MapView({ foragingSpots, currentPosition, onPinClick }: 
       <Map
         ref={mapRef}
         {...viewState}
-        onMove={evt => setViewState(evt.viewState)}
+        onMove={evt => {
+          setViewState(evt.viewState);
+          // Notify parent of view state changes
+          if (onViewStateChange) {
+            onViewStateChange({
+              longitude: evt.viewState.longitude,
+              latitude: evt.viewState.latitude,
+              zoom: evt.viewState.zoom
+            });
+          }
+        }}
+        onLoad={() => setMapLoaded(true)}
         mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
         style={{ width: '100%', height: '100%' }}
         mapStyle={DEFAULT_MAP_CONFIG.style}

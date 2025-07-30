@@ -7,6 +7,7 @@ import MapView from './MapView';
 import type{ User, ForagingSpot, ForagingType, Coordinates } from './types';
 import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
+import SpotListView from './SpotListView';
 
 interface MainMapScreenProps {
   user: User;
@@ -29,24 +30,52 @@ export default function MainMapScreen({
   const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
   const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(
     new Set(['chanterelle', 'blueberry', 'lingonberry', 'cloudberry', 'other'])
   );
+  const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
+  
+  // Denmark center coordinates for when no location is available
+  const denmarkCenter = { lat: 56.0, lng: 10.0 };
+  const denmarkZoom = 6;
+  
+  // Persistent map view state
+  const [mapViewState, setMapViewState] = useState({
+    longitude: denmarkCenter.lng,
+    latitude: denmarkCenter.lat,
+    zoom: denmarkZoom
+  });
+  
+  // Track if we've initialized the map position with user's location
+  const [hasInitializedUserPosition, setHasInitializedUserPosition] = useState(false);
 
-  // Get real GPS position
+  // Get real GPS position and initialize map position once
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setCurrentPosition({
+          const userPosition = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
-          });
+          };
+          setCurrentPosition(userPosition);
+          
+          // Only set initial map position if we haven't done so yet
+          if (!hasInitializedUserPosition) {
+            setMapViewState({
+              longitude: userPosition.lng,
+              latitude: userPosition.lat,
+              zoom: 12 // Use a reasonable zoom level for user location
+            });
+            setHasInitializedUserPosition(true);
+          }
         },
         (error) => {
           console.warn('Geolocation error:', error.message);
           setCurrentPosition(null); // No location available
+          setHasInitializedUserPosition(true); // Mark as initialized even if failed
         },
         {
           enableHighAccuracy: true,
@@ -57,8 +86,9 @@ export default function MainMapScreen({
     } else {
       console.warn('Geolocation is not supported by this browser');
       setCurrentPosition(null);
+      setHasInitializedUserPosition(true);
     }
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   const handleAddSpot = (type: ForagingType, notes: string) => {
     if (!currentPosition) {
@@ -80,7 +110,11 @@ export default function MainMapScreen({
     setEditingSpot(null);
   };
 
-  const handlePinClick = (spot: ForagingSpot) => {
+  // const handlePinClick = (spot: ForagingSpot) => {
+  //   setSelectedSpot(spot);
+  // };
+
+  const handleSpotClick = (spot: ForagingSpot) => {
     setSelectedSpot(spot);
   };
 
@@ -104,24 +138,62 @@ export default function MainMapScreen({
     setActiveFilters(filters);
   };
 
+  const handleViewOnMap = (spot: ForagingSpot) => {
+    setViewMode('map');
+    // Add a small delay to ensure the map component has mounted before setting centerOnSpot
+    setTimeout(() => {
+      setCenterOnSpot(spot);
+      // Clear the centerOnSpot after the map has had time to center
+      setTimeout(() => setCenterOnSpot(null), 3000);
+    }, 100);
+  };
+
+  const handleMapViewStateChange = (newViewState: { longitude: number; latitude: number; zoom: number }) => {
+    setMapViewState(newViewState);
+  };
+
   const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <TopBar user={user} onSignOut={onSignOut} />
+      <TopBar 
+        user={user} 
+        onSignOut={onSignOut}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
       
       <div className="flex-1 relative">
-        <MapView 
-          foragingSpots={filteredSpots}
-          currentPosition={currentPosition}
-          onPinClick={handlePinClick}
-        />
-        
-        <FilterButton
-          onClick={() => setShowFilterDialog(true)}
-          activeFilters={activeFilters}
-          totalTypes={5}
-        />
+        {viewMode === 'map' ? (
+          <>
+            <MapView 
+              foragingSpots={filteredSpots}
+              currentPosition={currentPosition}
+              onPinClick={handleSpotClick}
+              centerOnSpot={centerOnSpot}
+              initialViewState={mapViewState}
+              onViewStateChange={handleMapViewStateChange}
+            />
+            
+            <FilterButton
+              onClick={() => setShowFilterDialog(true)}
+              activeFilters={activeFilters}
+              totalTypes={5}
+            />
+          </>
+        ) : (
+          <SpotListView
+            foragingSpots={foragingSpots}
+            activeFilters={activeFilters}
+            onSpotClick={handleSpotClick}
+            onEdit={(spot) => setEditingSpot(spot)}
+            onDelete={onDeleteSpot}
+            onShare={handleSpotClick}
+            onViewOnMap={handleViewOnMap}
+            onFilterClick={() => setShowFilterDialog(true)}
+            totalTypes={5}
+          />
+        )}
         
         <FloatingActionButton onClick={() => setShowAddModal(true)} />
       </div>
