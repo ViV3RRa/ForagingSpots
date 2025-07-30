@@ -1,0 +1,51 @@
+import { Button } from './ui/button';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { TreePine, LogOut } from 'lucide-react';
+import type{ User } from './types';
+
+interface TopBarProps {
+  user: User;
+  onSignOut: () => void;
+}
+
+export default function TopBar({ user, onSignOut }: TopBarProps) {
+  return (
+    <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between">
+        {/* Logo and title */}
+        <div className="flex items-center">
+          <div className="flex items-center text-green-700 mr-3">
+            <TreePine className="h-6 w-6" />
+          </div>
+          <h1 className="text-lg font-bold text-gray-800">My Spots</h1>
+        </div>
+
+        {/* User menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-green-100 text-green-700">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <div className="flex items-center justify-start gap-2 p-2">
+              <div className="flex flex-col space-y-1 leading-none">
+                <p className="font-medium text-sm">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+            <DropdownMenuItem onClick={onSignOut} className="text-red-600 focus:text-red-600">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
