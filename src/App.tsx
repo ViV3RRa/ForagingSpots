@@ -4,13 +4,19 @@ import SignInScreen from './components/SignInScreen';
 import MainMapScreen from './components/MainMapScreen';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
+import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from './hooks/useForagingSpots';
 import type { ForagingSpot } from './lib/types';
 import './styles/tokens.css'
 
 function AppContent() {
   const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'map'>('welcome');
-  const [foragingSpots, setForagingSpots] = useState<ForagingSpot[]>([]);
+  
+  // TanStack Query hooks for data management
+  const { data: foragingSpots = [], isLoading: spotsLoading } = useForagingSpots();
+  const createSpotMutation = useCreateSpot();
+  const updateSpotMutation = useUpdateSpot();
+  const deleteSpotMutation = useDeleteSpot();
 
   // Check geolocation permission
   useEffect(() => {
@@ -38,44 +44,32 @@ function AppContent() {
 
   const handleSignOut = async () => {
     await signOut();
-    setForagingSpots([]);
     setCurrentScreen('welcome');
   };
 
-  // Temporary mock data functions - will be replaced with TanStack Query in step 5
+  // TanStack Query mutation functions
   const addForagingSpot = (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => {
     if (!user) return;
-    
-    const newSpot: ForagingSpot = {
-      ...spot,
-      id: Math.random().toString(36),
-      user: user.id,
-      created: new Date().toISOString(),
-      updated: new Date().toISOString(),
-    };
-    
-    setForagingSpots(prev => [...prev, newSpot]);
+    createSpotMutation.mutate(spot);
   };
 
   const updateForagingSpot = (spotId: string, updates: Partial<ForagingSpot>) => {
-    setForagingSpots(prev => 
-      prev.map(spot => 
-        spot.id === spotId ? { ...spot, ...updates, updated: new Date().toISOString() } : spot
-      )
-    );
+    updateSpotMutation.mutate({ id: spotId, data: updates });
   };
 
   const deleteForagingSpot = (spotId: string) => {
-    setForagingSpots(prev => prev.filter(spot => spot.id !== spotId));
+    deleteSpotMutation.mutate(spotId);
   };
 
-  // Show loading screen while initializing auth
-  if (isLoading) {
+  // Show loading screen while initializing auth or loading spots
+  if (isLoading || (isAuthenticated && spotsLoading)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {isLoading ? 'Loading...' : 'Loading foraging spots...'}
+          </p>
         </div>
       </div>
     );
