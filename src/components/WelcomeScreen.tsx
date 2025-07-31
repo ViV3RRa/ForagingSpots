@@ -1,3 +1,4 @@
+import PWAInstallPrompt from './PWAInstallPrompt';
 import { Button } from './ui/button';
 import { Leaf, TreePine } from 'lucide-react';
 
@@ -62,6 +63,8 @@ export default function WelcomeScreen({ onSignIn }: WelcomeScreenProps) {
       {/* <div className="text-center py-6 text-xs text-gray-500">
         🍄 Happy foraging! Remember to follow local guidelines 🫐
       </div> */}
+
+      <PWAInstallPrompt />
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: 
   // Helper function to get avatar URL from Pocketbase
   const getAvatarUrl = (user: User) => {
     if (user.avatar) {
-      const baseUrl = pb.baseUrl;
+      const baseUrl = pb.baseURL;
       return `${baseUrl}/api/files/users/${user.id}/${user.avatar}?thumb=60x60`;
     }
     return null;
