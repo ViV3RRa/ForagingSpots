@@ -3,6 +3,7 @@ import PocketBase from 'pocketbase';
 // Initialize PocketBase client
 // You'll need to replace this URL with your actual Pocketbase instance URL
 const pb = new PocketBase(import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+// const pb = new PocketBase(import.meta.env.VITE_POCKETBASE_URL || 'http://10.0.2.2:8090'); // For testing on Android emulator
 
 // Enable auto cancellation for duplicate requests
 pb.autoCancellation(false);

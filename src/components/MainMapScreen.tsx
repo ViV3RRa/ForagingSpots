@@ -151,7 +151,7 @@ export default function MainMapScreen({
   const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50 safe-area-x">
       <TopBar 
         user={user} 
         onSignOut={onSignOut}
