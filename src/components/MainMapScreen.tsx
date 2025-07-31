@@ -106,8 +106,8 @@ export default function MainMapScreen({
     setShowAddModal(false);
   };
 
-  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string) => {
-    onUpdateSpot(spot.id, { type, notes });
+  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string, coordinates: Coordinates) => {
+    onUpdateSpot(spot.id, { type, notes, coordinates });
     setEditingSpot(null);
   };
 
@@ -206,7 +206,7 @@ export default function MainMapScreen({
         <AddEditModal
           spot={editingSpot}
           coordinates={editingSpot.coordinates}
-          onSave={(type, notes) => handleEditSpot(editingSpot, type, notes)}
+          onSave={(type, notes, coordinates) => handleEditSpot(editingSpot, type, notes, coordinates)}
           onClose={() => setEditingSpot(null)}
         />
       )}

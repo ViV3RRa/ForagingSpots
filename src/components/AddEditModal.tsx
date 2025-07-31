@@ -4,14 +4,15 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { MapPin } from 'lucide-react';
+import { MapPin, Target } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
 import ChanterelleIcon from './ChanterelleIcon';
+import LocationPickerModal from './LocationPickerModal';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
   coordinates: Coordinates;
-  onSave: (type: ForagingType, notes: string) => void;
+  onSave: (type: ForagingType, notes: string, coordinates: Coordinates) => void;
   onClose: () => void;
 }
 
@@ -26,10 +27,17 @@ const foragingOptions = [
 export default function AddEditModal({ spot, coordinates, onSave, onClose }: AddEditModalProps) {
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
   const [notes, setNotes] = useState(spot?.notes || '');
+  const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(coordinates);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(selectedType, notes);
+    onSave(selectedType, notes, currentCoordinates);
+  };
+
+  const handleLocationUpdate = (newCoordinates: Coordinates) => {
+    setCurrentCoordinates(newCoordinates);
+    setShowLocationPicker(false);
   };
 
   return (
@@ -44,17 +52,37 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* GPS Coordinates */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
+        {/* GPS Coordinates */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">GPS lokation</span>
             </div>
-            <div className="text-sm text-gray-600 font-mono">
-              {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
-            </div>
+            {spot !== undefined && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLocationPicker(true)}
+                className="text-xs px-2 py-1 h-auto"
+              >
+                <Target className="h-3 w-3 mr-1" />
+                Rediger
+              </Button>
+            )}
           </div>
+          <div className="text-sm text-gray-600 font-mono">
+            {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
+          </div>
+          {spot !== undefined && (currentCoordinates.lat !== coordinates.lat || currentCoordinates.lng !== coordinates.lng) && (
+            <div className="mt-2 text-xs text-green-600 font-medium">
+              Lokation redigeret
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* What did you find? */}
           <div className="space-y-2">
@@ -110,6 +138,15 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
             </Button>
           </div>
         </form>
+
+        {/* Location Picker Modal */}
+        {showLocationPicker && (
+          <LocationPickerModal
+            initialCoordinates={currentCoordinates}
+            onSave={handleLocationUpdate}
+            onClose={() => setShowLocationPicker(false)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
