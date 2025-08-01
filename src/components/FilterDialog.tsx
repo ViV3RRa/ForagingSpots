@@ -74,7 +74,7 @@ export default function FilterDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-forest-green">🗂️</span>
-            Filter Foraging Spots
+            Filtrer typer af skatte
           </DialogTitle>
         </DialogHeader>
 
@@ -82,7 +82,7 @@ export default function FilterDialog({
           {/* Filter summary and quick actions */}
           <div className="flex items-center justify-between text-sm text-gray-600">
             <span>
-              {tempFilters.size} of {foragingTypes.length} types selected
+              {tempFilters.size} af {foragingTypes.length} typer valgt
             </span>
             <div className="flex gap-2">
               <Button
@@ -91,7 +91,7 @@ export default function FilterDialog({
                 size="sm"
                 className="h-auto py-1 px-2 text-xs text-forest-green hover:text-forest-dark"
               >
-                All
+                Alle
               </Button>
               <Button
                 onClick={handleHideAll}
@@ -99,7 +99,7 @@ export default function FilterDialog({
                 size="sm"
                 className="h-auto py-1 px-2 text-xs text-gray-600 hover:text-gray-700"
               >
-                None
+                Ingen
               </Button>
             </div>
           </div>
@@ -158,13 +158,13 @@ export default function FilterDialog({
               variant="outline"
               className="flex-1"
             >
-              Cancel
+              Annuller
             </Button>
             <Button
               onClick={handleApply}
               className="flex-1 bg-forest-green hover:bg-forest-dark"
             >
-              Apply Filters
+              Filtrer
             </Button>
           </div>
         </div>
