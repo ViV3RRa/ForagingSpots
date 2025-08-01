@@ -124,7 +124,7 @@ export default function PinDetailsDrawer({
                   <div className="bg-forest-green/10 p-2 rounded-lg">
                     <MapPin className="h-4 w-4 text-forest-green" />
                   </div>
-                  <span className="font-medium text-foreground">GPS Location</span>
+                  <span className="font-medium text-foreground">GPS Lokation</span>
                 </div>
                 <div className="font-mono text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                   {spot.coordinates.lat.toFixed(6)}, {spot.coordinates.lng.toFixed(6)}
@@ -138,7 +138,7 @@ export default function PinDetailsDrawer({
                     <div className="bg-mushroom-brown/10 p-2 rounded-lg">
                       <Edit className="h-4 w-4 text-mushroom-brown" />
                     </div>
-                    Notes
+                    Noter
                   </h4>
                   <p className="text-muted-foreground leading-relaxed">
                     {spot.notes}
@@ -156,7 +156,7 @@ export default function PinDetailsDrawer({
                       className="h-12 border-forest-green/20 text-forest-green hover:bg-forest-green/10 hover:border-forest-green/30 transition-all duration-200"
                     >
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit Spot
+                      Rediger
                     </Button>
                     <Button 
                       onClick={onDelete} 
@@ -164,7 +164,7 @@ export default function PinDetailsDrawer({
                       className="h-12 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-200"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      Slet
                     </Button>
                   </div>
 
@@ -177,7 +177,7 @@ export default function PinDetailsDrawer({
                         <div className="bg-light-green/10 p-2 rounded-lg">
                           <Share className="h-4 w-4 text-light-green" />
                         </div>
-                        Share this spot
+                        Del denne lokation
                       </h4>
                       <Button
                         onClick={() => setIsSharing(!isSharing)}
@@ -190,14 +190,14 @@ export default function PinDetailsDrawer({
                         }
                       >
                         <UserPlus className="h-4 w-4 mr-2" />
-                        {isSharing ? 'Cancel' : 'Add User'}
+                        {isSharing ? 'Annuller' : 'Tilføj bruger'}
                       </Button>
                     </div>
 
                     {isSharing && (
                       <div className="bg-muted/30 rounded-lg p-4 mb-4 transition-all duration-300 ease-out">
                         <Label htmlFor="shareEmail" className="text-sm font-medium text-foreground">
-                          Share with email address:
+                          Del med e-mailadresse:
                         </Label>
                         <div className="flex gap-2 mt-3">
                           <Input
@@ -214,7 +214,7 @@ export default function PinDetailsDrawer({
                             disabled={!shareEmail.trim()}
                             className="bg-light-green hover:bg-light-green/90 px-4"
                           >
-                            Share
+                            Del
                           </Button>
                         </div>
                       </div>
@@ -224,7 +224,7 @@ export default function PinDetailsDrawer({
                     {spot.sharedWith.length > 0 && (
                       <div>
                         <div className="text-sm font-medium text-muted-foreground mb-3">
-                          Shared with {spot.sharedWith.length} {spot.sharedWith.length === 1 ? 'person' : 'people'}:
+                          Del med {spot.sharedWith.length} {spot.sharedWith.length === 1 ? 'person' : 'personer'}:
                         </div>
                         <div className="space-y-2">
                           {spot.sharedWith.map((email) => (
@@ -250,7 +250,7 @@ export default function PinDetailsDrawer({
                     {spot.sharedWith.length === 0 && !isSharing && (
                       <div className="text-center py-4">
                         <div className="text-muted-foreground/60 text-sm">
-                          This spot is private - not shared with anyone
+                          Denne lokation er privat - ikke delt med nogen
                         </div>
                       </div>
                     )}
@@ -262,7 +262,7 @@ export default function PinDetailsDrawer({
               {!isOwner && (
                 <div className="bg-muted/30 rounded-xl p-4 text-center">
                   <div className="text-muted-foreground text-sm">
-                    This spot was shared with you
+                    Denne lokation er delt med dig
                   </div>
                 </div>
               )}
