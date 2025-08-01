@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import WelcomeScreen from './components/WelcomeScreen';
 import SignInScreen from './components/SignInScreen';
 import MainMapScreen from './components/MainMapScreen';
+import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from './hooks/useForagingSpots';
@@ -119,6 +120,7 @@ export default function App() {
     <div className="safe-area-all">
       <AuthProvider>
         <AppContent />
+        <PWAUpdatePrompt />
       </AuthProvider>
     </div>
   );
