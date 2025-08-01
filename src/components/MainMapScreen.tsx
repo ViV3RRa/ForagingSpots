@@ -210,7 +210,7 @@ export default function MainMapScreen({
         />
       )}
 
-      {selectedSpot && (
+      {/* {selectedSpot && ( */}
         <PinDetailsDrawer
           spot={selectedSpot}
           currentUser={user}
@@ -220,13 +220,14 @@ export default function MainMapScreen({
             setSelectedSpot(null);
           }}
           onDelete={() => {
+            if (!selectedSpot) return;
             onDeleteSpot(selectedSpot.id);
             setSelectedSpot(null);
           }}
           onShare={handleShare}
           onUnshare={handleUnshare}
         />
-      )}
+      {/* )} */}
 
       <FilterDialog
         open={showFilterDialog}
