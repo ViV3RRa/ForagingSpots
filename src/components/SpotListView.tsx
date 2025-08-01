@@ -7,7 +7,9 @@ import { Badge } from './ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Search, MoreVertical, Edit, Trash2, Share, MapPin, Calendar, StickyNote, SlidersHorizontal } from 'lucide-react';
 import type { ForagingSpot, ForagingType } from '../lib/types';
-import ChanterelleIcon from './ChanterelleIcon';
+import { getForagingIcon, getForagingColor } from './icons';
+import { getDanishLabel } from '../utils/danishLabels';
+import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
 
 interface SpotListViewProps {
   foragingSpots: ForagingSpot[];
@@ -23,13 +25,15 @@ interface SpotListViewProps {
 
 type SortOption = 'newest' | 'oldest' | 'type' | 'location';
 
-const typeConfig = {
-  chanterelle: { label: 'Chanterelles', icon: <ChanterelleIcon size={16} />, color: 'bg-yellow-500' },
-  blueberry: { label: 'Blueberries', icon: '🫐', color: 'bg-blue-500' },
-  lingonberry: { label: 'Lingonberries', icon: '🔴', color: 'bg-red-500' },
-  cloudberry: { label: 'Cloudberries', icon: '🟠', color: 'bg-orange-500' },
-  other: { label: 'Other', icon: '🌿', color: 'bg-green-500' },
-};
+// Generate type config from the centralized icon configuration
+const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = ALL_FORAGING_TYPES.reduce((acc, type) => {
+  acc[type] = {
+    label: getDanishLabel(type),
+    icon: getForagingIcon(type, { size: 24 }),
+    color: getForagingColor(type)
+  };
+  return acc;
+}, {} as Record<string, { label: string; icon: React.ReactNode; color: string }>);
 
 export default function SpotListView({
   foragingSpots,
@@ -248,7 +252,7 @@ export default function SpotListView({
                 <div className="relative">
                   <Search className="h-16 w-16 text-gray-400 opacity-60" />
                   <div className="absolute -top-2 -right-2 h-8 w-8 bg-white rounded-full flex items-center justify-center shadow-lg">
-                    <ChanterelleIcon size={20} />
+                    {getForagingIcon('chanterelle', { size: 20 })}
                   </div>
                 </div>
               </div>

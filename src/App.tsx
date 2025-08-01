@@ -8,10 +8,11 @@ import { useAuth } from './hooks/useAuth';
 import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from './hooks/useForagingSpots';
 import type { ForagingSpot } from './lib/types';
 import './styles/tokens.css'
+import IconShowcase from './components/IconShowcase';
 
 function AppContent() {
   const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'map'>('welcome');
+  const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'map' | 'icons'>('welcome');
   
   // TanStack Query hooks for data management
   const { data: foragingSpots = [], isLoading: spotsLoading } = useForagingSpots();
@@ -32,6 +33,7 @@ function AppContent() {
       setCurrentScreen('map');
     } else if (!isLoading) {
       setCurrentScreen('welcome');
+      // setCurrentScreen('icons');
     }
   }, [isAuthenticated, user, isLoading]);
 
@@ -74,6 +76,10 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  if (currentScreen === 'icons') {
+    return <IconShowcase />;
   }
 
   if (currentScreen === 'welcome') {

@@ -10,7 +10,7 @@ export interface Coordinates {
   lng: number;
 }
 
-export type ForagingType = 'chanterelle' | 'blueberry' | 'lingonberry' | 'cloudberry' | 'other';
+export type ForagingType = 'chanterelle' | 'blueberry' | 'lingonberry' | 'cloudberry' | 'porcini' | 'oyster' | 'elderberry' | 'rosehip' | 'seabuckthorn' | 'generic_mushroom' | 'generic_berry' | 'other';
 
 export interface ForagingSpot {
   id: string;

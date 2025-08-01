@@ -3,8 +3,8 @@ import Map, { Marker, NavigationControl, GeolocateControl, type MapRef } from 'r
 import Supercluster from 'supercluster';
 import type { ForagingSpot, Coordinates } from '../lib/types';
 import { TreePine } from 'lucide-react';
-import ChanterelleIcon from './ChanterelleIcon';
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';
+import { getForagingIcon, getForagingColor, getForagingLabel } from './icons';
 
 interface MapViewProps {
   foragingSpots: ForagingSpot[];
@@ -14,34 +14,6 @@ interface MapViewProps {
   initialViewState?: { longitude: number; latitude: number; zoom: number };
   onViewStateChange?: (viewState: { longitude: number; latitude: number; zoom: number }) => void;
 }
-
-const getForagingIcon = (type: string) => {
-  switch (type) {
-    case 'chanterelle':
-      return <ChanterelleIcon size={18} />;
-    case 'blueberry':
-    case 'lingonberry':
-    case 'cloudberry':
-      return '🫐';
-    default:
-      return '🌿';
-  }
-};
-
-const getForagingColor = (type: string) => {
-  switch (type) {
-    case 'chanterelle':
-      return 'bg-yellow-500';
-    case 'blueberry':
-      return 'bg-blue-500';
-    case 'lingonberry':
-      return 'bg-red-500';
-    case 'cloudberry':
-      return 'bg-orange-500';
-    default:
-      return 'bg-green-500';
-  }
-};
 
 export default function MapView({ 
   foragingSpots, 
@@ -303,7 +275,7 @@ export default function MapView({
                   )}
                 </div>
                 <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm max-w-20 truncate">
-                  {spot.type}
+                  {getForagingLabel(spot.type)}
                 </div>
               </button>
             </Marker>

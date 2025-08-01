@@ -3,8 +3,9 @@ import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import type{ ForagingType } from './types';
 import { Check } from 'lucide-react';
-import ChanterelleIcon from './ChanterelleIcon';
 import { useState, useEffect } from 'react';
+import { getForagingIcon, foragingIconConfig, type ExtendedForagingType } from './icons';
+import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
 
 interface FilterDialogProps {
   open: boolean;
@@ -13,13 +14,14 @@ interface FilterDialogProps {
   onApplyFilters: (filters: Set<ForagingType>) => void;
 }
 
-const foragingTypes = [
-  { type: 'chanterelle' as ForagingType, label: 'Chanterelles', icon: <ChanterelleIcon size={20} />, color: 'bg-yellow-500', description: 'Golden funnel-shaped mushrooms' },
-  { type: 'blueberry' as ForagingType, label: 'Blueberries', icon: '🫐', color: 'bg-blue-500', description: 'Sweet blue berries' },
-  { type: 'lingonberry' as ForagingType, label: 'Lingonberries', icon: '🔴', color: 'bg-red-500', description: 'Tart red berries' },
-  { type: 'cloudberry' as ForagingType, label: 'Cloudberries', icon: '🟠', color: 'bg-orange-500', description: 'Rare orange berries' },
-  { type: 'other' as ForagingType, label: 'Other', icon: '🌿', color: 'bg-green-500', description: 'Other foraging finds' },
-];
+// Generate foraging types from the icon configuration
+const foragingTypes = ALL_FORAGING_TYPES.map(type => ({
+  type: type as ForagingType,
+  label: foragingIconConfig[type as keyof typeof foragingIconConfig]?.label || type,
+  icon: getForagingIcon(type as ExtendedForagingType, { size: 20 }),
+  color: foragingIconConfig[type as keyof typeof foragingIconConfig]?.color || 'bg-green-500',
+  description: foragingIconConfig[type as keyof typeof foragingIconConfig]?.description || `${type} foraging finds`
+}));
 
 export default function FilterDialog({ 
   open, 
@@ -50,7 +52,7 @@ export default function FilterDialog({
   };
 
   const handleShowAll = () => {
-    setTempFilters(new Set(['chanterelle', 'blueberry', 'lingonberry', 'cloudberry', 'other']));
+    setTempFilters(new Set(ALL_FORAGING_TYPES));
   };
 
   const handleHideAll = () => {
@@ -104,8 +106,8 @@ export default function FilterDialog({
 
           <Separator />
 
-          {/* Filter options */}
-          <div className="space-y-2">
+          {/* Filter options - scrollable */}
+          <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
             {foragingTypes.map(({ type, label, icon, color, description }) => {
               const isActive = tempFilters.has(type);
               
@@ -124,7 +126,7 @@ export default function FilterDialog({
                     {typeof icon === 'string' ? (
                       <span className="text-lg">{icon}</span>
                     ) : (
-                      <div className="text-white">{icon}</div>
+                      <div className="text-white">{type === 'other' ? null : icon}</div>
                     )}
                   </div>
 

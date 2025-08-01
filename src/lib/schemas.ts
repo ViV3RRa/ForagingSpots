@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
+import type { ForagingType } from '../components/types';
 
 // Coordinates schema
 export const CoordinatesSchema = z.object({
@@ -7,13 +9,7 @@ export const CoordinatesSchema = z.object({
 });
 
 // Foraging type enum schema
-export const ForagingTypeSchema = z.enum([
-  'chanterelle',
-  'blueberry', 
-  'lingonberry',
-  'cloudberry',
-  'other'
-]);
+export const ForagingTypeSchema = z.enum(ALL_FORAGING_TYPES as [ForagingType, ...ForagingType[]]);
 
 // User schema (for Pocketbase users collection)
 export const UserSchema = z.object({

@@ -8,6 +8,7 @@ import type { User as NewUser, ForagingSpot, ForagingType, Coordinates } from '.
 import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
+import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
 
 interface MainMapScreenProps {
   user: NewUser;
@@ -32,9 +33,7 @@ export default function MainMapScreen({
   const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(
-    new Set(['chanterelle', 'blueberry', 'lingonberry', 'cloudberry', 'other'])
-  );
+  const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(getAllForagingTypesSet());
   const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
   
   // Denmark center coordinates for when no location is available
@@ -174,7 +173,7 @@ export default function MainMapScreen({
             <FilterButton
               onClick={() => setShowFilterDialog(true)}
               activeFilters={activeFilters}
-              totalTypes={5}
+              totalTypes={getTotalForagingTypes()}
             />
           </>
         ) : (
@@ -187,7 +186,7 @@ export default function MainMapScreen({
             onShare={handleSpotClick}
             onViewOnMap={handleViewOnMap}
             onFilterClick={() => setShowFilterDialog(true)}
-            totalTypes={5}
+            totalTypes={getTotalForagingTypes()}
           />
         )}
         

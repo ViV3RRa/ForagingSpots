@@ -7,7 +7,8 @@ import { Separator } from './ui/separator';
 import { useIsMobile } from './ui/use-mobile';
 import { Edit, Trash2, Share, MapPin, Minus } from 'lucide-react';
 import type { ForagingSpot, User } from '../lib/types';
-import ChanterelleIcon from './ChanterelleIcon';
+import { getForagingColor, getForagingIcon } from './icons';
+import { getDanishFoundTitle } from '../utils/danishLabels';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot;
@@ -18,34 +19,6 @@ interface PinDetailsDrawerProps {
   onShare: (spotId: string, email: string) => void;
   onUnshare: (spotId: string, email: string) => void;
 }
-
-const getForagingIcon = (type: string) => {
-  switch (type) {
-    case 'chanterelle':
-      return <ChanterelleIcon size={20} />;
-    case 'blueberry':
-    case 'lingonberry':
-    case 'cloudberry':
-      return '🫐';
-    default:
-      return '🌿';
-  }
-};
-
-const getForagingTitle = (type: string) => {
-  switch (type) {
-    case 'chanterelle':
-      return 'Kantareller fundet';
-    case 'blueberry':
-      return 'Blåbær fundet';
-    case 'lingonberry':
-      return 'Tyttebær fundet';
-    case 'cloudberry':
-      return 'Multebær fundet';
-    default:
-      return 'Noget spændende fundet';
-  }
-};
 
 export default function PinDetailsDrawer({ 
   spot, 
@@ -84,9 +57,9 @@ export default function PinDetailsDrawer({
       >
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-3">
-            <div className="text-2xl">{getForagingIcon(spot.type)}</div>
+            <div className={`h-12 w-12 ${getForagingColor(spot.type)} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>{getForagingIcon(spot.type)}</div>
             <div>
-              <div className="text-lg font-semibold">{getForagingTitle(spot.type)}</div>
+              <div className="text-lg font-semibold">{getDanishFoundTitle(spot.type)}</div>
               <div className="text-sm text-gray-500 font-normal">
                 {new Date(spot.created).toLocaleDateString()} at {new Date(spot.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>

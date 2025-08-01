@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { MapPin, Target } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
-import ChanterelleIcon from './ChanterelleIcon';
 import LocationPickerModal from './LocationPickerModal';
+import { getForagingColor, getForagingIcon, type ExtendedForagingType } from './icons';
+import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
+import { getDanishLabel } from '../utils/danishLabels';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
@@ -16,13 +18,12 @@ interface AddEditModalProps {
   onClose: () => void;
 }
 
-const foragingOptions = [
-  { value: 'chanterelle', label: 'Kantareller', icon: <ChanterelleIcon size={16} /> },
-  { value: 'blueberry', label: 'Blåbær', icon: '🫐' },
-  { value: 'lingonberry', label: 'Tyttebær', icon: '🔴' },
-  { value: 'cloudberry', label: 'Multebær', icon: '🟠' },
-  { value: 'other', label: 'Andet', icon: '🌿' },
-];
+// Generate foraging options from the icon configuration with Danish labels
+const foragingOptions = ALL_FORAGING_TYPES.map(type => ({
+  value: type,
+  label: getDanishLabel(type),
+  icon: getForagingIcon(type as ExtendedForagingType, { size: 24 })
+}));
 
 export default function AddEditModal({ spot, coordinates, onSave, onClose }: AddEditModalProps) {
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
@@ -45,7 +46,7 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="text-xl">
+            <div className={`h-12 w-12 ${getForagingColor(selectedType)} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
               {foragingOptions.find(opt => opt.value === selectedType)?.icon}
             </div>
             {spot === undefined ? 'Tilføj skat' : 'Rediger skat'}
@@ -98,7 +99,8 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
                       {typeof option.icon === 'string' ? (
                         <span className="text-base">{option.icon}</span>
                       ) : (
-                        <div className="text-base">{option.icon}</div>
+                        // <div className="text-base">{option.icon}</div>
+                        <div className={`h-6 w-6 ${getForagingColor(option.value)} rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`}>{option.value === 'other' ? null : React.cloneElement(option.icon!, { className: 'text-white' })}</div>
                       )}
                       <span>{option.label}</span>
                     </div>
