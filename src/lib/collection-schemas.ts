@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
-import type { ForagingType } from '../components/types';
+import { FORAGING_TYPES } from '../components/types';
 
 // Pocketbase collection field types
 export const PocketBaseFieldTypes = {
@@ -80,7 +79,7 @@ export const CollectionSchemas = {
         required: true,
         options: {
           maxSelect: 1,
-          values: ALL_FORAGING_TYPES,
+          values: FORAGING_TYPES,
         },
       },
       coordinates: {
@@ -173,7 +172,7 @@ export const CollectionValidationSchemas = {
   }),
 
   // Validate foraging spot type
-  foragingType: z.enum(ALL_FORAGING_TYPES as [ForagingType, ...ForagingType[]]),
+  foragingType: z.enum(FORAGING_TYPES),
 
   // Validate user data
   userData: z.object({
@@ -185,7 +184,7 @@ export const CollectionValidationSchemas = {
   // Validate foraging spot data
   foragingSpotData: z.object({
     user: z.string(),
-    type: z.enum(ALL_FORAGING_TYPES as [ForagingType, ...ForagingType[]]),
+    type: z.enum(FORAGING_TYPES),
     coordinates: z.object({
       lat: z.number().min(-90).max(90),
       lng: z.number().min(-180).max(180),

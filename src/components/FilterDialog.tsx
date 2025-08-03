@@ -1,11 +1,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import type{ ForagingType } from './types';
+import{ FORAGING_TYPES, type ForagingType } from './types';
 import { Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getForagingIcon, foragingIconConfig, type ExtendedForagingType } from './icons';
-import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
+import { getForagingSpotConfig } from './icons';
 
 interface FilterDialogProps {
   open: boolean;
@@ -13,15 +12,6 @@ interface FilterDialogProps {
   activeFilters: Set<ForagingType>;
   onApplyFilters: (filters: Set<ForagingType>) => void;
 }
-
-// Generate foraging types from the icon configuration
-const foragingTypes = ALL_FORAGING_TYPES.map(type => ({
-  type: type as ForagingType,
-  label: foragingIconConfig[type as keyof typeof foragingIconConfig]?.label || type,
-  icon: getForagingIcon(type as ExtendedForagingType, { size: 20 }),
-  color: foragingIconConfig[type as keyof typeof foragingIconConfig]?.color || 'bg-green-500',
-  description: foragingIconConfig[type as keyof typeof foragingIconConfig]?.description || `${type} foraging finds`
-}));
 
 export default function FilterDialog({ 
   open, 
@@ -52,7 +42,7 @@ export default function FilterDialog({
   };
 
   const handleShowAll = () => {
-    setTempFilters(new Set(ALL_FORAGING_TYPES));
+    setTempFilters(new Set(FORAGING_TYPES));
   };
 
   const handleHideAll = () => {
@@ -82,7 +72,7 @@ export default function FilterDialog({
           {/* Filter summary and quick actions */}
           <div className="flex items-center justify-between text-sm text-gray-600">
             <span>
-              {tempFilters.size} af {foragingTypes.length} typer valgt
+              {tempFilters.size} af {FORAGING_TYPES.length} typer valgt
             </span>
             <div className="flex gap-2">
               <Button
@@ -108,7 +98,8 @@ export default function FilterDialog({
 
           {/* Filter options - scrollable */}
           <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
-            {foragingTypes.map(({ type, label, icon, color, description }) => {
+            {FORAGING_TYPES.map((type) => {
+              const { label, icon, background, description } = getForagingSpotConfig(type, 18);
               const isActive = tempFilters.has(type);
               
               return (
@@ -122,7 +113,7 @@ export default function FilterDialog({
                   }`}
                 >
                   {/* Icon */}
-                  <div className={`h-10 w-10 ${color} rounded-full flex items-center justify-center text-white shadow-sm`}>
+                  <div className={`h-10 w-10 ${background} rounded-full flex items-center justify-center text-white shadow-sm`}>
                     {typeof icon === 'string' ? (
                       <span className="text-lg">{icon}</span>
                     ) : (

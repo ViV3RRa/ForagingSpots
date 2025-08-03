@@ -4,7 +4,7 @@ import Supercluster from 'supercluster';
 import type { ForagingSpot, Coordinates } from '../lib/types';
 import { TreePine } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';
-import { getForagingIcon, getForagingColor, getForagingLabel } from './icons';
+import { getForagingSpotConfig } from './icons';
 
 interface MapViewProps {
   foragingSpots: ForagingSpot[];
@@ -256,6 +256,7 @@ export default function MapView({
           }
 
           const spot = cluster.properties.spot as ForagingSpot;
+          const config = getForagingSpotConfig(spot.type, 20);
           return (
             <Marker
               key={spot.id}
@@ -267,48 +268,17 @@ export default function MapView({
                 onClick={() => onPinClick(spot)}
                 className="transition-all duration-300 hover:scale-110 z-10 flex flex-col items-center"
               >
-                <div className={`h-10 w-10 ${getForagingColor(spot.type)} rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow`}>
-                  {typeof getForagingIcon(spot.type) === 'string' ? (
-                    <span className="text-lg">{getForagingIcon(spot.type)}</span>
-                  ) : (
-                    getForagingIcon(spot.type)
-                  )}
+                <div className={`h-12 w-12 ${config.background} rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow`}>
+                  { config.icon }
                 </div>
-                <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm max-w-20 truncate">
-                  {getForagingLabel(spot.type)}
+                <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm whitespace-nowrap">
+                  {config.label}
                 </div>
               </button>
             </Marker>
           );
         })}
       </Map>
-
-      {/* Map Legend */}
-      {/* <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur rounded-lg p-3 shadow-lg z-10">
-        <div className="text-xs font-medium text-gray-700 mb-2">Legend</div>
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center">
-            <div className="h-3 w-3 bg-blue-500 rounded-full mr-2" />
-            <span className="text-gray-600">Your location</span>
-          </div>
-          <div className="flex items-center">
-            <div className="h-3 w-3 bg-green-600 rounded-full mr-2 flex items-center justify-center">
-              <span className="text-white text-[8px] font-bold">3</span>
-            </div>
-            <span className="text-gray-600">Clustered spots</span>
-          </div>
-          <div className="flex items-center">
-            <div className="mr-2">
-              <ChanterelleIcon size={16} />
-            </div>
-            <span className="text-gray-600">Chanterelles</span>
-          </div>
-          <div className="flex items-center">
-            <span className="text-base mr-2">🫐</span>
-            <span className="text-gray-600">Berries</span>
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 }

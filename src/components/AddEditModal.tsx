@@ -7,9 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { MapPin, Target } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
 import LocationPickerModal from './LocationPickerModal';
-import { getForagingColor, getForagingIcon, type ExtendedForagingType } from './icons';
-import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
-import { getDanishLabel } from '../utils/danishLabels';
+import { FORAGING_TYPES } from './types';
+import { getForagingSpotConfig } from './icons';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
@@ -17,13 +16,6 @@ interface AddEditModalProps {
   onSave: (type: ForagingType, notes: string, coordinates: Coordinates) => void;
   onClose: () => void;
 }
-
-// Generate foraging options from the icon configuration with Danish labels
-const foragingOptions = ALL_FORAGING_TYPES.map(type => ({
-  value: type,
-  label: getDanishLabel(type),
-  icon: getForagingIcon(type as ExtendedForagingType, { size: 24 })
-}));
 
 export default function AddEditModal({ spot, coordinates, onSave, onClose }: AddEditModalProps) {
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
@@ -46,8 +38,8 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className={`h-12 w-12 ${getForagingColor(selectedType)} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
-              {foragingOptions.find(opt => opt.value === selectedType)?.icon}
+            <div className={`h-12 w-12 ${getForagingSpotConfig(selectedType).background} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+              {getForagingSpotConfig(selectedType, 20).icon}
             </div>
             {spot === undefined ? 'Tilføj skat' : 'Rediger skat'}
           </DialogTitle>
@@ -92,20 +84,20 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
               <SelectTrigger className="h-12">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {foragingOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value} className="flex items-center">
-                    <div className="flex items-center gap-2">
-                      {typeof option.icon === 'string' ? (
-                        <span className="text-base">{option.icon}</span>
-                      ) : (
-                        // <div className="text-base">{option.icon}</div>
-                        <div className={`h-6 w-6 ${getForagingColor(option.value)} rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`}>{option.value === 'other' ? null : React.cloneElement(option.icon!, { className: 'text-white' })}</div>
-                      )}
-                      <span>{option.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-[300px] overflow-y-auto">
+                {FORAGING_TYPES.map(type => {
+                  const config = getForagingSpotConfig(type, 10);
+                  return (
+                    <SelectItem key={type} value={type} className="flex items-center">
+                      <div className="flex items-center gap-2">
+                          <div className={`h-6 w-6 ${getForagingSpotConfig(type).background} rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`}>
+                            {config.icon}
+                          </div>
+                        <span>{config.label}</span>
+                      </div>
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>

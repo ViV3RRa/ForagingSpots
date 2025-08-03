@@ -7,7 +7,7 @@ import { Separator } from './ui/separator';
 import { useIsMobile } from './ui/use-mobile';
 import { X, Edit, Trash2, Share, MapPin, Calendar, Clock, UserPlus } from 'lucide-react';
 import type { ForagingSpot, User } from '../lib/types';
-import { getForagingColor, getForagingIcon, getForagingLabel } from './icons';
+import { getForagingSpotConfig } from './icons';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot | null;
@@ -66,6 +66,8 @@ export default function PinDetailsDrawer({
     }
   };
 
+  const config = spot ? getForagingSpotConfig(spot.type) : null;
+
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
       <SheetContent 
@@ -87,12 +89,12 @@ export default function PinDetailsDrawer({
             <div className={`forest-gradient px-6 pt-8 pb-6 ${isMobile ? 'rounded-t-[20px]' : 'rounded-tl-[20px]'}`}>
               <SheetHeader className="mb-0">
                 <SheetTitle className="flex items-start gap-4 text-white">
-                  <div className={`h-12 w-12 ${getForagingColor(spot.type)} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
-                    {getForagingIcon(spot.type)}
+                  <div className={`h-12 w-12 ${config?.background} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+                    {config?.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl font-semibold text-white mb-1 leading-tight">
-                      {getForagingLabel(spot.type)}
+                      {config?.label}
                     </h2>
                     <div className="flex items-center gap-3 text-white/80 text-sm">
                       <div className="flex items-center gap-1">

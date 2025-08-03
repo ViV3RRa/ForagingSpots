@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Download, X, Share, Plus } from 'lucide-react';
-import { getForagingIcon } from './icons';
+import { getForagingSpotConfig } from './icons';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -129,7 +129,7 @@ export default function PWAInstallPrompt() {
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="text-2xl">{getForagingIcon('chanterelle', { size: 24 })}</div>
+              <div className="text-2xl">{getForagingSpotConfig('chanterelle').icon}</div>
               <div>
                 <h3 className="font-semibold text-sm">Installér Skovens Skatte</h3>
                 <p className="text-xs text-gray-600">Få nem adgang fra din hjemmeskærm</p>
@@ -158,7 +158,7 @@ export default function PWAInstallPrompt() {
                   <span>Vælg "Føj til hjemmeskærm"</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getForagingIcon('chanterelle', { size: 24 })}</span>
+                  <span className="text-2xl">{getForagingSpotConfig('chanterelle').icon}</span>
                   <span>Tryk "Tilføj" for at installere Skovens Skatte</span>
                 </div>
               </div>

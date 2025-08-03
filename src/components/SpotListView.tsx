@@ -7,9 +7,7 @@ import { Badge } from './ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Search, MoreVertical, Edit, Trash2, Share, MapPin, Calendar, StickyNote, SlidersHorizontal } from 'lucide-react';
 import type { ForagingSpot, ForagingType } from '../lib/types';
-import { getForagingIcon, getForagingColor } from './icons';
-import { getDanishLabel } from '../utils/danishLabels';
-import { ALL_FORAGING_TYPES } from '../utils/foragingTypes';
+import { getForagingSpotConfig } from './icons';
 
 interface SpotListViewProps {
   foragingSpots: ForagingSpot[];
@@ -24,16 +22,6 @@ interface SpotListViewProps {
 }
 
 type SortOption = 'newest' | 'oldest' | 'type' | 'location';
-
-// Generate type config from the centralized icon configuration
-const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = ALL_FORAGING_TYPES.reduce((acc, type) => {
-  acc[type] = {
-    label: getDanishLabel(type),
-    icon: getForagingIcon(type, { size: 24 }),
-    color: getForagingColor(type)
-  };
-  return acc;
-}, {} as Record<string, { label: string; icon: React.ReactNode; color: string }>);
 
 export default function SpotListView({
   foragingSpots,
@@ -55,8 +43,8 @@ export default function SpotListView({
       const matchesFilter = activeFilters.has(spot.type);
       const matchesSearch = searchQuery === '' || 
         spot.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        typeConfig[spot.type].label.toLowerCase().includes(searchQuery.toLowerCase());
-      
+        getForagingSpotConfig(spot.type).label.toLowerCase().includes(searchQuery.toLowerCase());
+
       return matchesFilter && matchesSearch;
     });
 
@@ -69,7 +57,7 @@ export default function SpotListView({
         filtered.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
         break;
       case 'type':
-        filtered.sort((a, b) => typeConfig[a.type].label.localeCompare(typeConfig[b.type].label));
+        filtered.sort((a, b) => getForagingSpotConfig(a.type).label.localeCompare(getForagingSpotConfig(b.type).label));
         break;
       case 'location':
         // Sort by coordinates (just for demo - could be more sophisticated)
@@ -156,7 +144,7 @@ export default function SpotListView({
         {filteredAndSortedSpots.length > 0 ? (
           <>
             {filteredAndSortedSpots.map((spot) => {
-              const config = typeConfig[spot.type];
+              const config = getForagingSpotConfig(spot.type);
               const isShared = spot.sharedWith.length > 0;
               
               return (
@@ -168,7 +156,7 @@ export default function SpotListView({
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       {/* Type Icon */}
-                      <div className={`h-12 w-12 ${config.color} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+                      <div className={`h-12 w-12 ${config.background} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
                         {typeof config.icon === 'string' ? (
                           <span className="text-xl">{config.icon}</span>
                         ) : (
@@ -252,7 +240,7 @@ export default function SpotListView({
                 <div className="relative">
                   <Search className="h-16 w-16 text-gray-400 opacity-60" />
                   <div className="absolute -top-2 -right-2 h-8 w-8 bg-white rounded-full flex items-center justify-center shadow-lg">
-                    {getForagingIcon('chanterelle', { size: 20 })}
+                    {getForagingSpotConfig('chanterelle', 20 /* size */).icon}
                   </div>
                 </div>
               </div>

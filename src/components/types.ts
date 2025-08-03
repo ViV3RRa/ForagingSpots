@@ -10,7 +10,35 @@ export interface Coordinates {
   lng: number;
 }
 
-export type ForagingType = 'chanterelle' | 'blueberry' | 'lingonberry' | 'cloudberry' | 'porcini' | 'oyster' | 'elderberry' | 'rosehip' | 'seabuckthorn' | 'generic_mushroom' | 'generic_berry' | 'other';
+export const FORAGING_TYPES = [
+  'bay_bolete',
+  'black_currant',
+  'black_trumpet',
+  'blackberry',
+  'blueberry',
+  'chanterelle',
+  'cloudberry',
+  'cranberry',
+  'elderberry',
+  'field_mushroom',
+  'generic_berry',
+  'generic_mushroom',
+  'hedgehog_mushroom',
+  'lingonberry',
+  'oyster',
+  'parasol_mushroom',
+  'porcini',
+  'raspberry',
+  'red_currant',
+  'rosehip',
+  'seabuckthorn',
+  'sheathed_woodtuft',
+  'sloe',
+  'wild_strawberry',
+  'other'
+] as const;
+
+export type ForagingType = typeof FORAGING_TYPES[number];
 
 export interface ForagingSpot {
   id: string;
