@@ -113,7 +113,7 @@ export default function FilterDialog({
                   }`}
                 >
                   {/* Icon */}
-                  <div className={`h-10 w-10 ${background} rounded-full flex items-center justify-center text-white shadow-sm`}>
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white shadow-sm`} style={background}>
                     {typeof icon === 'string' ? (
                       <span className="text-lg">{icon}</span>
                     ) : (

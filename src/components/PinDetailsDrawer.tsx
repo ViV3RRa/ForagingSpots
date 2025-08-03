@@ -89,7 +89,7 @@ export default function PinDetailsDrawer({
             <div className={`forest-gradient px-6 pt-8 pb-6 ${isMobile ? 'rounded-t-[20px]' : 'rounded-tl-[20px]'}`}>
               <SheetHeader className="mb-0">
                 <SheetTitle className="flex items-start gap-4 text-white">
-                  <div className={`h-12 w-12 ${config?.background} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`} style={config?.background}>
                     {config?.icon}
                   </div>
                   <div className="flex-1 min-w-0">

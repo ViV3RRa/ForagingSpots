@@ -268,7 +268,7 @@ export default function MapView({
                 onClick={() => onPinClick(spot)}
                 className="transition-all duration-300 hover:scale-110 z-10 flex flex-col items-center"
               >
-                <div className={`h-12 w-12 ${config.background} rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow`}>
+                <div className={`h-12 w-12 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow`} style={config.background}>
                   { config.icon }
                 </div>
                 <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm whitespace-nowrap">

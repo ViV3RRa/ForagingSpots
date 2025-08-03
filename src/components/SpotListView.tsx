@@ -156,7 +156,7 @@ export default function SpotListView({
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       {/* Type Icon */}
-                      <div className={`h-12 w-12 ${config.background} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+                      <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`} style={config.background}>
                         {typeof config.icon === 'string' ? (
                           <span className="text-xl">{config.icon}</span>
                         ) : (

@@ -38,7 +38,7 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className={`h-12 w-12 ${getForagingSpotConfig(selectedType).background} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+            <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(selectedType).background}>
               {getForagingSpotConfig(selectedType, 20).icon}
             </div>
             {spot === undefined ? 'Tilføj skat' : 'Rediger skat'}
@@ -90,7 +90,7 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
                   return (
                     <SelectItem key={type} value={type} className="flex items-center">
                       <div className="flex items-center gap-2">
-                          <div className={`h-6 w-6 ${getForagingSpotConfig(type).background} rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`}>
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(type).background}>
                             {config.icon}
                           </div>
                         <span>{config.label}</span>

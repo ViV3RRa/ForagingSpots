@@ -1,16 +1,18 @@
 import type { ForagingType } from '../types';
 import { assertUnreachable } from '../../utils/utils';
-import type { JSX } from 'react';
+import type { CSSProperties, JSX } from 'react';
 
 export interface ForagingSpotConfig {
   label: string
   icon: JSX.Element | null
-  background: string
+  background: CSSProperties
   description: string
 }
 
-const getGradientBackground = (color1: string = '#77DB89', color2: string = '#4FA459', angle: number = 45) => {
-  return `bg-[linear-gradient(${angle}deg,${color1},${color2})]`;
+const getGradientBackground = (color1: string = '#77DB89', color2: string = '#4FA459', angle: number = 45): CSSProperties => {
+  return {
+    background: `linear-gradient(${angle}deg, ${color1}, ${color2})`
+  };
 }
 
 const getImage = (src: string, label: string, iconSize: number) => {
