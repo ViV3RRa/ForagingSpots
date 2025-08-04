@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import Map, { Marker, NavigationControl, GeolocateControl, type MapRef } from 'react-map-gl';
+import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, Coordinates } from '../lib/types';
-import { TreePine } from 'lucide-react';
+import { TreePine, Compass, LocateFixed } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';
 import { getForagingSpotConfig } from './icons';
 
@@ -13,6 +13,7 @@ interface MapViewProps {
   centerOnSpot?: ForagingSpot | null;
   initialViewState?: { longitude: number; latitude: number; zoom: number };
   onViewStateChange?: (viewState: { longitude: number; latitude: number; zoom: number }) => void;
+  onCenterOnUserLocation?: () => void;
 }
 
 export default function MapView({ 
@@ -21,7 +22,8 @@ export default function MapView({
   onPinClick, 
   centerOnSpot, 
   initialViewState,
-  onViewStateChange 
+  onViewStateChange,
+  onCenterOnUserLocation
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -209,9 +211,46 @@ export default function MapView({
         style={{ width: '100%', height: '100%' }}
         mapStyle={DEFAULT_MAP_CONFIG.style}
       >
-        {/* Navigation Controls */}
-        <NavigationControl position="top-right" showZoom={false} />
-        <GeolocateControl position="top-right" />
+        {/* Custom Compass Button */}
+        <div className="absolute top-3 right-3 z-10">
+          <button
+            onClick={() => {
+              if (mapRef.current) {
+                mapRef.current.flyTo({
+                  bearing: 0, // Reset to north
+                  pitch: 0,   // Reset pitch to flat
+                  duration: 500
+                });
+              }
+            }}
+            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-md p-2 shadow-md transition-colors duration-200 mb-2"
+            title="Reset to north"
+          >
+            <Compass className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
+        
+        {/* Custom Location Button */}
+        {currentPosition && onCenterOnUserLocation && (
+          <div className="absolute top-16 right-3 z-10">
+            <button
+              onClick={() => {
+                if (mapRef.current && currentPosition) {
+                  mapRef.current.flyTo({
+                    center: [currentPosition.lng, currentPosition.lat],
+                    zoom: 15,
+                    duration: 1500
+                  });
+                }
+                onCenterOnUserLocation();
+              }}
+              className="bg-white hover:bg-gray-50 border border-gray-300 rounded-md p-2 shadow-md transition-colors duration-200 mb-2"
+              title="Center on my location"
+            >
+              <LocateFixed className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+        )}
 
         {/* Current Position Marker - only show if we have a valid location */}
         {currentPosition && (

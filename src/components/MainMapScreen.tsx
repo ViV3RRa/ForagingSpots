@@ -50,9 +50,10 @@ export default function MainMapScreen({
   // Track if we've initialized the map position with user's location
   const [hasInitializedUserPosition, setHasInitializedUserPosition] = useState(false);
 
-  // Get real GPS position and initialize map position once
+  // Continuously track user's GPS position
   useEffect(() => {
     if ('geolocation' in navigator) {
+      // Get initial position
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const userPosition = {
@@ -72,16 +73,41 @@ export default function MainMapScreen({
           }
         },
         (error) => {
-          console.warn('Geolocation error:', error.message);
-          setCurrentPosition(null); // No location available
-          setHasInitializedUserPosition(true); // Mark as initialized even if failed
+          console.warn('Initial geolocation error:', error.message);
+          setCurrentPosition(null);
+          setHasInitializedUserPosition(true);
         },
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 300000 // 5 minutes
+          maximumAge: 60000 // 1 minute
         }
       );
+
+      // Set up continuous location tracking
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const userPosition = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setCurrentPosition(userPosition);
+        },
+        (error) => {
+          console.warn('Location tracking error:', error.message);
+          // Don't set position to null on watch errors, keep the last known position
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 30000 // 30 seconds
+        }
+      );
+
+      // Cleanup function to stop watching location
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+      };
     } else {
       console.warn('Geolocation is not supported by this browser');
       setCurrentPosition(null);
@@ -147,6 +173,16 @@ export default function MainMapScreen({
     setMapViewState(newViewState);
   };
 
+  const handleCenterOnUserLocation = () => {
+    if (currentPosition) {
+      setMapViewState({
+        longitude: currentPosition.lng,
+        latitude: currentPosition.lat,
+        zoom: 15 // Zoom in closer when user manually centers
+      });
+    }
+  };
+
   const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
 
   return (
@@ -168,6 +204,7 @@ export default function MainMapScreen({
               centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
               initialViewState={mapViewState}
               onViewStateChange={handleMapViewStateChange}
+              onCenterOnUserLocation={handleCenterOnUserLocation}
             />
             
             <FilterButton
