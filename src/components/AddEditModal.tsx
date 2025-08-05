@@ -69,8 +69,8 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(selectedType).background}>
               {getForagingSpotConfig(selectedType, 20).icon}
@@ -79,106 +79,111 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
           </DialogTitle>
         </DialogHeader>
 
-        {/* GPS Coordinates */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">GPS lokation</span>
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 min-h-0">
+          <div className="space-y-6 pb-6">
+            {/* GPS Coordinates */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">GPS lokation</span>
+                </div>
+                {spot !== undefined && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLocationPicker(true)}
+                    className="text-xs px-2 py-1 h-auto"
+                  >
+                    <Target className="h-3 w-3 mr-1" />
+                    Rediger
+                  </Button>
+                )}
+              </div>
+              <div className="text-sm text-gray-600 font-mono">
+                {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
+              </div>
+              {spot !== undefined && (currentCoordinates.lat !== coordinates.lat || currentCoordinates.lng !== coordinates.lng) && (
+                <div className="mt-2 text-xs text-green-600 font-medium">
+                  Lokation redigeret
+                </div>
+              )}
             </div>
-            {spot !== undefined && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowLocationPicker(true)}
-                className="text-xs px-2 py-1 h-auto"
-              >
-                <Target className="h-3 w-3 mr-1" />
-                Rediger
-              </Button>
-            )}
-          </div>
-          <div className="text-sm text-gray-600 font-mono">
-            {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
-          </div>
-          {spot !== undefined && (currentCoordinates.lat !== coordinates.lat || currentCoordinates.lng !== coordinates.lng) && (
-            <div className="mt-2 text-xs text-green-600 font-medium">
-              Lokation redigeret
-            </div>
-          )}
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* What did you find? */}
-          <div className="space-y-2">
-            <Label htmlFor="type">Hvad har du fundet?</Label>
-            <Select value={selectedType} onValueChange={(e) => setSelectedType(e as ForagingType)}>
-              <SelectTrigger className="h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] overflow-y-auto">
-                {FORAGING_TYPES.map(type => {
-                  const config = getForagingSpotConfig(type, 10);
-                  return (
-                    <SelectItem key={type} value={type} className="flex items-center">
-                      <div className="flex items-center gap-2">
-                          <div className={`h-6 w-6 rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(type).background}>
-                            {config.icon}
+              {/* What did you find? */}
+              <div className="space-y-2">
+                <Label htmlFor="type">Hvad har du fundet?</Label>
+                <Select value={selectedType} onValueChange={(e) => setSelectedType(e as ForagingType)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
+                    {FORAGING_TYPES.map(type => {
+                      const config = getForagingSpotConfig(type, 10);
+                      return (
+                        <SelectItem key={type} value={type} className="flex items-center">
+                          <div className="flex items-center gap-2">
+                              <div className={`h-6 w-6 rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(type).background}>
+                                {config.icon}
+                              </div>
+                            <span>{config.label}</span>
                           </div>
-                        <span>{config.label}</span>
-                      </div>
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Note (valgfri)</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Tilføj detaljer om placeringen, mængden, størrelsen osv."
-              className="min-h-[100px] resize-none"
-            />
-          </div>
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Note (valgfri)</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Tilføj detaljer om placeringen, mængden, størrelsen osv."
+                  className="min-h-[100px] resize-none"
+                />
+              </div>
 
-          {/* Images */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-forest-green" />
-              Billeder
-            </Label>
-            <ImageCapture
-              images={images}
-              onImagesChange={setImages}
-              maxImages={5}
-            />
-          </div>
+              {/* Images */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-forest-green" />
+                  Billeder
+                </Label>
+                <ImageCapture
+                  images={images}
+                  onImagesChange={setImages}
+                  maxImages={5}
+                />
+              </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
-              Fortryd
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-green-600 hover:bg-green-700"
-            >
-              {spot === undefined ? 'Gem skat' : 'Opdater skat'}
-            </Button>
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1"
+                >
+                  Fortryd
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  {spot === undefined ? 'Gem skat' : 'Opdater skat'}
+                </Button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
 
         {/* Location Picker Modal */}
         {showLocationPicker && (

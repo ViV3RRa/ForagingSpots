@@ -238,7 +238,7 @@ export default function MapView({
                 if (mapRef.current && currentPosition) {
                   mapRef.current.flyTo({
                     center: [currentPosition.lng, currentPosition.lat],
-                    zoom: 15,
+                    zoom: 18,
                     duration: 1500
                   });
                 }

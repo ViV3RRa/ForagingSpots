@@ -230,12 +230,6 @@ export default function ImageCapture({ images, onImagesChange, maxImages = 5 }: 
         </div>
       )}
 
-      {images.length >= maxImages && (
-        <p className="text-sm text-center text-muted-foreground bg-mushroom-brown/10 p-3 rounded-lg border border-mushroom-brown/20">
-          Maksimum {maxImages} billeder pr. skat
-        </p>
-      )}
-
       {/* Hidden file inputs */}
       <input
         ref={cameraInputRef}
