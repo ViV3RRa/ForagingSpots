@@ -13,8 +13,16 @@ export const foragingSpotsApi = {
         expand: 'user',
       });
       
+      // Debug logging
+      console.log('Raw foraging spots from API:', records);
+      
       // Validate and parse each record with Zod
-      return records.map(record => ForagingSpotSchema.parse(record));
+      return records.map(record => {
+        console.log('Processing record:', record);
+        const parsed = ForagingSpotSchema.parse(record);
+        console.log('Parsed record:', parsed);
+        return parsed;
+      });
     } catch (error) {
       console.error('Failed to fetch foraging spots:', error);
       throw new Error('Failed to fetch foraging spots');
@@ -70,11 +78,29 @@ export const foragingSpotsApi = {
         throw new Error('User must be authenticated to create foraging spots');
       }
 
-      // Create the record with user ID
-      const record = await pb.collection(Collections.FORAGING_SPOTS).create({
-        ...validatedData,
-        user: pb.authStore.model.id,
-      });
+      // Prepare form data for file uploads
+      const formData = new FormData();
+      formData.append('type', validatedData.type);
+      formData.append('coordinates', JSON.stringify(validatedData.coordinates));
+      formData.append('user', pb.authStore.model.id);
+      
+      if (validatedData.notes) {
+        formData.append('notes', validatedData.notes);
+      }
+      
+      if (validatedData.sharedWith.length > 0) {
+        formData.append('sharedWith', JSON.stringify(validatedData.sharedWith));
+      }
+
+      // Add image files to form data
+      if (validatedData.images && validatedData.images.length > 0) {
+        validatedData.images.forEach((file: File) => {
+          formData.append('images', file);
+        });
+      }
+
+      // Create the record with files
+      const record = await pb.collection(Collections.FORAGING_SPOTS).create(formData);
 
       // Fetch the created record with expanded user data
       const createdRecord = await pb.collection(Collections.FORAGING_SPOTS).getOne(record.id, {
@@ -94,8 +120,59 @@ export const foragingSpotsApi = {
       // Validate input data
       const validatedData = ForagingSpotUpdateSchema.parse(data);
       
+      // Prepare form data for file uploads
+      const formData = new FormData();
+      
+      if (validatedData.type) {
+        formData.append('type', validatedData.type);
+      }
+      
+      if (validatedData.coordinates) {
+        formData.append('coordinates', JSON.stringify(validatedData.coordinates));
+      }
+      
+      if (validatedData.notes !== undefined) {
+        formData.append('notes', validatedData.notes);
+      }
+
+      // Handle image updates: combine existing filenames with new files
+      if (validatedData.images || validatedData.existingImageFilenames) {
+        console.log('Processing image updates:', {
+          newFiles: validatedData.images?.length || 0,
+          existingFilenames: validatedData.existingImageFilenames || []
+        });
+        
+        // For PocketBase file fields, we need to:
+        // 1. Send existing filenames as strings to keep them
+        // 2. Send new Files to upload them
+        // 3. Any existing files NOT included will be deleted
+        
+        // First add existing image filenames to keep
+        if (validatedData.existingImageFilenames && validatedData.existingImageFilenames.length > 0) {
+          validatedData.existingImageFilenames.forEach((filename: string) => {
+            console.log('Keeping existing image:', filename);
+            formData.append('images', filename);
+          });
+        }
+        
+        // Then add new image files to upload
+        if (validatedData.images && validatedData.images.length > 0) {
+          validatedData.images.forEach((file: File, index: number) => {
+            console.log(`Adding new image file ${index + 1}:`, file.name, file.size);
+            formData.append('images', file);
+          });
+        }
+        
+        // If neither existing nor new images, this means remove all images
+        if ((!validatedData.existingImageFilenames || validatedData.existingImageFilenames.length === 0) &&
+            (!validatedData.images || validatedData.images.length === 0)) {
+          console.log('Removing all images');
+          formData.append('images', ''); // Empty string removes all files
+        }
+      }
+
       // Update the record
-      const record = await pb.collection(Collections.FORAGING_SPOTS).update(id, validatedData);
+      const record = await pb.collection(Collections.FORAGING_SPOTS).update(id, formData);
 
       // Fetch the updated record with expanded user data
       const updatedRecord = await pb.collection(Collections.FORAGING_SPOTS).getOne(record.id, {

@@ -36,6 +36,7 @@ export const ForagingSpotSchema = z.object({
   type: ForagingTypeSchema,
   coordinates: CoordinatesSchema,
   notes: z.string().optional(),
+  images: z.array(z.string()).default([]), // Array of file URLs
   created: z.string(),
   updated: z.string(),
   sharedWith: z.array(z.string()).default([]), // Array of email addresses for sharing
@@ -50,6 +51,7 @@ export const ForagingSpotCreateSchema = z.object({
   type: ForagingTypeSchema,
   coordinates: CoordinatesSchema,
   notes: z.string().optional(),
+  images: z.array(z.any()).default([]), // Files for upload
   sharedWith: z.array(z.string()).default([]),
 });
 
@@ -58,6 +60,8 @@ export const ForagingSpotUpdateSchema = z.object({
   type: ForagingTypeSchema.optional(),
   coordinates: CoordinatesSchema.optional(),
   notes: z.string().optional(),
+  images: z.array(z.any()).optional(), // Files for upload
+  existingImageFilenames: z.array(z.string()).optional(), // Existing image filenames to keep
 });
 
 // Map pin schema (for UI display)

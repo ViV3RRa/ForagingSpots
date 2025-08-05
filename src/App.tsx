@@ -51,12 +51,12 @@ function AppContent() {
   };
 
   // TanStack Query mutation functions
-  const addForagingSpot = (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => {
+  const addForagingSpot = (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated' | 'images'> & { images: File[] }) => {
     if (!user) return;
     createSpotMutation.mutate(spot);
   };
 
-  const updateForagingSpot = (spotId: string, updates: Partial<ForagingSpot>) => {
+  const updateForagingSpot = (spotId: string, updates: Partial<Omit<ForagingSpot, 'images'>> & { images?: File[]; existingImageFilenames?: string[] }) => {
     updateSpotMutation.mutate({ id: spotId, data: updates });
   };
 

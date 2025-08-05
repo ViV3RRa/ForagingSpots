@@ -4,16 +4,19 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { MapPin, Target } from 'lucide-react';
+import { Camera, MapPin, Target } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
 import LocationPickerModal from './LocationPickerModal';
 import { FORAGING_TYPES } from './types';
 import { getForagingSpotConfig } from './icons';
+import ImageCapture, { type SpotImage } from './ImageCapture';
+
+import { getSpotImageThumbnailUrls } from '../lib/pocketbase';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
   coordinates: Coordinates;
-  onSave: (type: ForagingType, notes: string, coordinates: Coordinates) => void;
+  onSave: (type: ForagingType, notes: string, coordinates: Coordinates, newImages: File[], existingImageFilenames?: string[]) => void;
   onClose: () => void;
 }
 
@@ -22,10 +25,41 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
   const [notes, setNotes] = useState(spot?.notes || '');
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(coordinates);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [images, setImages] = useState<SpotImage[]>(() => {
+    // Initialize images from existing spot
+    if (spot?.images && spot.images.length > 0) {
+      const existingImageUrls = getSpotImageThumbnailUrls(spot, { width: 200, height: 200 });
+      return spot.images.map((filename, index) => ({
+        id: `existing-${index}`,
+        url: existingImageUrls[index] || '',
+        filename: filename, // Store the original filename
+        isExisting: true, // Mark as existing server image
+        timestamp: new Date(spot.updated), // Use spot's updated date as fallback
+      }));
+    }
+    return [];
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(selectedType, notes, currentCoordinates);
+    
+    // Extract files from images (only new images that have files)
+    const newImageFiles = images
+      .filter(img => img.file && !img.isExisting)
+      .map(img => img.file!)
+      .filter(file => file instanceof File);
+    
+    // Extract existing image filenames that should be kept
+    const existingImageFilenames = images
+      .filter(img => img.isExisting && img.filename)
+      .map(img => img.filename!);
+    
+    console.log('Submitting with:', {
+      newFiles: newImageFiles.length,
+      existingFilenames: existingImageFilenames
+    });
+    
+    onSave(selectedType, notes, currentCoordinates, newImageFiles, existingImageFilenames);
   };
 
   const handleLocationUpdate = (newCoordinates: Coordinates) => {
@@ -111,6 +145,19 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Tilføj detaljer om placeringen, mængden, størrelsen osv."
               className="min-h-[100px] resize-none"
+            />
+          </div>
+
+          {/* Images */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-forest-green" />
+              Billeder
+            </Label>
+            <ImageCapture
+              images={images}
+              onImagesChange={setImages}
+              maxImages={5}
             />
           </div>
 

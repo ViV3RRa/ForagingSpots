@@ -14,8 +14,8 @@ interface MainMapScreenProps {
   user: NewUser;
   foragingSpots: ForagingSpot[];
   onSignOut: () => void;
-  onAddSpot: (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated'>) => void;
-  onUpdateSpot: (spotId: string, updates: Partial<ForagingSpot>) => void;
+  onAddSpot: (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated' | 'images'> & { images: File[] }) => void;
+  onUpdateSpot: (spotId: string, updates: Partial<Omit<ForagingSpot, 'images'>> & { images?: File[]; existingImageFilenames?: string[] }) => void;
   onDeleteSpot: (spotId: string) => void;
 }
 
@@ -116,23 +116,21 @@ export default function MainMapScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
 
-  const handleAddSpot = (type: ForagingType, notes: string) => {
-    if (!currentPosition) {
-      console.warn('Cannot add spot: location not available');
-      return;
-    }
-    
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleAddSpot = (type: ForagingType, notes: string, coordinates: Coordinates, images: File[], _existingImageFilenames?: string[]) => {
+    // For new spots, existingImageFilenames should be undefined/empty (unused for new spots)
     onAddSpot({
       type,
-      coordinates: currentPosition,
+      coordinates,
       notes,
+      images,
       sharedWith: []
     });
     setShowAddModal(false);
   };
 
-  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string, coordinates: Coordinates) => {
-    onUpdateSpot(spot.id, { type, notes, coordinates });
+  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string, coordinates: Coordinates, images: File[], existingImageFilenames?: string[]) => {
+    onUpdateSpot(spot.id, { type, notes, coordinates, images, existingImageFilenames });
     setEditingSpot(null);
   };
 
@@ -233,7 +231,7 @@ export default function MainMapScreen({
       {showAddModal && currentPosition && (
         <AddEditModal
           coordinates={currentPosition}
-          onSave={handleAddSpot}
+          onSave={(type, notes, coordinates, images, existingImageFilenames) => handleAddSpot(type, notes, coordinates, images, existingImageFilenames)}
           onClose={() => setShowAddModal(false)}
         />
       )}
@@ -242,7 +240,7 @@ export default function MainMapScreen({
         <AddEditModal
           spot={editingSpot}
           coordinates={editingSpot.coordinates}
-          onSave={(type, notes, coordinates) => handleEditSpot(editingSpot, type, notes, coordinates)}
+          onSave={(type, notes, coordinates, images, existingImageFilenames) => handleEditSpot(editingSpot, type, notes, coordinates, images, existingImageFilenames)}
           onClose={() => setEditingSpot(null)}
         />
       )}
