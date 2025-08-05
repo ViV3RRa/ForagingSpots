@@ -9,8 +9,8 @@ import { X, Edit, Trash2, Share, MapPin, Calendar, Clock, UserPlus, Camera } fro
 import type { ForagingSpot, User } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
 import { getSpotImageUrls, getSpotImageThumbnailUrls } from '../lib/pocketbase';
-// import ImageThumbnails from './ImageThumbnails';
 import ImageViewer from './ImageViewer';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot | null;
@@ -36,6 +36,8 @@ export default function PinDetailsDrawer({
   const [isOpen, setIsOpen] = useState(false);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isMobile = useIsMobile();
 
   const isOwner = spot?.user === currentUser.id;
@@ -75,6 +77,30 @@ export default function PinDetailsDrawer({
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
     setImageViewerOpen(true);
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!spot) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDelete();
+      setShowDeleteConfirmation(false);
+      // onDelete should handle closing the drawer
+    } catch (error) {
+      console.error('Error deleting spot:', error);
+      // Handle error (you might want to show an error toast here)
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
   };
 
   const config = spot ? getForagingSpotConfig(spot.type) : null;
@@ -208,7 +234,7 @@ export default function PinDetailsDrawer({
                         Rediger
                       </Button>
                       <Button 
-                        onClick={onDelete} 
+                        onClick={handleDeleteClick} 
                         variant="outline" 
                         className="h-12 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-200"
                       >
@@ -333,6 +359,19 @@ export default function PinDetailsDrawer({
           onClose={() => setImageViewerOpen(false)}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirmation}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Er du sikker?"
+        description={`Er du sikker på, at du vil slette dette sted?`}
+        confirmText="Slet permanent"
+        cancelText="Annuller"
+        variant="destructive"
+        isLoading={isDeleting}
+      />
     </>
   );
 }
