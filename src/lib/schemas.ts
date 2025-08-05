@@ -39,7 +39,7 @@ export const ForagingSpotSchema = z.object({
   images: z.array(z.string()).default([]), // Array of file URLs
   created: z.string(),
   updated: z.string(),
-  sharedWith: z.array(z.string()).default([]), // Array of email addresses for sharing
+  sharedWith: z.array(z.string()).default([]), // Array of usernames for sharing
   // Pocketbase expand fields (populated when using expand query)
   expand: z.object({
     user: UserSchema.optional(),
@@ -62,6 +62,7 @@ export const ForagingSpotUpdateSchema = z.object({
   notes: z.string().optional(),
   images: z.array(z.any()).optional(), // Files for upload
   existingImageFilenames: z.array(z.string()).optional(), // Existing image filenames to keep
+  sharedWith: z.array(z.string()).optional(), // Array of usernames for sharing
 });
 
 // Map pin schema (for UI display)

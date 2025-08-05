@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
-import { Separator } from './ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from './ui/sheet';
 import { useIsMobile } from './ui/use-mobile';
 import { X, Edit, Trash2, Share, MapPin, Calendar, Clock, UserPlus, Camera } from 'lucide-react';
 import type { ForagingSpot, User } from '../lib/types';
@@ -18,8 +17,8 @@ interface PinDetailsDrawerProps {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onShare: (spotId: string, email: string) => void;
-  onUnshare: (spotId: string, email: string) => void;
+  onShare: (spotId: string, username: string) => void;
+  onUnshare: (spotId: string, username: string) => void;
 }
 
 export default function PinDetailsDrawer({ 
@@ -27,11 +26,11 @@ export default function PinDetailsDrawer({
   currentUser, 
   onClose, 
   onEdit, 
-  onDelete, 
-  onShare, 
+  onDelete,
+  onShare,
   onUnshare 
 }: PinDetailsDrawerProps) {
-  const [shareEmail, setShareEmail] = useState('');
+  const [shareUsername, setShareUsername] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
@@ -42,6 +41,7 @@ export default function PinDetailsDrawer({
 
   const isOwner = spot?.user === currentUser.id;
   const hasImages = spot?.images && spot.images.length > 0;
+  const sharedWith = spot?.sharedWith || [];
 
   // Handle opening/closing with proper animation timing
   useEffect(() => {
@@ -61,16 +61,16 @@ export default function PinDetailsDrawer({
   };
 
   const handleShare = () => {
-    if (shareEmail.trim() && isOwner && spot) {
-      onShare(spot.id, shareEmail.trim());
-      setShareEmail('');
+    if (shareUsername.trim() && isOwner && spot) {
+      onShare(spot.id, shareUsername.trim());
+      setShareUsername('');
       setIsSharing(false);
     }
   };
 
-  const handleUnshare = (email: string) => {
+  const handleUnshare = (username: string) => {
     if (isOwner && spot) {
-      onUnshare(spot.id, email);
+      onUnshare(spot.id, username);
     }
   };
 
@@ -111,7 +111,7 @@ export default function PinDetailsDrawer({
         <SheetContent 
           side={isMobile ? "bottom" : "right"} 
           className={`
-            ${isMobile ? "h-[85vh]" : "w-[420px] h-full"} 
+            ${isMobile ? "h-[85vh]" : "w-[480px] h-full"} 
             bg-earth-background border-0 p-0 m-0 gap-0 flex flex-col
             ${isMobile ? 'rounded-t-[20px]' : 'rounded-l-[20px]'}
           `}
@@ -224,27 +224,6 @@ export default function PinDetailsDrawer({
                 {/* Action buttons (only for owner) */}
                 {isOwner && (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        onClick={onEdit} 
-                        variant="outline" 
-                        className="h-12 border-forest-green/20 text-forest-green hover:bg-forest-green/10 hover:border-forest-green/30 transition-all duration-200"
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Rediger
-                      </Button>
-                      <Button 
-                        onClick={handleDeleteClick} 
-                        variant="outline" 
-                        className="h-12 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-200"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Slet
-                      </Button>
-                    </div>
-
-                    <Separator className="my-6" />
-
                     {/* Enhanced sharing section */}
                     <div className="bg-white rounded-xl p-4 mushroom-shadow border border-border/50">
                       <div className="flex items-center justify-between mb-4">
@@ -271,22 +250,22 @@ export default function PinDetailsDrawer({
 
                       {isSharing && (
                         <div className="bg-muted/30 rounded-lg p-4 mb-4 transition-all duration-300 ease-out">
-                          <Label htmlFor="shareEmail" className="text-sm font-medium text-foreground">
-                            Del med e-mailadresse:
+                          <Label htmlFor="shareUsername" className="text-sm font-medium text-foreground">
+                            Del med brugernavn:
                           </Label>
                           <div className="flex gap-2 mt-3">
                             <Input
-                              id="shareEmail"
-                              type="email"
-                              value={shareEmail}
-                              onChange={(e) => setShareEmail(e.target.value)}
-                              placeholder="friend@forager.com"
+                              id="shareUsername"
+                              type="text"
+                              value={shareUsername}
+                              onChange={(e) => setShareUsername(e.target.value)}
+                              placeholder="brugernavn"
                               className="flex-1 bg-white border-border/50 focus:border-light-green"
                             />
                             <Button 
                               onClick={handleShare} 
                               size="sm" 
-                              disabled={!shareEmail.trim()}
+                              disabled={!shareUsername.trim()}
                               className="bg-light-green hover:bg-light-green/90 px-4"
                             >
                               Del
@@ -296,20 +275,20 @@ export default function PinDetailsDrawer({
                       )}
 
                       {/* Shared with list */}
-                      {spot.sharedWith.length > 0 && (
+                      {sharedWith.length > 0 && (
                         <div>
                           <div className="text-sm font-medium text-muted-foreground mb-3">
-                            Del med {spot.sharedWith.length} {spot.sharedWith.length === 1 ? 'person' : 'personer'}:
+                            Delt med {sharedWith.length} {sharedWith.length === 1 ? 'person' : 'personer'}:
                           </div>
                           <div className="space-y-2">
-                            {spot.sharedWith.map((email) => (
+                            {sharedWith.map((username) => (
                               <div 
-                                key={email} 
+                                key={username} 
                                 className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-3 group transition-all duration-200 hover:bg-muted/50"
                               >
-                                <span className="text-sm text-foreground font-medium">{email}</span>
+                                <span className="text-sm text-foreground font-medium">{username}</span>
                                 <Button
-                                  onClick={() => handleUnshare(email)}
+                                  onClick={() => handleUnshare(username)}
                                   variant="ghost"
                                   size="sm"
                                   className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-200"
@@ -322,7 +301,7 @@ export default function PinDetailsDrawer({
                         </div>
                       )}
 
-                      {spot.sharedWith.length === 0 && !isSharing && (
+                      {sharedWith.length === 0 && !isSharing && (
                         <div className="text-center py-4">
                           <div className="text-muted-foreground/60 text-sm">
                             Denne lokation er privat - ikke delt med nogen
@@ -343,6 +322,30 @@ export default function PinDetailsDrawer({
                 )}
                 </div>
               </div>
+
+              {/* Fixed Footer with Action Buttons (only for owner) */}
+              {isOwner && (
+                <SheetFooter className="p-4 shadow-sm border-t border-border/50">
+                  <div className="grid grid-cols-2 gap-3 w-full">
+                    <Button 
+                      onClick={onEdit} 
+                      variant="outline" 
+                      className="h-12 border-forest-green/20 text-forest-green hover:bg-forest-green/10 hover:border-forest-green/30 transition-all duration-200"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Rediger
+                    </Button>
+                    <Button 
+                      onClick={handleDeleteClick} 
+                      variant="outline" 
+                      className="h-12 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-200"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Slet
+                    </Button>
+                  </div>
+                </SheetFooter>
+              )}
             </>
           ) : null}
         </SheetContent>

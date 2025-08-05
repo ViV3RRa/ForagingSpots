@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, MoreVertical, Edit, Trash2, Share, MapPin, Calendar, StickyNote, SlidersHorizontal } from 'lucide-react';
 import type { ForagingSpot, ForagingType } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
+import { useAuth } from '../hooks/useAuth';
 
 interface SpotListViewProps {
   foragingSpots: ForagingSpot[];
@@ -36,6 +37,8 @@ export default function SpotListView({
 }: SpotListViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+
+  const { user } = useAuth();
 
   // Filter spots based on active filters and search
   const filteredAndSortedSpots = useMemo(() => {
@@ -145,7 +148,8 @@ export default function SpotListView({
           <>
             {filteredAndSortedSpots.map((spot) => {
               const config = getForagingSpotConfig(spot.type);
-              const isShared = spot.sharedWith.length > 0;
+              const sharedWith = spot.sharedWith ?? []
+              const isShared = sharedWith.length > 0;
               
               return (
                 <Card 
@@ -171,7 +175,7 @@ export default function SpotListView({
                             <h3 className="font-medium text-gray-900">{config.label}</h3>
                             {isShared && (
                               <Badge variant="secondary" className="text-xs">
-                                Delt med {spot.sharedWith.length} person{spot.sharedWith.length !== 1 ? 'er' : ''}
+                                Delt med {sharedWith.length} person{sharedWith.length !== 1 ? 'er' : ''}
                               </Badge>
                             )}
                           </div>
@@ -188,21 +192,25 @@ export default function SpotListView({
                                 <MapPin className="mr-2 h-4 w-4" />
                                 Vis på kort
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(spot); }}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Rediger
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(spot); }}>
-                                <Share className="mr-2 h-4 w-4" />
-                                Del
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={(e) => { e.stopPropagation(); onDelete(spot.id); }}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Slet
-                              </DropdownMenuItem>
+                              {user?.id === spot.user && (
+                                <>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(spot); }}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Rediger
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(spot); }}>
+                                    <Share className="mr-2 h-4 w-4" />
+                                    Del
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => { e.stopPropagation(); onDelete(spot.id); }}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Slet
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

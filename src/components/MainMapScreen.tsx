@@ -9,6 +9,9 @@ import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
 import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
+import { useUpdateSpot } from '../hooks/useForagingSpots';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../lib/queryClient';
 
 interface MainMapScreenProps {
   user: NewUser;
@@ -35,6 +38,10 @@ export default function MainMapScreen({
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(getAllForagingTypesSet());
   const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
+  
+  // TanStack Query hooks for optimistic updates
+  const queryClient = useQueryClient();
+  const updateSpotMutation = useUpdateSpot();
   
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
@@ -142,15 +149,73 @@ export default function MainMapScreen({
     setSelectedSpot(spot);
   };
 
-  // Sharing functionality temporarily disabled - will be implemented with shared_spots collection
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleShare = (_spotId: string, _email: string) => {
-    console.log('Sharing functionality will be implemented in step 5 with TanStack Query');
+  // Simple sharing functions with optimistic updates
+  const handleShare = (spotId: string, username: string) => {
+    const spot = foragingSpots.find(s => s.id === spotId);
+    if (spot && !spot.sharedWith?.includes(username)) {
+      const updatedSharedWith = [...(spot.sharedWith || []), username];
+      const updatedSpot = { ...spot, sharedWith: updatedSharedWith };
+      
+      // Optimistically update the cache
+      queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map(s => 
+          s.id === spotId 
+            ? updatedSpot
+            : s
+        );
+      });
+      
+      // Update the selected spot state if it's the same spot
+      if (selectedSpot?.id === spotId) {
+        setSelectedSpot(updatedSpot);
+      }
+      
+      // Update via mutation and invalidate
+      updateSpotMutation.mutate(
+        { id: spotId, data: { sharedWith: updatedSharedWith } },
+        {
+          onSettled: () => {
+            // Invalidate to refetch from backend
+            queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+          }
+        }
+      );
+    }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleUnshare = (_spotId: string, _email: string) => {
-    console.log('Unsharing functionality will be implemented in step 5 with TanStack Query');
+  const handleUnshare = (spotId: string, username: string) => {
+    const spot = foragingSpots.find(s => s.id === spotId);
+    if (spot && spot.sharedWith?.includes(username)) {
+      const updatedSharedWith = spot.sharedWith.filter(u => u !== username);
+      const updatedSpot = { ...spot, sharedWith: updatedSharedWith };
+      
+      // Optimistically update the cache
+      queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map(s => 
+          s.id === spotId 
+            ? updatedSpot
+            : s
+        );
+      });
+      
+      // Update the selected spot state if it's the same spot
+      if (selectedSpot?.id === spotId) {
+        setSelectedSpot(updatedSpot);
+      }
+      
+      // Update via mutation and invalidate
+      updateSpotMutation.mutate(
+        { id: spotId, data: { sharedWith: updatedSharedWith } },
+        {
+          onSettled: () => {
+            // Invalidate to refetch from backend
+            queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+          }
+        }
+      );
+    }
   };
 
   const handleApplyFilters = (filters: Set<ForagingType>) => {

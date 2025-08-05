@@ -88,9 +88,7 @@ export const foragingSpotsApi = {
         formData.append('notes', validatedData.notes);
       }
       
-      if (validatedData.sharedWith.length > 0) {
-        formData.append('sharedWith', JSON.stringify(validatedData.sharedWith));
-      }
+      formData.append('sharedWith', JSON.stringify(validatedData.sharedWith.length > 0 ? validatedData.sharedWith : []));
 
       // Add image files to form data
       if (validatedData.images && validatedData.images.length > 0) {
@@ -133,6 +131,10 @@ export const foragingSpotsApi = {
       
       if (validatedData.notes !== undefined) {
         formData.append('notes', validatedData.notes);
+      }
+
+      if (validatedData.sharedWith !== undefined) {
+        formData.append('sharedWith', JSON.stringify(validatedData.sharedWith));
       }
 
       // Handle image updates: combine existing filenames with new files

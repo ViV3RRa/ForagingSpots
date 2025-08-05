@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Camera, MapPin, Target } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
 import LocationPickerModal from './LocationPickerModal';
@@ -79,40 +79,41 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
           </DialogTitle>
         </DialogHeader>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 min-h-0">
-          <div className="space-y-6 pb-6">
-            {/* GPS Coordinates */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">GPS lokation</span>
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 min-h-0">
+            <div className="space-y-6 pb-6">
+              {/* GPS Coordinates */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">GPS lokation</span>
+                  </div>
+                  {spot !== undefined && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowLocationPicker(true)}
+                      className="text-xs px-2 py-1 h-auto"
+                    >
+                      <Target className="h-3 w-3 mr-1" />
+                      Rediger
+                    </Button>
+                  )}
                 </div>
-                {spot !== undefined && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowLocationPicker(true)}
-                    className="text-xs px-2 py-1 h-auto"
-                  >
-                    <Target className="h-3 w-3 mr-1" />
-                    Rediger
-                  </Button>
+                <div className="text-sm text-gray-600 font-mono">
+                  {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
+                </div>
+                {spot !== undefined && (currentCoordinates.lat !== coordinates.lat || currentCoordinates.lng !== coordinates.lng) && (
+                  <div className="mt-2 text-xs text-green-600 font-medium">
+                    Lokation redigeret
+                  </div>
                 )}
               </div>
-              <div className="text-sm text-gray-600 font-mono">
-                {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
-              </div>
-              {spot !== undefined && (currentCoordinates.lat !== coordinates.lat || currentCoordinates.lng !== coordinates.lng) && (
-                <div className="mt-2 text-xs text-green-600 font-medium">
-                  Lokation redigeret
-                </div>
-              )}
-            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
 
               {/* What did you find? */}
               <div className="space-y-2">
@@ -163,27 +164,29 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
                   maxImages={5}
                 />
               </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="flex-1"
-                >
-                  Fortryd
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  {spot === undefined ? 'Gem skat' : 'Opdater skat'}
-                </Button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
+
+          <DialogFooter>
+            <div className="flex gap-3 p-6 pt-0 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="flex-1"
+              >
+                Fortryd
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {spot === undefined ? 'Gem skat' : 'Opdater skat'}
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
 
         {/* Location Picker Modal */}
         {showLocationPicker && (
