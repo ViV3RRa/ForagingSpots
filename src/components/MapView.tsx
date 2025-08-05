@@ -29,6 +29,8 @@ export default function MapView({
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [bearing, setBearing] = useState(0);
   
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
@@ -54,6 +56,13 @@ export default function MapView({
       document.head.removeChild(style);
     };
   }, []);
+
+  // Auto-enable following when location is available and user hasn't interacted
+  useEffect(() => {
+    if (currentPosition && !hasUserInteracted && mapLoaded) {
+      setIsFollowingUser(true);
+    }
+  }, [currentPosition, hasUserInteracted, mapLoaded]);
 
   useEffect(() => {
     if (!validateMapboxToken()) {
@@ -218,6 +227,7 @@ export default function MapView({
         {...viewState}
         onMove={evt => {
           setViewState(evt.viewState);
+          setBearing(evt.viewState.bearing || 0);
           
           // Notify parent of view state changes
           if (onViewStateChange) {
@@ -229,6 +239,9 @@ export default function MapView({
           }
         }}
         onDrag={() => {
+          // Mark that user has interacted with the map
+          setHasUserInteracted(true);
+          
           // Detect user drag interaction - stop following
           if (isFollowingUser) {
             setIsFollowingUser(false);
@@ -239,28 +252,10 @@ export default function MapView({
         style={{ width: '100%', height: '100%' }}
         mapStyle={DEFAULT_MAP_CONFIG.style}
       >
-        {/* Custom Compass Button */}
-        <div className="absolute top-3 right-3 z-10">
-          <button
-            onClick={() => {
-              if (mapRef.current) {
-                mapRef.current.flyTo({
-                  bearing: 0, // Reset to north
-                  pitch: 0,   // Reset pitch to flat
-                  duration: 500
-                });
-              }
-            }}
-            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-md p-2 shadow-md transition-colors duration-200 mb-2"
-            title="Reset to north"
-          >
-            <Compass className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
         
         {/* Custom Location Button */}
         {onCenterOnUserLocation && (
-          <div className="absolute top-16 right-3 z-10">
+          <div className="absolute top-3 right-3 z-10">
             <button
               onClick={() => {
                 if (mapRef.current && currentPosition) {
@@ -287,6 +282,36 @@ export default function MapView({
             </button>
           </div>
         )}
+
+        {/* Custom Compass Button - animate opacity based on bearing */}
+        <div className="absolute top-16 right-3 z-10">
+          <button
+            onClick={() => {
+              if (mapRef.current) {
+                mapRef.current.flyTo({
+                  bearing: 0, // Reset to north
+                  pitch: 0,   // Reset pitch to flat
+                  duration: 500
+                });
+              }
+            }}
+            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-md p-2 shadow-md transition-all duration-300 mb-2"
+            title="Reset to north"
+            style={{
+              opacity: bearing === 0 ? 0 : 1,
+              transition: 'opacity 0.3s ease-in-out',
+              pointerEvents: bearing === 0 ? 'none' : 'auto'
+            }}
+          >
+            <Compass 
+              className="h-5 w-5 text-gray-600" 
+              style={{
+                transform: `rotate(${bearing - 45}deg)`,
+                transition: 'transform 0.3s ease-out'
+              }}
+            />
+          </button>
+        </div>
 
         {/* Current Position Marker - only show if we have a valid location */}
         {currentPosition && (

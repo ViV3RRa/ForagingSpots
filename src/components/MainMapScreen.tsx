@@ -74,7 +74,7 @@ export default function MainMapScreen({
             setMapViewState({
               longitude: userPosition.lng,
               latitude: userPosition.lat,
-              zoom: 12 // Use a reasonable zoom level for user location
+              zoom: 18 // Use a reasonable zoom level for user location
             });
             setHasInitializedUserPosition(true);
           }
@@ -241,7 +241,7 @@ export default function MainMapScreen({
       setMapViewState({
         longitude: currentPosition.lng,
         latitude: currentPosition.lat,
-        zoom: 15 // Zoom in closer when user manually centers
+        zoom: 18 // Zoom in closer when user manually centers
       });
     }
   };

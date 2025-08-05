@@ -9,6 +9,7 @@ import { Search, MoreVertical, Edit, Trash2, Share, MapPin, Calendar, StickyNote
 import type { ForagingSpot, ForagingType } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
 import { useAuth } from '../hooks/useAuth';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface SpotListViewProps {
   foragingSpots: ForagingSpot[];
@@ -37,8 +38,25 @@ export default function SpotListView({
 }: SpotListViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [spotToDelete, setSpotToDelete] = useState<ForagingSpot | null>(null);
 
   const { user } = useAuth();
+
+  // Delete confirmation handlers
+  const handleDeleteClick = (spot: ForagingSpot) => {
+    setSpotToDelete(spot);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!spotToDelete) return;
+    
+    onDelete(spotToDelete.id);
+    setSpotToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setSpotToDelete(null);
+  };
 
   // Filter spots based on active filters and search
   const filteredAndSortedSpots = useMemo(() => {
@@ -203,7 +221,7 @@ export default function SpotListView({
                                     Del
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
-                                    onClick={(e) => { e.stopPropagation(); onDelete(spot.id); }}
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(spot); }}
                                     className="text-red-600"
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
@@ -262,6 +280,18 @@ export default function SpotListView({
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={spotToDelete !== null}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Er du sikker?"
+        description={`Er du sikker på, at du vil slette dette sted?`}
+        confirmText="Slet permanent"
+        cancelText="Annuller"
+        variant="destructive"
+      />
     </div>
   );
 }

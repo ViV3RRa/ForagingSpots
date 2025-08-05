@@ -155,11 +155,11 @@ export default function ImageCapture({ images, onImagesChange, maxImages = 5 }: 
       {images.length === 0 ? (
         /* Empty State */
         <Card className="p-8 text-center border-2 border-dashed border-border bg-gradient-to-br from-forest-green/5 to-light-green/5">
-          <div className="w-16 h-16 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-8 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto">
             <Camera className="w-8 h-8 text-forest-green" />
           </div>
-          <h3 className="text-lg mb-2 text-foreground">Tilføj billeder</h3>
-          <p className="text-sm text-muted-foreground mb-6">
+          <h3 className="text-lg text-foreground">Tilføj billeder</h3>
+          <p className="text-sm text-muted-foreground">
             {isCompressing ? 'Komprimerer billeder...' : 'Tag billeder af dine opdagelser for at huske dem bedre'}
           </p>
           <div className="flex flex-col gap-3 max-w-sm mx-auto">
