@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, Coordinates } from '../lib/types';
-import { TreePine, Compass, LocateFixed } from 'lucide-react';
+import { TreePine, Compass, Locate, LocateFixed } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';
 import { getForagingSpotConfig } from './icons';
 
@@ -28,6 +28,7 @@ export default function MapView({
   const mapRef = useRef<MapRef>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
   
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
@@ -86,6 +87,26 @@ export default function MapView({
     }
   }, [initialViewState, mapLoaded, viewState.longitude, viewState.latitude, viewState.zoom]);
 
+  // Follow user location when enabled and location changes
+  useEffect(() => {
+    if (isFollowingUser && currentPosition && mapRef.current && mapLoaded) {
+      // Only follow if the position has changed significantly (more than ~10 meters)
+      const currentCenter = mapRef.current.getCenter();
+      const distance = Math.sqrt(
+        Math.pow((currentPosition.lng - currentCenter.lng) * Math.cos(currentPosition.lat * Math.PI / 180), 2) +
+        Math.pow(currentPosition.lat - currentCenter.lat, 2)
+      ) * 111000; // Convert to meters approximately
+
+      if (distance > 10) { // 10 meter threshold
+        mapRef.current.easeTo({
+          center: [currentPosition.lng, currentPosition.lat],
+          zoom: 18,
+          duration: 1000 // Smooth 1 second transition
+        });
+      }
+    }
+  }, [currentPosition, isFollowingUser, mapLoaded]);
+
   // Center on specific spot when requested - only after map is loaded
   useEffect(() => {
     if (centerOnSpot && mapRef.current && mapLoaded) {
@@ -94,7 +115,7 @@ export default function MapView({
         if (mapRef.current) {
           mapRef.current.flyTo({
             center: [centerOnSpot.coordinates.lng, centerOnSpot.coordinates.lat],
-            zoom: 15, // Zoom in closer to see the specific spot
+            zoom: 18, // Zoom in closer to see the specific spot
             duration: 1500 // Slightly longer animation for better UX
           });
         }
@@ -197,6 +218,7 @@ export default function MapView({
         {...viewState}
         onMove={evt => {
           setViewState(evt.viewState);
+          
           // Notify parent of view state changes
           if (onViewStateChange) {
             onViewStateChange({
@@ -204,6 +226,12 @@ export default function MapView({
               latitude: evt.viewState.latitude,
               zoom: evt.viewState.zoom
             });
+          }
+        }}
+        onDrag={() => {
+          // Detect user drag interaction - stop following
+          if (isFollowingUser) {
+            setIsFollowingUser(false);
           }
         }}
         onLoad={() => setMapLoaded(true)}
@@ -231,7 +259,7 @@ export default function MapView({
         </div>
         
         {/* Custom Location Button */}
-        {currentPosition && onCenterOnUserLocation && (
+        {onCenterOnUserLocation && (
           <div className="absolute top-16 right-3 z-10">
             <button
               onClick={() => {
@@ -242,12 +270,20 @@ export default function MapView({
                     duration: 1500
                   });
                 }
+                
+                // Enable following
+                setIsFollowingUser(true);
+                
                 onCenterOnUserLocation();
               }}
-              className="bg-white hover:bg-gray-50 border border-gray-300 rounded-md p-2 shadow-md transition-colors duration-200 mb-2"
-              title="Center on my location"
+              className={'bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 rounded-md p-2 shadow-md transition-colors duration-200 mb-2'}
+              title={currentPosition && isFollowingUser ? "Følger din position" : "Centrer på min position"}
             >
-              <LocateFixed className="h-5 w-5 text-gray-600" />
+              {currentPosition && isFollowingUser ? (
+                <LocateFixed className="h-5 w-5" />
+              ) : (
+                <Locate className="h-5 w-5" />
+              )}
             </button>
           </div>
         )}
