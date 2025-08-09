@@ -5,6 +5,8 @@ import { MapPin, Move, Target } from 'lucide-react';
 import type { Coordinates } from '../lib/types';
 import Map, { NavigationControl, GeolocateControl } from 'react-map-gl';
 import { DEFAULT_MAP_CONFIG, MAPBOX_ACCESS_TOKEN } from '../utils/mapbox';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
 
 interface LocationPickerModalProps {
   initialCoordinates: Coordinates;
@@ -14,7 +16,8 @@ interface LocationPickerModalProps {
 
 export default function LocationPickerModal({ initialCoordinates, onSave, onClose }: LocationPickerModalProps) {
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(initialCoordinates);
-  // const [isDragging, setIsDragging] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({ lat: false, lng: false });
+
   const [mapViewState, setMapViewState] = useState({
     longitude: initialCoordinates.lng,
     latitude: initialCoordinates.lat,
@@ -33,6 +36,43 @@ export default function LocationPickerModal({ initialCoordinates, onSave, onClos
       zoom: 14
     });
   };
+
+  const validateCoordinate = (value: string, type: 'lat' | 'lng'): boolean => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return false;
+    
+    if (type === 'lat') {
+      return num >= -90 && num <= 90;
+    } else {
+      return num >= -180 && num <= 180;
+    }
+  };
+
+  const handleManualCoordinateChange = (value: string, type: 'lat' | 'lng') => {
+    // Real-time validation
+    const isValid = validateCoordinate(value, type);
+    setValidationErrors(prev => ({ ...prev, [type]: !isValid && value !== '' }));
+
+    // Update coordinates if both values are valid
+    const currentLat = type === 'lat' ? value : currentCoordinates.lat.toString();
+    const currentLng = type === 'lng' ? value : currentCoordinates.lng.toString();
+    
+    const latValid = validateCoordinate(currentLat, 'lat');
+    const lngValid = validateCoordinate(currentLng, 'lng');
+    
+    if (latValid && lngValid && currentLat !== '' && currentLng !== '') {
+      const newCoords = {
+        lat: parseFloat(currentLat),
+        lng: parseFloat(currentLng)
+      };
+      setCurrentCoordinates(newCoords);
+      setMapViewState(prev => ({ ...prev, latitude: newCoords.lat, longitude: newCoords.lng }));
+    }
+  };
+
+  const isValidForSaving = !validationErrors.lat && !validationErrors.lng &&
+    validateCoordinate(currentCoordinates.lat.toString(), 'lat') &&
+    validateCoordinate(currentCoordinates.lng.toString(), 'lng');
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -102,19 +142,64 @@ export default function LocationPickerModal({ initialCoordinates, onSave, onClos
             </div>
           </div>
 
-          {/* Current coordinates display */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="space-y-4 bg-muted/20 rounded-lg p-4 border border-border/30">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Ny GPS-lokation</span>
+            <span className="text-sm font-medium text-gray-700">Ny GPS-lokation</span>
             </div>
-            <div className="text-sm text-gray-600 font-mono">
-              {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="latitude" className="text-sm font-medium">
+                      Breddegrad
+                    </Label>
+                    <Input
+                      id="latitude"
+                      value={currentCoordinates.lat.toFixed(6)}
+                      onChange={(e) => handleManualCoordinateChange(e.target.value, 'lat')}
+                      placeholder="60.1695"
+                      className={`font-mono ${validationErrors.lat ? 'border-destructive focus:border-destructive' : 'border-forest-green/20 focus:border-forest-green'}`}
+                    />
+                  <p className="text-xs text-muted-foreground">
+                    Interval: -90.0 to 90.0
+                  </p>
+                  {validationErrors.lat && (
+                    <p className="text-xs text-destructive">
+                      Venligst indtast en gyldig breddegrad mellem -90 og 90
+                    </p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="longitude" className="text-sm font-medium">
+                    Længdegrad
+                  </Label>
+                  <Input
+                    id="longitude"
+                    value={currentCoordinates.lng.toFixed(6)}
+                    onChange={(e) => handleManualCoordinateChange(e.target.value, 'lng')}
+                    placeholder="24.9354"
+                    className={`font-mono ${validationErrors.lng ? 'border-destructive focus:border-destructive' : 'border-forest-green/20 focus:border-forest-green'}`}
+                  />
+                    <p className="text-xs text-muted-foreground">
+                    Interval: -180.0 til 180.0
+                    </p>
+                  {validationErrors.lng && (
+                    <p className="text-xs text-destructive">
+                      Venligst indtast en gyldig længdegrad mellem -180 og 180
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                Ændring: {(currentCoordinates.lat - initialCoordinates.lat >= 0 ? '+' : '')}{(currentCoordinates.lat - initialCoordinates.lat).toFixed(6)}, {(currentCoordinates.lng - initialCoordinates.lng >= 0 ? '+' : '')}{(currentCoordinates.lng - initialCoordinates.lng).toFixed(6)}
+              </div>
+              
+              {isValidForSaving && (
+                <div className="text-xs text-forest-green bg-forest-green/10 p-2 rounded border border-forest-green/20">
+                  ✓ Koordinaterne er gyldige og klar til at gemme
+                </div>
+              )}
             </div>
-            <div className="mt-2 text-xs text-gray-500">
-              Ændring: {(currentCoordinates.lat - initialCoordinates.lat >= 0 ? '+' : '')}{(currentCoordinates.lat - initialCoordinates.lat).toFixed(6)}, {(currentCoordinates.lng - initialCoordinates.lng >= 0 ? '+' : '')}{(currentCoordinates.lng - initialCoordinates.lng).toFixed(6)}
-            </div>
-          </div>
 
           {/* Action buttons */}
           <div className="flex gap-3">
