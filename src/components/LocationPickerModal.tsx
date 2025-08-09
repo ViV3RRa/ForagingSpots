@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { MapPin, Move, Target } from 'lucide-react';
 import type { Coordinates } from '../lib/types';
-import Map, { NavigationControl, GeolocateControl } from 'react-map-gl';
+import Map, { NavigationControl } from 'react-map-gl';
 import { DEFAULT_MAP_CONFIG, MAPBOX_ACCESS_TOKEN } from '../utils/mapbox';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
@@ -118,7 +118,6 @@ export default function LocationPickerModal({ initialCoordinates, onSave, onClos
               >
                 {/* Navigation Controls */}
                 <NavigationControl position="top-right" />
-                <GeolocateControl position="top-right" />
               </Map>
 
               {/* Crosshair in center */}
@@ -149,19 +148,17 @@ export default function LocationPickerModal({ initialCoordinates, onSave, onClos
             </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="latitude" className="text-sm font-medium">
-                      Breddegrad
-                    </Label>
-                    <Input
-                      id="latitude"
-                      value={currentCoordinates.lat.toFixed(6)}
-                      onChange={(e) => handleManualCoordinateChange(e.target.value, 'lat')}
-                      placeholder="60.1695"
-                      className={`font-mono ${validationErrors.lat ? 'border-destructive focus:border-destructive' : 'border-forest-green/20 focus:border-forest-green'}`}
-                    />
-                  <p className="text-xs text-muted-foreground">
-                    Interval: -90.0 to 90.0
-                  </p>
+                  <Label htmlFor="latitude" className="text-sm font-medium">
+                    Breddegrad
+                  </Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    value={currentCoordinates.lat}
+                    onChange={(e) => handleManualCoordinateChange(e.target.value, 'lat')}
+                    placeholder="60.1695"
+                    className={`font-mono ${validationErrors.lat ? 'border-destructive focus:border-destructive' : 'border-forest-green/20 focus:border-forest-green'}`}
+                  />
                   {validationErrors.lat && (
                     <p className="text-xs text-destructive">
                       Venligst indtast en gyldig breddegrad mellem -90 og 90
@@ -175,14 +172,12 @@ export default function LocationPickerModal({ initialCoordinates, onSave, onClos
                   </Label>
                   <Input
                     id="longitude"
-                    value={currentCoordinates.lng.toFixed(6)}
+                    type="number"
+                    value={currentCoordinates.lng}
                     onChange={(e) => handleManualCoordinateChange(e.target.value, 'lng')}
                     placeholder="24.9354"
                     className={`font-mono ${validationErrors.lng ? 'border-destructive focus:border-destructive' : 'border-forest-green/20 focus:border-forest-green'}`}
                   />
-                    <p className="text-xs text-muted-foreground">
-                    Interval: -180.0 til 180.0
-                    </p>
                   {validationErrors.lng && (
                     <p className="text-xs text-destructive">
                       Venligst indtast en gyldig længdegrad mellem -180 og 180
