@@ -119,6 +119,14 @@ export default function MapView({
   // Center on specific spot when requested - only after map is loaded
   useEffect(() => {
     if (centerOnSpot && mapRef.current && mapLoaded) {
+      // Mark that user has interacted with the map (programmatic navigation counts as interaction)
+      setHasUserInteracted(true);
+      
+      // Stop following user location when navigating to a specific spot
+      if (isFollowingUser) {
+        setIsFollowingUser(false);
+      }
+      
       // Add a small delay to ensure map is fully ready
       const timer = setTimeout(() => {
         if (mapRef.current) {
@@ -132,7 +140,7 @@ export default function MapView({
       
       return () => clearTimeout(timer);
     }
-  }, [centerOnSpot, mapLoaded]);
+  }, [centerOnSpot, mapLoaded, isFollowingUser]);
 
   // Create supercluster instance and process spots
   const { clusters, supercluster } = useMemo(() => {
