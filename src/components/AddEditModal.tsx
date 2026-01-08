@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Camera, MapPin, Target } from 'lucide-react';
-import type { ForagingSpot, ForagingType, Coordinates } from '../lib/types';
+import type { ForagingSpot, ForagingType, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import LocationPickerModal from './LocationPickerModal';
 import { FORAGING_TYPES } from './types';
 import { getForagingSpotConfig } from './icons';
 import ImageCapture, { type SpotImage } from './ImageCapture';
 
 import { getSpotImageThumbnailUrls } from '../lib/pocketbase';
+import { getPendingImages } from '../hooks/usePendingSpots';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
@@ -25,9 +26,13 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
   const [notes, setNotes] = useState(spot?.notes || '');
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(coordinates);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  // Check if this is a pending spot
+  const isPendingSpot = spot?.id?.startsWith('pending-') || (spot as ForagingSpotWithPending)?._pending;
+
   const [images, setImages] = useState<SpotImage[]>(() => {
-    // Initialize images from existing spot
-    if (spot?.images && spot.images.length > 0) {
+    // Initialize images from existing server spot (not pending)
+    if (!isPendingSpot && spot?.images && spot.images.length > 0) {
       const existingImageUrls = getSpotImageThumbnailUrls(spot, { width: 200, height: 200 });
       return spot.images.map((filename, index) => ({
         id: `existing-${index}`,
@@ -39,6 +44,34 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
     }
     return [];
   });
+
+  // Load images from IndexedDB for pending spots
+  useEffect(() => {
+    if (isPendingSpot && spot?.id) {
+      getPendingImages(spot.id).then((files) => {
+        const pendingImages: SpotImage[] = files.map((file, index) => ({
+          id: `pending-${index}`,
+          url: URL.createObjectURL(file),
+          file: file, // Keep the file reference for re-submission
+          isExisting: false, // These are "new" files that need to be uploaded when synced
+          timestamp: new Date(),
+        }));
+        setImages(pendingImages);
+      });
+    }
+
+    // Cleanup object URLs on unmount
+    return () => {
+      if (isPendingSpot) {
+        images.forEach(img => {
+          if (img.url.startsWith('blob:')) {
+            URL.revokeObjectURL(img.url);
+          }
+        });
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spot?.id, isPendingSpot]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

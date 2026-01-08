@@ -50,3 +50,9 @@ export type ApiError = {
   status?: number;
   data?: Record<string, unknown>;
 };
+
+// Offline/pending spot extension
+export type ForagingSpotWithPending = ForagingSpot & {
+  _pending?: boolean;
+  _syncError?: string;
+};

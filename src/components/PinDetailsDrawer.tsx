@@ -4,12 +4,15 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from './ui/sheet';
 import { useIsMobile } from './ui/use-mobile';
-import { X, Edit, Trash2, Share, MapPin, Calendar, Clock, UserPlus, Camera } from 'lucide-react';
-import type { ForagingSpot, User } from '../lib/types';
+import { X, Edit, Trash2, Share, MapPin, Calendar, Clock, UserPlus, Camera, WifiOff } from 'lucide-react';
+import type { ForagingSpot, User, ForagingSpotWithPending } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
 import { getSpotImageUrls, getSpotImageThumbnailUrls } from '../lib/pocketbase';
 import ImageViewer from './ImageViewer';
 import ConfirmationDialog from './ConfirmationDialog';
+import { PendingSyncBadge } from './PendingSyncBadge';
+import { getPendingImageUrls } from '../hooks/usePendingSpots';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot | null;
@@ -37,11 +40,38 @@ export default function PinDetailsDrawer({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingImageUrls, setPendingImageUrls] = useState<string[]>([]);
   const isMobile = useIsMobile();
+  const { isOnline } = useNetworkStatus();
 
-  const isOwner = spot?.user === currentUser.id;
-  const hasImages = spot?.images && spot.images.length > 0;
+  // Check if spot is pending (offline)
+  const spotWithPending = spot as ForagingSpotWithPending | null;
+  const isPending = spotWithPending?._pending;
+
+  // Disable edit/delete for server spots when offline
+  const isEditDisabled = !isOnline && !isPending;
+  const hasError = !!spotWithPending?._syncError;
+
+  const isOwner = spot?.user === currentUser.id || isPending; // Pending spots are always "owned"
+  const hasImages = isPending ? pendingImageUrls.length > 0 : (spot?.images && spot.images.length > 0);
   const sharedWith = spot?.sharedWith || [];
+
+  // Load pending images from IndexedDB
+  useEffect(() => {
+    if (isPending && spot?.id) {
+      getPendingImageUrls(spot.id).then(urls => {
+        setPendingImageUrls(urls);
+      });
+    } else {
+      setPendingImageUrls([]);
+    }
+
+    // Cleanup object URLs when component unmounts or spot changes
+    return () => {
+      pendingImageUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spot?.id, isPending]);
 
   // Handle opening/closing with proper animation timing
   useEffect(() => {
@@ -131,16 +161,19 @@ export default function PinDetailsDrawer({
                       {config?.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-xl font-semibold text-white mb-1 leading-tight">
-                        {config?.label}
-                      </h2>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-xl font-semibold text-white leading-tight">
+                          {config?.label}
+                        </h2>
+                        {isPending && <PendingSyncBadge hasError={hasError} className="bg-white/20 text-white" />}
+                      </div>
                       <div className="flex items-center gap-3 text-white/80 text-sm">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
-                          <span>{new Date(spot.created).toLocaleDateString('da-DK', { 
-                            month: 'short', 
+                          <span>{new Date(spot.created).toLocaleDateString('da-DK', {
+                            month: 'short',
                             day: 'numeric',
-                            year: new Date(spot.created).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined 
+                            year: new Date(spot.created).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
                           })}</span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -185,38 +218,48 @@ export default function PinDetailsDrawer({
                 )}
 
                 {/* Images section */}
-                {spot.images && spot.images.length > 0 && (
+                {hasImages && (
                   <div className="bg-white rounded-xl p-4 mushroom-shadow border border-border/50">
                     <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
                       <div className="bg-forest-green/10 p-2 rounded-lg">
                         <Camera className="h-4 w-4 text-forest-green" />
                       </div>
-                      Billeder ({spot.images.length})
+                      Billeder ({isPending ? pendingImageUrls.length : spot.images.length})
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
-                      {getSpotImageThumbnailUrls(spot).map((thumbnailUrl, index) => {
-                        const fullImageUrl = getSpotImageUrls(spot)[index];
-                        return (
+                      {isPending ? (
+                        // Pending spot: show images from IndexedDB
+                        pendingImageUrls.map((imageUrl, index) => (
                           <div key={index} className="aspect-square rounded-lg overflow-hidden bg-muted border border-border/30">
                             <img
-                              src={thumbnailUrl}
+                              src={imageUrl}
                               alt={`Spot image ${index + 1}`}
                               className="w-full h-full object-cover transition-transform duration-300 hover:scale-105 cursor-pointer"
-                              loading="lazy"
-                              onError={(e) => {
-                                console.error(`Failed to load thumbnail: ${thumbnailUrl}`);
-                                // Fallback to full image URL if thumbnail fails
-                                (e.target as HTMLImageElement).src = fullImageUrl;
-                              }}
-                              onClick={() => {
-                                // Open full image in a new tab
-                                // window.open(fullImageUrl, '_blank');
-                                handleImageClick(index);
-                              }}
+                              onClick={() => handleImageClick(index)}
                             />
                           </div>
-                        );
-                      })}
+                        ))
+                      ) : (
+                        // Server spot: show images from PocketBase
+                        getSpotImageThumbnailUrls(spot).map((thumbnailUrl, index) => {
+                          const fullImageUrl = getSpotImageUrls(spot)[index];
+                          return (
+                            <div key={index} className="aspect-square rounded-lg overflow-hidden bg-muted border border-border/30">
+                              <img
+                                src={thumbnailUrl}
+                                alt={`Spot image ${index + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105 cursor-pointer"
+                                loading="lazy"
+                                onError={(e) => {
+                                  console.error(`Failed to load thumbnail: ${thumbnailUrl}`);
+                                  (e.target as HTMLImageElement).src = fullImageUrl;
+                                }}
+                                onClick={() => handleImageClick(index)}
+                              />
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 )}
@@ -323,22 +366,40 @@ export default function PinDetailsDrawer({
                 </div>
               </div>
 
+              {/* Offline Banner for server spots when offline */}
+              {isOwner && isEditDisabled && (
+                <div className="px-4 py-3 bg-amber-50 border-t border-amber-200 text-amber-800 text-sm flex items-center">
+                  <WifiOff className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span>Du er offline. Rediger og slet er ikke tilgængelig for synkroniserede skatte.</span>
+                </div>
+              )}
+
               {/* Fixed Footer with Action Buttons (only for owner) */}
               {isOwner && (
                 <SheetFooter className="p-4 shadow-sm border-t border-border/50">
                   <div className="grid grid-cols-2 gap-3 w-full">
-                    <Button 
-                      onClick={onEdit} 
-                      variant="outline" 
-                      className="h-12 border-forest-green/20 text-forest-green hover:bg-forest-green/10 hover:border-forest-green/30 transition-all duration-200"
+                    <Button
+                      onClick={onEdit}
+                      variant="outline"
+                      disabled={isEditDisabled}
+                      className={`h-12 transition-all duration-200 ${
+                        isEditDisabled
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'border-forest-green/20 text-forest-green hover:bg-forest-green/10 hover:border-forest-green/30'
+                      }`}
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Rediger
                     </Button>
-                    <Button 
-                      onClick={handleDeleteClick} 
-                      variant="outline" 
-                      className="h-12 border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-all duration-200"
+                    <Button
+                      onClick={handleDeleteClick}
+                      variant="outline"
+                      disabled={isEditDisabled}
+                      className={`h-12 transition-all duration-200 ${
+                        isEditDisabled
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'border-destructive/20 text-destructive hover:bg-destructive/10 hover:border-destructive/30'
+                      }`}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Slet
@@ -352,9 +413,9 @@ export default function PinDetailsDrawer({
       </Sheet>
 
       {/* Image Viewer */}
-      {hasImages && (
+      {hasImages && spot && (
         <ImageViewer
-          images={getSpotImageThumbnailUrls(spot).map(img => ({
+          images={(isPending ? pendingImageUrls : getSpotImageThumbnailUrls(spot)).map(img => ({
             url: img,
           }))}
           initialIndex={selectedImageIndex}
@@ -369,7 +430,7 @@ export default function PinDetailsDrawer({
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Er du sikker?"
-        description={`Er du sikker på, at du vil slette dette sted?`}
+        description={`Er du sikker på, at du vil slette denne skat?`}
         confirmText="Slet permanent"
         cancelText="Annuller"
         variant="destructive"

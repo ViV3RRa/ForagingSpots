@@ -8,6 +8,7 @@ import type { User as NewUser, ForagingSpot, ForagingType, Coordinates } from '.
 import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
+import { OfflineBanner } from './OfflineBanner';
 import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
 import { useUpdateSpot } from '../hooks/useForagingSpots';
 import { useQueryClient } from '@tanstack/react-query';
@@ -250,13 +251,15 @@ export default function MainMapScreen({
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 safe-area-x">
-      <TopBar 
-        user={user} 
+      <TopBar
+        user={user}
         onSignOut={onSignOut}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />
-      
+
+      <OfflineBanner />
+
       <div className="flex-1 relative">
         {viewMode === 'map' ? (
           <>

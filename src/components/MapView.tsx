@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
-import type { ForagingSpot, Coordinates } from '../lib/types';
+import type { ForagingSpot, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import { TreePine, Compass, Locate, LocateFixed } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';
 import { getForagingSpotConfig } from './icons';
+import { PendingSyncIcon } from './PendingSyncBadge';
 
 interface MapViewProps {
   foragingSpots: ForagingSpot[];
@@ -363,8 +364,11 @@ export default function MapView({
             );
           }
 
-          const spot = cluster.properties.spot as ForagingSpot;
+          const spot = cluster.properties.spot as ForagingSpotWithPending;
           const config = getForagingSpotConfig(spot.type, 20);
+          const isPending = spot._pending;
+          const hasError = !!spot._syncError;
+
           return (
             <Marker
               key={spot.id}
@@ -376,8 +380,14 @@ export default function MapView({
                 onClick={() => onPinClick(spot)}
                 className="transition-all duration-300 hover:scale-110 z-10 flex flex-col items-center"
               >
-                <div className={`h-12 w-12 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow`} style={config.background}>
-                  { config.icon }
+                <div className="relative">
+                  <div
+                    className={`h-12 w-12 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow ${isPending ? 'opacity-80' : ''}`}
+                    style={config.background}
+                  >
+                    {config.icon}
+                  </div>
+                  {isPending && <PendingSyncIcon hasError={hasError} />}
                 </div>
                 <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm whitespace-nowrap">
                   {config.label}

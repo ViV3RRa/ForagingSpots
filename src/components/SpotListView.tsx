@@ -6,10 +6,11 @@ import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Search, MoreVertical, Edit, Trash2, Share, MapPin, Calendar, StickyNote, SlidersHorizontal } from 'lucide-react';
-import type { ForagingSpot, ForagingType } from '../lib/types';
+import type { ForagingSpot, ForagingType, ForagingSpotWithPending } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
 import { useAuth } from '../hooks/useAuth';
 import ConfirmationDialog from './ConfirmationDialog';
+import { PendingSyncBadge } from './PendingSyncBadge';
 
 interface SpotListViewProps {
   foragingSpots: ForagingSpot[];
@@ -168,17 +169,20 @@ export default function SpotListView({
               const config = getForagingSpotConfig(spot.type);
               const sharedWith = spot.sharedWith ?? []
               const isShared = sharedWith.length > 0;
-              
+              const spotWithPending = spot as ForagingSpotWithPending;
+              const isPending = spotWithPending._pending;
+              const hasError = !!spotWithPending._syncError;
+
               return (
-                <Card 
-                  key={spot.id} 
-                  className="cursor-pointer hover:shadow-md transition-all duration-200 border-gray-200"
+                <Card
+                  key={spot.id}
+                  className={`cursor-pointer hover:shadow-md transition-all duration-200 border-gray-200 ${isPending ? 'opacity-90 border-amber-200' : ''}`}
                   onClick={() => onSpotClick(spot)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       {/* Type Icon */}
-                      <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`} style={config.background}>
+                      <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm ${isPending ? 'opacity-80' : ''}`} style={config.background}>
                         {typeof config.icon === 'string' ? (
                           <span className="text-xl">{config.icon}</span>
                         ) : (
@@ -189,8 +193,9 @@ export default function SpotListView({
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-medium text-gray-900">{config.label}</h3>
+                            {isPending && <PendingSyncBadge hasError={hasError} />}
                             {isShared && (
                               <Badge variant="secondary" className="text-xs">
                                 Delt med {sharedWith.length} person{sharedWith.length !== 1 ? 'er' : ''}
@@ -287,7 +292,7 @@ export default function SpotListView({
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Er du sikker?"
-        description={`Er du sikker på, at du vil slette dette sted?`}
+        description={`Er du sikker på, at du vil slette denne skat?`}
         confirmText="Slet permanent"
         cancelText="Annuller"
         variant="destructive"

@@ -10,8 +10,7 @@ export default defineConfig({
       registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        // Skip waiting and claim clients immediately for faster updates
-        skipWaiting: true,
+        // Let PWAUpdatePrompt control when updates activate
         clientsClaim: true,
         runtimeCaching: [
           {

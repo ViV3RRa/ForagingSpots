@@ -1,17 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { foragingSpotsApi, handleApiError } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
-import type { ForagingSpot, ForagingSpotCreate, ForagingSpotUpdate, ForagingType } from '../lib/types';
+import type { ForagingSpot, ForagingSpotCreate, ForagingSpotUpdate, ForagingType, ForagingSpotWithPending } from '../lib/types';
 import { toast } from 'sonner';
+import { usePendingSpots, addPendingSpot, updatePendingSpot, deletePendingSpot, pendingSpotsQueryKey } from './usePendingSpots';
 
-// Hook to fetch all foraging spots
-export function useForagingSpots() {
-  return useQuery({
+// Hook to fetch all foraging spots (merged with pending offline spots)
+export function useForagingSpots(isAuthenticated: boolean = true) {
+  const { pendingSpots } = usePendingSpots();
+
+  const query = useQuery({
     queryKey: queryKeys.foragingSpots.all,
     queryFn: foragingSpotsApi.getAll,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isAuthenticated, // Only fetch when authenticated
   });
+
+  // Merge server spots with pending offline spots
+  const data = useMemo((): ForagingSpotWithPending[] => {
+    const serverSpots = (query.data || []) as ForagingSpotWithPending[];
+    // Pending spots appear first
+    return [...pendingSpots, ...serverSpots];
+  }, [query.data, pendingSpots]);
+
+  return {
+    ...query,
+    data,
+  };
 }
 
 // Hook to fetch filtered foraging spots
@@ -42,72 +59,95 @@ export function useForagingSpot(id: string) {
   });
 }
 
-// Hook to create a new foraging spot
+// Hook to create a new foraging spot (offline-aware)
 export function useCreateSpot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: foragingSpotsApi.create,
-    onMutate: async (newSpot: ForagingSpotCreate) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.foragingSpots.all });
+    // Run mutations immediately even when offline - we handle offline logic ourselves
+    // Without this, TanStack Query v5 pauses mutations when device goes offline mid-session
+    networkMode: 'always',
+    mutationFn: async (newSpot: ForagingSpotCreate) => {
+      // Check navigator.onLine directly - NOT from React state
+      // React state would be stale if device went offline after hook mounted
+      if (navigator.onLine) {
+        // Online: use normal API
+        return foragingSpotsApi.create(newSpot);
+      } else {
+        // Offline: save to IndexedDB first, then return the result
+        // This ensures the spot is persisted before showing in UI
+        const localId = await addPendingSpot({
+          type: newSpot.type,
+          coordinates: newSpot.coordinates,
+          notes: newSpot.notes,
+          images: newSpot.images as File[],
+          sharedWith: newSpot.sharedWith,
+        });
 
-      // Snapshot the previous value
-      const previousSpots = queryClient.getQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all);
-
-      // Optimistically update to the new value
-      if (previousSpots) {
-        const optimisticSpot: ForagingSpot = {
-          id: `temp-${Date.now()}`, // Temporary ID
-          user: 'current-user', // Will be replaced with actual user ID
-          ...newSpot,
+        // Return with the ACTUAL ID that was saved to IndexedDB
+        const pendingSpot: ForagingSpotWithPending = {
+          id: localId,
+          user: 'current-user',
+          type: newSpot.type,
+          coordinates: newSpot.coordinates,
+          notes: newSpot.notes,
+          images: [],
+          sharedWith: newSpot.sharedWith,
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
+          _pending: true,
         };
 
-        queryClient.setQueryData<ForagingSpot[]>(
-          queryKeys.foragingSpots.all,
-          [...previousSpots, optimisticSpot]
-        );
+        return pendingSpot;
       }
-
-      // Return a context object with the snapshotted value
-      return { previousSpots };
     },
-    onError: (error, _newSpot, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousSpots) {
-        queryClient.setQueryData(queryKeys.foragingSpots.all, context.previousSpots);
-      }
-      
+    // NOTE: No onMutate optimistic update for offline creates
+    // This prevents ID mismatch between temp-ID and actual pending-ID
+    // The UI updates via pendingSpotsQueryKey invalidation after IndexedDB write succeeds
+    onError: (error) => {
       const errorMessage = handleApiError(error).message;
-      toast.error('Failed to create foraging spot', {
+      toast.error('Kunne ikke oprette skat', {
         description: errorMessage,
       });
     },
     onSuccess: (data) => {
-      // Update the cache with the server response
-      queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(data.id), data);
-      
-      // Invalidate and refetch the list
-      queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-      
-      toast.success('Foraging spot created successfully!');
-    },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+      if ((data as ForagingSpotWithPending)._pending) {
+        // Offline: invalidate and force refetch pending spots query to show the new spot
+        // refetchType 'all' ensures immediate refetch even with staleTime: Infinity
+        queryClient.invalidateQueries({ queryKey: pendingSpotsQueryKey, refetchType: 'all' });
+        toast.info('Skat gemt offline', {
+          description: 'Synkroniseres når forbindelsen genoprettes',
+        });
+      } else {
+        // Online: update server spots cache
+        queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(data.id), data);
+        queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+        toast.success('Skat oprettet!');
+      }
     },
   });
 }
 
-// Hook to update a foraging spot
+// Hook to update a foraging spot (offline-aware for pending spots)
 export function useUpdateSpot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ForagingSpotUpdate }) =>
-      foragingSpotsApi.update(id, data),
+    // Run mutations immediately even when offline - we handle offline logic ourselves
+    networkMode: 'always',
+    mutationFn: async ({ id, data }: { id: string; data: ForagingSpotUpdate }) => {
+      const isPendingSpot = id.startsWith('pending-');
+
+      if (isPendingSpot) {
+        // Update pending spot directly in IndexedDB
+        await updatePendingSpot(id, data);
+        // Return updated spot shape for optimistic UI
+        return { id, ...data, _pending: true } as ForagingSpotWithPending;
+      }
+
+      // Server spot - use API
+      return foragingSpotsApi.update(id, data);
+    },
     onMutate: async ({ id, data }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.foragingSpots.all });
@@ -150,23 +190,42 @@ export function useUpdateSpot() {
       });
     },
     onSuccess: (data) => {
-      // Update the cache with the server response
-      queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(data.id), data);
-      
-      // Invalidate the list to ensure consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-      
-      toast.success('Foraging spot updated successfully!');
+      const isPendingSpot = (data as ForagingSpotWithPending)._pending;
+
+      if (isPendingSpot) {
+        // Pending spot updated in IndexedDB - invalidate and force refetch
+        queryClient.invalidateQueries({ queryKey: pendingSpotsQueryKey, refetchType: 'all' });
+        toast.success('Skat opdateret (afventer synkronisering)');
+      } else {
+        // Server spot - update cache
+        queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(data.id), data);
+        queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+        toast.success('Skat opdateret!');
+      }
     },
   });
 }
 
-// Hook to delete a foraging spot
+// Hook to delete a foraging spot (offline-aware for pending spots)
 export function useDeleteSpot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: foragingSpotsApi.delete,
+    // Run mutations immediately even when offline - we handle offline logic ourselves
+    networkMode: 'always',
+    mutationFn: async (id: string) => {
+      const isPendingSpot = id.startsWith('pending-');
+
+      if (isPendingSpot) {
+        // Delete pending spot from IndexedDB
+        await deletePendingSpot(id);
+        return { id, _pending: true };
+      }
+
+      // Server spot - use API
+      await foragingSpotsApi.delete(id);
+      return { id, _pending: false };
+    },
     onMutate: async (id: string) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.foragingSpots.all });
@@ -193,14 +252,17 @@ export function useDeleteSpot() {
         description: errorMessage,
       });
     },
-    onSuccess: (_, id) => {
-      // Remove the individual spot from cache
-      queryClient.removeQueries({ queryKey: queryKeys.foragingSpots.detail(id) });
-      
-      // Invalidate the list
-      queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-      
-      toast.success('Foraging spot deleted successfully!');
+    onSuccess: (result) => {
+      if (result._pending) {
+        // Pending spot deleted from IndexedDB - invalidate and force refetch
+        queryClient.invalidateQueries({ queryKey: pendingSpotsQueryKey, refetchType: 'all' });
+        toast.success('Skat slettet');
+      } else {
+        // Server spot - update cache
+        queryClient.removeQueries({ queryKey: queryKeys.foragingSpots.detail(result.id) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+        toast.success('Skat slettet!');
+      }
     },
   });
 }

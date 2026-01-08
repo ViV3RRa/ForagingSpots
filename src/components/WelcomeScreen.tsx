@@ -30,7 +30,7 @@ export default function WelcomeScreen({ onSignIn }: WelcomeScreenProps) {
               Skovens Skatte
             </h1>
             <p className="text-gray-600 leading-relaxed">
-            Opdag og registrer dine hemmelige samlersteder. Registrer kantareller, vilde bær og mere med GPS-position.
+            Opdag og registrer dine hemmelige skatte. Registrer kantareller, vilde bær og mere med GPS-position.
             </p>
         </div>
 

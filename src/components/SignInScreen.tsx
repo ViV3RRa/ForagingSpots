@@ -60,7 +60,7 @@ export default function SignInScreen({ onSignIn, onBack }: SignInScreenProps) {
               Velkommen tilbage
             </h1>
             <p className="text-gray-600">
-              Log ind for at få adgang til dine samlesteder
+              Log ind for at få adgang til dine skatte
             </p>
           </div>
 
