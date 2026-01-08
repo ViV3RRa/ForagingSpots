@@ -29,11 +29,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         // Check if there's a valid auth token
         if (pb.authStore.isValid) {
-          // Refresh the auth token to ensure it's still valid
-          await pb.collection('users').authRefresh();
-          
-          // Validate and set user data
-          const userData = pb.authStore.model;
+          // Only refresh token if online - when offline, trust the cached token
+          if (navigator.onLine) {
+            await pb.collection('users').authRefresh();
+          }
+
+          // Validate and set user data from cached auth store
+          const userData = pb.authStore.record;
           if (userData) {
             const validatedUser = UserSchema.parse(userData);
             setUser(validatedUser);
@@ -42,10 +44,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
-        // Clear invalid auth data
-        pb.authStore.clear();
-        setUser(null);
-        setIsAuthenticated(false);
+        // Only clear auth if we're online (actual auth failure)
+        // If offline, keep the cached auth
+        if (navigator.onLine) {
+          pb.authStore.clear();
+          setUser(null);
+          setIsAuthenticated(false);
+        } else {
+          // Offline: trust cached auth
+          const userData = pb.authStore.record;
+          if (userData) {
+            const validatedUser = UserSchema.parse(userData);
+            setUser(validatedUser);
+            setIsAuthenticated(true);
+          }
+        }
       } finally {
         setIsLoading(false);
       }
@@ -152,7 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (pb.authStore.isValid) {
         await pb.collection('users').authRefresh();
         
-        const userData = pb.authStore.model;
+        const userData = pb.authStore.record;
         if (userData) {
           const validatedUser = UserSchema.parse(userData);
           setUser(validatedUser);

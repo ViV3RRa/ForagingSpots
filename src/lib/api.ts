@@ -74,7 +74,7 @@ export const foragingSpotsApi = {
       const validatedData = ForagingSpotCreateSchema.parse(data);
       
       // Ensure user is authenticated
-      if (!pb.authStore.isValid || !pb.authStore.model?.id) {
+      if (!pb.authStore.isValid || !pb.authStore.record?.id) {
         throw new Error('User must be authenticated to create foraging spots');
       }
 
@@ -82,7 +82,7 @@ export const foragingSpotsApi = {
       const formData = new FormData();
       formData.append('type', validatedData.type);
       formData.append('coordinates', JSON.stringify(validatedData.coordinates));
-      formData.append('user', pb.authStore.model.id);
+      formData.append('user', pb.authStore.record.id);
       
       if (validatedData.notes) {
         formData.append('notes', validatedData.notes);
