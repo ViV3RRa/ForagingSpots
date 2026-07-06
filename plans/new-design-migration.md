@@ -104,7 +104,7 @@ token values from the Claude Design project via MCP before writing code.
 | 1.1 Design tokens & theme infrastructure | [subtasks/1.1-tokens-and-theme.md](subtasks/1.1-tokens-and-theme.md) | ✅ Done (2026-07-06) |
 | 1.2 Typography | [subtasks/1.2-typography.md](subtasks/1.2-typography.md) | ✅ Done (2026-07-06) |
 | 1.3 Base UI primitives | [subtasks/1.3-ui-primitives.md](subtasks/1.3-ui-primitives.md) | ✅ Done (2026-07-06) |
-| 1.4 Custom Mapbox styles | [subtasks/1.4-mapbox-styles.md](subtasks/1.4-mapbox-styles.md) | |
+| 1.4 Custom Mapbox styles | [subtasks/1.4-mapbox-styles.md](subtasks/1.4-mapbox-styles.md) | ✅ Done (2026-07-06) |
 | 2.1 Welcome screen | [subtasks/2.1-welcome-screen.md](subtasks/2.1-welcome-screen.md) | |
 | 2.2 Sign-in screens | [subtasks/2.2-signin-screens.md](subtasks/2.2-signin-screens.md) | |
 | 2.3 App chrome | [subtasks/2.3-app-chrome.md](subtasks/2.3-app-chrome.md) | |

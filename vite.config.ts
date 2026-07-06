@@ -15,12 +15,15 @@ export default defineConfig({
         clientsClaim: true,
         runtimeCaching: [
           {
+            // Covers style JSON (/styles/v1), sprites, glyphs (/fonts/v1) and
+            // vector tiles (/v4) — one map load needs style + sprite + ~dozens
+            // of glyph ranges + tiles, hence the generous entry cap
             urlPattern: /^https:\/\/api\.mapbox\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'mapbox-cache',
               expiration: {
-                maxEntries: 10,
+                maxEntries: 500,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
               }
             }

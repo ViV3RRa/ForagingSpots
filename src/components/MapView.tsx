@@ -3,7 +3,8 @@ import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import { TreePine, Compass, Locate, LocateFixed } from 'lucide-react';
-import { MAPBOX_ACCESS_TOKEN, DEFAULT_MAP_CONFIG, validateMapboxToken } from '../utils/mapbox';
+import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
+import { useTheme } from '../hooks/useTheme';
 import { getForagingSpotConfig } from './icons';
 import { PendingSyncIcon } from './PendingSyncBadge';
 
@@ -27,6 +28,7 @@ export default function MapView({
   onCenterOnUserLocation
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
+  const { theme } = useTheme();
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
@@ -259,7 +261,7 @@ export default function MapView({
         onLoad={() => setMapLoaded(true)}
         mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={DEFAULT_MAP_CONFIG.style}
+        mapStyle={getMapStyle(theme)}
       >
         
         {/* Custom Location Button */}

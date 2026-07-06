@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { MapPin, Move, Target } from 'lucide-react';
 import type { Coordinates } from '../lib/types';
 import Map, { NavigationControl } from 'react-map-gl';
-import { DEFAULT_MAP_CONFIG, MAPBOX_ACCESS_TOKEN } from '../utils/mapbox';
+import { getMapStyle, MAPBOX_ACCESS_TOKEN } from '../utils/mapbox';
+import { useTheme } from '../hooks/useTheme';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 
@@ -15,6 +16,7 @@ interface LocationPickerModalProps {
 }
 
 export default function LocationPickerModal({ initialCoordinates, onSave, onClose }: LocationPickerModalProps) {
+  const { theme } = useTheme();
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(initialCoordinates);
   const [validationErrors, setValidationErrors] = useState({ lat: false, lng: false });
 
@@ -114,7 +116,7 @@ export default function LocationPickerModal({ initialCoordinates, onSave, onClos
                 }}
                 mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle={DEFAULT_MAP_CONFIG.style}
+                mapStyle={getMapStyle(theme)}
               >
                 {/* Navigation Controls */}
                 <NavigationControl position="top-right" />

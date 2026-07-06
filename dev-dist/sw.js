@@ -86,7 +86,7 @@ define(['./workbox-f001acab'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.uaf9uop5rj"
+    "revision": "0.b3sobk1t2no"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -95,7 +95,7 @@ define(['./workbox-f001acab'], (function (workbox) { 'use strict';
   workbox.registerRoute(/^https:\/\/api\.mapbox\.com\/.*/i, new workbox.CacheFirst({
     "cacheName": "mapbox-cache",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 10,
+      maxEntries: 500,
       maxAgeSeconds: 31536000
     })]
   }), 'GET');
