@@ -7,6 +7,13 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Skovens Skatte type roles: Spectral headings/editorial, Work Sans body/UI,
+        // Space Mono coords/timestamps/micro-labels
+        sans: ["'Work Sans'", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
+        serif: ["Spectral", "Georgia", "'Times New Roman'", "serif"],
+        mono: ["'Space Mono'", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
       colors: {
         // Custom CSS variables from tokens.css
         background: "var(--background)",

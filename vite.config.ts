@@ -9,7 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // woff2 covers the self-hosted fonts; the .woff fallbacks are legacy-only and not precached
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Let PWAUpdatePrompt control when updates activate
         clientsClaim: true,
         runtimeCaching: [

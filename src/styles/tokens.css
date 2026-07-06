@@ -146,62 +146,81 @@
 }
 
 /**
- * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ * Base typography — "Skovens Skatte" type scale.
+ * Headings: Spectral 600 (design sizes: 44px welcome title as a one-off utility,
+ * 34px screen titles, 26/23px sheet titles, 19px list-row titles).
+ * Body/UI: Work Sans. Coordinates/timestamps/micro-labels: Space Mono (see .label-mono).
  */
 @layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+    font-weight: 600;
+  }
+
+  /* Sizes are not applied to elements which have an ancestor with a Tailwind text class. */
   :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
     h1 {
-      font-size: var(--text-2xl);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 34px;
+      line-height: 1.15;
     }
 
     h2 {
-      font-size: var(--text-xl);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 26px;
+      line-height: 1.2;
     }
 
     h3 {
-      font-size: var(--text-lg);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 23px;
+      line-height: 1.25;
     }
 
     h4 {
-      font-size: var(--text-base);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.5;
+      font-size: 19px;
+      line-height: 1.3;
     }
 
     p {
-      font-size: var(--text-base);
       font-weight: var(--font-weight-normal);
       line-height: 1.5;
     }
 
     label {
-      font-size: var(--text-base);
       font-weight: var(--font-weight-medium);
       line-height: 1.5;
     }
 
     button {
-      font-size: var(--text-base);
       font-weight: var(--font-weight-medium);
       line-height: 1.5;
     }
 
     input {
-      font-size: var(--text-base);
       font-weight: var(--font-weight-normal);
       line-height: 1.5;
     }
   }
 }
 
+@layer components {
+  /*
+   * Uppercase Space Mono micro-label — the design's recurring pattern for section
+   * labels, field labels, and kickers (11px, tracked, uppercase, --mono color).
+   */
+  .label-mono {
+    @apply font-mono uppercase;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--mono);
+  }
+}
+
 html {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  @apply font-sans;
   font-size: var(--font-size);
 }
 
