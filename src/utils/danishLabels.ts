@@ -1,18 +1,31 @@
 import type { ForagingType } from '../components/types';
 
-// Danish labels for foraging types
-export const DANISH_LABELS: { [key: string]: string } = {
-  chanterelle: 'Kantareller',
+// Danish labels for foraging types (ordered as FORAGING_TYPES in components/types.ts)
+export const DANISH_LABELS: Record<ForagingType, string> = {
+  bay_bolete: 'Brunstokket rørhat',
+  black_currant: 'Solbær',
+  black_trumpet: 'Trompetsvamp',
+  blackberry: 'Brombær',
   blueberry: 'Blåbær',
-  lingonberry: 'Tyttebær',
+  chanterelle: 'Kantareller',
   cloudberry: 'Multebær',
-  porcini: 'Karl Johan',
-  oyster: 'Østershat',
+  cranberry: 'Tranebær',
   elderberry: 'Hyldebær',
+  field_mushroom: 'Markchampignon',
+  generic_berry: 'Andre bær',
+  generic_mushroom: 'Andre svampe',
+  hedgehog_mushroom: 'Pigsvamp',
+  lingonberry: 'Tyttebær',
+  oyster: 'Østershat',
+  parasol_mushroom: 'Parasolhat',
+  porcini: 'Karl Johan',
+  raspberry: 'Hindbær',
+  red_currant: 'Ribs',
   rosehip: 'Hyben',
   seabuckthorn: 'Havtorn',
-  generic_mushroom: 'Andre svampe',
-  generic_berry: 'Andre bær',
+  sheathed_woodtuft: 'Foranderlig skælhat',
+  sloe: 'Slåen',
+  wild_strawberry: 'Skovjordbær',
   other: 'Andet'
 };
 

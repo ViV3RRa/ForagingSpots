@@ -4,27 +4,39 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "./utils";
 
+/*
+ * Button recipes from the "Skovens Skatte" design:
+ * - default: accent CTA with glow shadow ("Kom i gang", "Gem fund")
+ * - brand:   forest/gold action button (detail drawer primary)
+ * - secondary: surface bg + line border ("Tilføj foto")
+ * - outline: transparent bg + line border ("Annullér")
+ * - ghost:   plain Work Sans text button ("Jeg har allerede en konto", "Ikke nu")
+ * Sizes use explicit px values — the root font-size is 14px, so rem scales are off-design.
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-serif transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-[18px] shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default:
+          "bg-accent text-accent-ink font-semibold shadow-[0_8px_22px_-6px_var(--accent)] hover:opacity-90",
+        brand: "bg-brand text-brand-ink font-semibold hover:opacity-90",
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline:
-          "border bg-background text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "bg-accent text-accent-ink font-semibold hover:opacity-90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-surface text-ink font-medium border border-line hover:bg-line2",
+        outline:
+          "bg-transparent text-ink2 font-medium border border-line hover:bg-surface",
+        ghost: "font-sans font-medium text-ink2 hover:bg-surface",
+        link: "text-accent underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9 rounded-md",
+        default: "h-[52px] px-[24px] rounded-[14px] text-[16px]",
+        lg: "h-[56px] px-[26px] rounded-[16px] text-[17px]",
+        sm: "h-[38px] gap-1.5 px-[14px] rounded-[10px] text-[14px]",
+        icon: "size-[44px] rounded-full",
+        "icon-sm": "size-[36px] rounded-full [&_svg:not([class*='size-'])]:size-[16px]",
+        "icon-lg": "size-[52px] rounded-[14px]",
       },
     },
     defaultVariants: {

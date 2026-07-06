@@ -1,255 +1,155 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import ChanterelleSvgIcon from './icons/ChanterelleSvgIcon';
-import PorciniIcon from './icons/PorciniIcon';
-import OysterMushroomIcon from './icons/OysterMushroomIcon';
-import BlueberryIcon from './icons/BlueberryIcon';
-import LingonberryIcon from './icons/LingonberryIcon';
-import CloudberryIcon from './icons/CloudberryIcon';
-import ElderberryIcon from './icons/ElderberryIcon';
-import RoseHipIcon from './icons/RoseHipIcon';
-import SeaBuckthornIcon from './icons/SeaBuckthornIcon';
-import GenericMushroomIcon from './icons/GenericMushroomIcon';
-import GenericBerryIcon from './icons/GenericBerryIcon';
+import { useState } from 'react';
+import { ArrowLeft, Camera, Trash2, X } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import { MonoLabel } from './ui/MonoLabel';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from './ui/sheet';
+import TypeBadge from './TypeBadge';
+import type { ForagingType } from './types';
+import { FORAGING_TYPES } from './types';
+import { getDanishLabel } from '../utils/danishLabels';
 
-// Simple local configuration to avoid import issues
-const iconConfig = {
-  chanterelle: { 
-    label: 'Chanterelle', 
-    color: 'bg-yellow-500',
-    description: 'Golden trumpet-shaped mushroom with forked ridges'
-  },
-  porcini: { 
-    label: 'Porcini', 
-    color: 'bg-amber-700',
-    description: 'Brown cap mushroom, highly prized for cooking'
-  },
-  oyster: { 
-    label: 'Oyster Mushroom', 
-    color: 'bg-gray-400',
-    description: 'Fan-shaped mushroom growing on trees'
-  },
-  blueberry: { 
-    label: 'Blueberry', 
-    color: 'bg-blue-600',
-    description: 'Small dark blue berries in clusters'
-  },
-  lingonberry: { 
-    label: 'Lingonberry', 
-    color: 'bg-red-500',
-    description: 'Small red berries, popular in Scandinavian cuisine'
-  },
-  cloudberry: { 
-    label: 'Cloudberry', 
-    color: 'bg-orange-400',
-    description: 'Rare orange aggregate berry, arctic delicacy'
-  },
-  elderberry: { 
-    label: 'Elderberry', 
-    color: 'bg-purple-800',
-    description: 'Dark purple berries in umbrella-like clusters'
-  },
-  rosehip: { 
-    label: 'Rose Hip', 
-    color: 'bg-red-600',
-    description: 'Red fruit of wild roses, high in vitamin C'
-  },
-  seabuckthorn: { 
-    label: 'Sea Buckthorn', 
-    color: 'bg-orange-500',
-    description: 'Bright orange berries growing densely on branches'
-  },
-  other: { 
-    label: 'Other', 
-    color: 'bg-green-500',
-    description: 'Other forageable items'
-  },
-} as const;
+/*
+ * Dev-only showcase of the redesigned UI primitives (subtask 1.3), rendered in
+ * both themes for visual verification. Reachable via the 'icons' screen in
+ * App.tsx (not wired into normal navigation).
+ */
+
+const BADGE_SIZES = [44, 52, 60, 72];
+const BADGE_TYPES: ForagingType[] = ['chanterelle', 'blueberry', 'porcini', 'raspberry'];
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <MonoLabel>{title}</MonoLabel>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function PrimitivesPanel({ title, onOpenSheet }: { title: string; onOpenSheet: () => void }) {
+  return (
+    <div className="rounded-[28px] bg-bg text-ink p-6 space-y-8 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+      <header>
+        <MonoLabel>Skovens Skatte · primitives</MonoLabel>
+        <h2 className="mt-1">{title}</h2>
+      </header>
+
+      <Section title="Buttons">
+        <Button size="lg" className="w-full">Kom i gang</Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button>Gem fund</Button>
+          <Button variant="brand">Naviger</Button>
+          <Button variant="destructive">Slet fund</Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary"><Camera />Tilføj foto</Button>
+          <Button variant="outline">Annullér</Button>
+          <Button variant="ghost">Ikke nu</Button>
+          <Button variant="link">Redigér ›</Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" size="icon-sm" aria-label="Luk"><X /></Button>
+          <Button variant="secondary" size="icon" aria-label="Tilbage"><ArrowLeft /></Button>
+          <Button variant="secondary" size="icon-lg" aria-label="Slet" className="text-accent"><Trash2 /></Button>
+          <Button size="sm">Lille knap</Button>
+          <Button disabled>Deaktiveret</Button>
+        </div>
+      </Section>
+
+      <Section title="Felter">
+        <div className="space-y-2">
+          <Label htmlFor={`email-${title}`}>E-mail</Label>
+          <Input id={`email-${title}`} type="email" placeholder="emil@skoven.dk" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`pw-${title}`}>Adgangskode</Label>
+          <Input id={`pw-${title}`} type="password" placeholder="••••••••" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`notes-${title}`}>Noter</Label>
+          <Textarea id={`notes-${title}`} placeholder="Fx: under birketræerne, tre store eksemplarer…" />
+        </div>
+      </Section>
+
+      <Section title="Type badge">
+        <div className="flex flex-wrap items-end gap-5">
+          {BADGE_SIZES.map((size, i) => (
+            <div key={size} className="flex flex-col items-center gap-2">
+              <TypeBadge type={BADGE_TYPES[i]} size={size} />
+              <MonoLabel>{size}px</MonoLabel>
+            </div>
+          ))}
+          <div className="flex flex-col items-center gap-2">
+            <TypeBadge type="lingonberry" size={60} ring={false} />
+            <MonoLabel>60px · uden ring</MonoLabel>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 gap-3 pt-2">
+          {FORAGING_TYPES.map((type) => (
+            <div key={type} className="flex flex-col items-center gap-1.5 text-center">
+              <TypeBadge type={type} size={44} ring={false} />
+              <span className="text-[10.5px] leading-tight text-ink2">{getDanishLabel(type)}</span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Mono label">
+        <div className="flex flex-col gap-2">
+          <MonoLabel>Koordinater</MonoLabel>
+          <span className="font-mono text-[13px] text-ink">56.1234° N · 10.2038° E</span>
+        </div>
+      </Section>
+
+      <Section title="Bottom sheet">
+        <Button variant="secondary" onClick={onOpenSheet}>Åbn bottom sheet</Button>
+      </Section>
+    </div>
+  );
+}
 
 export default function IconShowcase() {
-  const mushroomIcons = [
-    { key: 'chanterelle', component: ChanterelleSvgIcon },
-    { key: 'porcini', component: PorciniIcon },
-    { key: 'oyster', component: OysterMushroomIcon },
-    { key: 'other', component: GenericMushroomIcon, label: 'Other Mushroom' },
-  ];
-
-  const berryIcons = [
-    { key: 'blueberry', component: BlueberryIcon },
-    { key: 'lingonberry', component: LingonberryIcon },
-    { key: 'cloudberry', component: CloudberryIcon },
-    { key: 'elderberry', component: ElderberryIcon },
-    { key: 'rosehip', component: RoseHipIcon },
-    { key: 'seabuckthorn', component: SeaBuckthornIcon },
-    { key: 'other', component: GenericBerryIcon, label: 'Other Berry' },
-  ];
-
-  const IconDisplay = ({ icon, iconKey, label }: { 
-    icon: React.ComponentType<{ size?: number; className?: string }>, 
-    iconKey: string, 
-    label?: string
-  }) => {
-    const IconComponent = icon;
-    const config = iconConfig[iconKey as keyof typeof iconConfig];
-    const displayLabel = label || config?.label || iconKey;
-    const color = config?.color || 'bg-gray-500';
-
-    return (
-      <div className="flex flex-col items-center space-y-3 p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-shadow">
-        {/* Large version */}
-        <div className={`${color} rounded-full p-4 shadow-sm`}>
-          <IconComponent size={32} className="text-white" />
-        </div>
-        
-        {/* Different sizes */}
-        <div className="flex items-center space-x-2">
-          <div className={`${color} rounded-full p-2`}>
-            <IconComponent size={16} className="text-white" />
-          </div>
-          <div className={`${color} rounded-full p-2.5`}>
-            <IconComponent size={20} className="text-white" />
-          </div>
-          <div className={`${color} rounded-full p-3`}>
-            <IconComponent size={24} className="text-white" />
-          </div>
-        </div>
-        
-        {/* Gray version */}
-        <div className="bg-gray-600 rounded-full p-3">
-          <IconComponent size={24} className="text-white" />
-        </div>
-        
-        {/* Label */}
-        <div className="text-center">
-          <p className="font-medium text-sm text-gray-900">{displayLabel}</p>
-          {config?.description && (
-            <p className="text-xs text-gray-500 mt-1 max-w-32">{config.description}</p>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-earth-background p-6">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-semibold text-gray-900">Danish Foraging Icons</h1>
-          <p className="text-gray-600">SVG icon package for mushrooms and berries popular in Denmark</p>
-          <Badge variant="secondary" className="mt-2">
-            {mushroomIcons.length + berryIcons.length} Total Icons
-          </Badge>
+    <div className="min-h-screen bg-[#d7d2c7] p-6">
+      <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2 items-start">
+        <PrimitivesPanel title="Lys" onOpenSheet={() => setSheetOpen(true)} />
+        <div className="dark">
+          <PrimitivesPanel title="Mørk" onOpenSheet={() => setSheetOpen(true)} />
         </div>
-
-        {/* Mushroom Icons */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🍄 Mushroom Icons
-              <Badge variant="outline">{mushroomIcons.length} icons</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {mushroomIcons.map(({ key, component, label }) => (
-                <IconDisplay 
-                  key={key}
-                  icon={component}
-                  iconKey={key}
-                  label={label}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Berry Icons */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🫐 Berry Icons
-              <Badge variant="outline">{berryIcons.length} icons</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-              {berryIcons.map(({ key, component, label }) => (
-                <IconDisplay 
-                  key={`berry-${key}`}
-                  icon={component}
-                  iconKey={key}
-                  label={label}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Usage Example */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Usage Examples</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Individual Icon Import:</h4>
-              <code className="text-sm text-gray-700">
-                {`import ChanterelleSvgIcon from './components/icons/ChanterelleSvgIcon';`}
-              </code>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Direct Usage:</h4>
-              <code className="text-sm text-gray-700">
-                {`<ChanterelleSvgIcon size={24} className="text-yellow-500" />`}
-              </code>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">With Helper (from index):</h4>
-              <code className="text-sm text-gray-700">
-                {`import { getForagingIcon } from './components/icons';
-const icon = getForagingIcon('elderberry', { size: 24 });`}
-              </code>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Popular Danish Foraging Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>About Danish Foraging</CardTitle>
-          </CardHeader>
-          <CardContent className="prose prose-sm max-w-none">
-            <p className="text-gray-600">
-              Denmark offers excellent foraging opportunities throughout the year. These icons represent some of the most 
-              popular and commonly found edible mushrooms and berries in Danish forests, parks, and coastal areas.
-            </p>
-            
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Best Mushroom Seasons:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>Chanterelles:</strong> July - October</li>
-                  <li><strong>Porcini:</strong> August - November</li>
-                  <li><strong>Oyster Mushrooms:</strong> October - March</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Best Berry Seasons:</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>Elderberries:</strong> August - September</li>
-                  <li><strong>Sea Buckthorn:</strong> September - October</li>
-                  <li><strong>Rose Hips:</strong> September - November</li>
-                  <li><strong>Lingonberries:</strong> August - September</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* The sheet portals to <body>, so it follows the app-level theme (toggle .dark on <html> to verify dark). */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent side="bottom" className="mx-auto max-w-md">
+          <div className="flex items-center justify-between border-b border-line2 px-6 pt-2 pb-4">
+            <SheetTitle className="text-[23px] text-ink m-0">Nyt fund</SheetTitle>
+            <SheetClose asChild>
+              <Button variant="secondary" size="icon-sm" aria-label="Luk"><X /></Button>
+            </SheetClose>
+          </div>
+          <div className="space-y-5 px-6 py-5">
+            <SheetDescription className="text-[15px] text-ink2 m-0">
+              Sheet-chrome fra designet: 28px topradius, grab handle, mørk scrim og rise/fade-animationer.
+            </SheetDescription>
+            <div className="space-y-2">
+              <Label htmlFor="sheet-notes">Noter</Label>
+              <Textarea id="sheet-notes" placeholder="Fx: under birketræerne, tre store eksemplarer…" />
+            </div>
+            <Button size="lg" className="w-full" onClick={() => setSheetOpen(false)}>Gem fund</Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
