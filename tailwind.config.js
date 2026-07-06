@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -29,7 +30,26 @@ module.exports = {
         "input-background": "var(--input-background)",
         "switch-background": "var(--switch-background)",
         ring: "var(--ring)",
-        
+
+        // Design tokens (Skovens Skatte redesign)
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        ink: "var(--ink)",
+        ink2: "var(--ink2)",
+        faint: "var(--faint)",
+        line: "var(--line)",
+        line2: "var(--line2)",
+        "accent-ink": "var(--accent-ink)",
+        brand: "var(--brand)",
+        "brand-ink": "var(--brand-ink)",
+        mono: "var(--mono)",
+        "pin-ring": "var(--pin-ring)",
+        "map-bg": "var(--map-bg)",
+        "map-land": "var(--map-land)",
+        "map-water": "var(--map-water)",
+        "map-line": "var(--map-line)",
+        "map-trail": "var(--map-trail)",
+
         // Foraging app specific colors
         "forest-green": "var(--forest-green)",
         "light-green": "var(--light-green)",
@@ -104,6 +124,20 @@ module.exports = {
           "0%": { opacity: "1" },
           "100%": { opacity: "0" },
         },
+        // Design keyframes (Skovens Skatte redesign)
+        "ss-pulse": {
+          "0%": { boxShadow: "0 0 0 0 var(--pulse, rgba(47, 74, 50, 0.35))" },
+          "70%": { boxShadow: "0 0 0 14px rgba(0, 0, 0, 0)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(0, 0, 0, 0)" },
+        },
+        "ss-rise": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
+        "ss-fade": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         // Desktop slide animations (horizontal)
@@ -119,6 +153,10 @@ module.exports = {
         // Fade animations
         "fade-in": "fade-in 0.2s ease-out",
         "fade-out": "fade-out 0.2s ease-in",
+        // Design animations (Skovens Skatte redesign)
+        "ss-pulse": "ss-pulse 2.4s infinite",
+        "ss-rise": "ss-rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "ss-fade": "ss-fade 0.2s ease",
       },
     },
   },

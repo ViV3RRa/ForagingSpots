@@ -2,89 +2,137 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens from the "Skovens Skatte" redesign (Claude Design project,
+ * LIGHT/DARK constants in `Skovens Skatte.dc.html`). Light palette on :root,
+ * dark palette on `.dark` (toggled on <html> by ThemeContext).
+ */
 :root {
   --font-size: 14px;
-  --background: #fafaf9;
-  --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+
+  /* Design palette — LIGHT */
+  --bg: #f4efe3;
+  --surface: #faf6ec;
+  --ink: #23301f;
+  --ink2: #5f5b50;
+  --muted: #8a8577;
+  --faint: #a09a8c;
+  --line: #ddd0b4;
+  --line2: #e3d9c2;
+  --accent: #b5502f;
+  --accent-ink: #f4efe3;
+  --brand: #2f4a32;
+  --brand-ink: #f4efe3;
+  --mono: #a08b5f;
+  --pin-ring: #f4efe3;
+  --map-bg: #e6ddc6;
+  --map-land: #d3ddc0;
+  --map-water: #bcd0e0;
+  --map-line: #cabf9f;
+  --map-trail: #c9a15f;
+  --shadow: rgba(80, 70, 40, 0.14);
+  --pulse: rgba(47, 74, 50, 0.35);
+
+  /* shadcn/Tailwind semantic tokens mapped onto the design palette */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-ink);
+  --secondary: var(--surface);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--accent-ink);
+  --destructive: var(--accent);
+  --destructive-foreground: var(--accent-ink);
+  --border: var(--line);
+  --input: var(--line);
+  --input-background: var(--surface);
+  --switch-background: var(--line);
+  --ring: var(--accent);
+  --chart-1: var(--accent);
+  --chart-2: var(--brand);
+  --chart-3: var(--mono);
+  --chart-4: var(--map-trail);
+  --chart-5: var(--muted);
+  --radius: 0.625rem;
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-ink);
+  --sidebar-accent: var(--bg);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
+
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 
-  /* Foraging App Colors */
-  --forest-green: #4CAF50;
-  --light-green: #9CCC65;
-  --mushroom-brown: #8D6E63;
-  --earth-background: #fafaf9;
-  --forest-dark: #2E7D32;
+  /* Legacy foraging tokens remapped onto the new palette (removed in cleanup 4.2) */
+  --forest-green: var(--brand);
+  --light-green: var(--map-land);
+  --mushroom-brown: var(--mono);
+  --earth-background: var(--bg);
+  --forest-dark: var(--ink);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  /* Design palette — DARK */
+  --bg: #1c261b;
+  --surface: #273226;
+  --ink: #f0e9d6;
+  --ink2: #c8d3bf;
+  --muted: #9fae94;
+  --faint: #8a9880;
+  --line: #3a4a34;
+  --line2: #31402c;
+  --accent: #c9a24b;
+  --accent-ink: #273226;
+  --brand: #c9a24b;
+  --brand-ink: #273226;
+  --mono: #c9a24b;
+  --pin-ring: #f0e9d6;
+  --map-bg: #1c261b;
+  --map-land: #233020;
+  --map-water: #1f3540;
+  --map-line: #31402c;
+  --map-trail: #c9a24b;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --pulse: rgba(201, 162, 75, 0.4);
+}
+
+/* Design keyframes (also registered as Tailwind animations in tailwind.config.js) */
+@keyframes ss-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--pulse, rgba(47, 74, 50, 0.35));
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes ss-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes ss-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @layer base {
@@ -157,21 +205,21 @@ html {
   font-size: var(--font-size);
 }
 
-/* Custom Foraging App Styles */
+/* Legacy gradient/shadow helpers remapped onto the new palette (removed in cleanup 4.2) */
 .forest-gradient {
   background: linear-gradient(135deg, var(--forest-green) 0%, var(--light-green) 100%);
 }
 
 .earth-gradient {
-  background: linear-gradient(135deg, var(--earth-background) 0%, #f5f5f4 100%);
+  background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
 }
 
 .mushroom-shadow {
-  box-shadow: 0 4px 12px rgba(141, 110, 99, 0.1);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .forest-shadow {
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 /* iOS Safe Area Support */
@@ -179,29 +227,29 @@ html {
   .safe-area-top {
     padding-top: max(env(safe-area-inset-top), 0px);
   }
-  
+
   .safe-area-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
-  
+
   .safe-area-left {
     padding-left: max(env(safe-area-inset-left), 0px);
   }
-  
+
   .safe-area-right {
     padding-right: max(env(safe-area-inset-right), 0px);
   }
-  
+
   .safe-area-x {
     padding-left: max(env(safe-area-inset-left), 0px);
     padding-right: max(env(safe-area-inset-right), 0px);
   }
-  
+
   .safe-area-y {
     padding-top: max(env(safe-area-inset-top), 0px);
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
-  
+
   .safe-area-all {
     padding-top: max(env(safe-area-inset-top), 0px);
     padding-right: max(env(safe-area-inset-right), 0px);
@@ -220,7 +268,7 @@ html {
     -ms-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
-  
+
   /* Ensure full viewport usage */
   #root {
     min-height: 100vh;
@@ -229,14 +277,14 @@ html {
     max-width: 100vw;
     overflow-x: hidden;
   }
-  
+
   /* Fix iOS zoom issues */
   html {
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
-  
+
   /* Prevent iOS Safari from zooming on input focus */
   input, select, textarea {
     font-size: 16px !important;

@@ -4,6 +4,7 @@ import SignInScreen from './components/SignInScreen';
 import MainMapScreen from './components/MainMapScreen';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from './hooks/useForagingSpots';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
@@ -152,11 +153,13 @@ function AppContent() {
 
 export default function App() {
   return (
-    <div className="safe-area-all">
-      <AuthProvider>
-        <AppContent />
-        <PWAUpdatePrompt />
-      </AuthProvider>
-    </div>
+    <ThemeProvider>
+      <div className="safe-area-all">
+        <AuthProvider>
+          <AppContent />
+          <PWAUpdatePrompt />
+        </AuthProvider>
+      </div>
+    </ThemeProvider>
   );
 }
