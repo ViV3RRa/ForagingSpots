@@ -10,6 +10,7 @@ import SpotListView from './SpotListView';
 import { OfflineBanner } from './OfflineBanner';
 import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
 import { getForagingSpotConfig } from './icons';
+import { useUserLocation } from '../hooks/useUserLocation';
 import { useUpdateSpot } from '../hooks/useForagingSpots';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
@@ -34,7 +35,7 @@ export default function MainMapScreen({
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
-  const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
+  const { position: currentPosition } = useUserLocation();
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
@@ -59,71 +60,18 @@ export default function MainMapScreen({
   // Track if we've initialized the map position with user's location
   const [hasInitializedUserPosition, setHasInitializedUserPosition] = useState(false);
 
-  // Continuously track user's GPS position
+  // Center the map on the user the first time a GPS fix arrives (position
+  // tracking itself lives in the shared useUserLocation hook)
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      // Get initial position
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userPosition = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setCurrentPosition(userPosition);
-          
-          // Only set initial map position if we haven't done so yet
-          if (!hasInitializedUserPosition) {
-            setMapViewState({
-              longitude: userPosition.lng,
-              latitude: userPosition.lat,
-              zoom: 18 // Use a reasonable zoom level for user location
-            });
-            setHasInitializedUserPosition(true);
-          }
-        },
-        (error) => {
-          console.warn('Initial geolocation error:', error.message);
-          setCurrentPosition(null);
-          setHasInitializedUserPosition(true);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000 // 1 minute
-        }
-      );
-
-      // Set up continuous location tracking
-      const watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const userPosition = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setCurrentPosition(userPosition);
-        },
-        (error) => {
-          console.warn('Location tracking error:', error.message);
-          // Don't set position to null on watch errors, keep the last known position
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 30000 // 30 seconds
-        }
-      );
-
-      // Cleanup function to stop watching location
-      return () => {
-        navigator.geolocation.clearWatch(watchId);
-      };
-    } else {
-      console.warn('Geolocation is not supported by this browser');
-      setCurrentPosition(null);
+    if (currentPosition && !hasInitializedUserPosition) {
+      setMapViewState({
+        longitude: currentPosition.lng,
+        latitude: currentPosition.lat,
+        zoom: 18 // Use a reasonable zoom level for user location
+      });
       setHasInitializedUserPosition(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run once on mount
+  }, [currentPosition, hasInitializedUserPosition]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAddSpot = (type: ForagingType, notes: string, coordinates: Coordinates, images: File[], _existingImageFilenames?: string[]) => {
@@ -255,7 +203,6 @@ export default function MainMapScreen({
         {viewMode === 'map' ? (
           <MapView
             foragingSpots={filteredSpots}
-            currentPosition={currentPosition}
             onPinClick={setSelectedSpot}
             centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
             initialViewState={mapViewState}
@@ -266,12 +213,14 @@ export default function MainMapScreen({
             foragingSpots={filteredSpots}
             activeFilters={activeFilters}
             searchQuery={searchQuery}
+            totalSpots={foragingSpots.length}
             onSpotClick={handleSpotClick}
             onEdit={(spot) => setEditingSpot(spot)}
             onDelete={onDeleteSpot}
             onShare={handleSpotClick}
             onViewOnMap={handleViewOnMap}
             onFilterClick={() => setShowFilterDialog(true)}
+            onAddClick={() => setShowAddModal(true)}
             totalTypes={getTotalForagingTypes()}
           />
         )}

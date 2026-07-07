@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
-import type { ForagingSpot, Coordinates, ForagingSpotWithPending } from '../lib/types';
+import type { ForagingSpot, ForagingSpotWithPending } from '../lib/types';
 import { TreePine, Compass } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
+import { useUserLocation } from '../hooks/useUserLocation';
 import TypeBadge from './TypeBadge';
 import { PendingSyncIcon } from './PendingSyncBadge';
 
@@ -29,7 +30,6 @@ function LocateIcon() {
 
 interface MapViewProps {
   foragingSpots: ForagingSpot[];
-  currentPosition: Coordinates | null;
   onPinClick: (spot: ForagingSpot) => void;
   centerOnSpot?: ForagingSpot | null;
   initialViewState?: { longitude: number; latitude: number; zoom: number };
@@ -38,7 +38,6 @@ interface MapViewProps {
 
 export default function MapView({
   foragingSpots,
-  currentPosition,
   onPinClick,
   centerOnSpot,
   initialViewState,
@@ -46,6 +45,7 @@ export default function MapView({
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
+  const { position: currentPosition } = useUserLocation();
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
