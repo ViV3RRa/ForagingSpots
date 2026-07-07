@@ -108,7 +108,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.1 Welcome screen | [subtasks/2.1-welcome-screen.md](subtasks/2.1-welcome-screen.md) | ✅ Done (2026-07-06) |
 | 2.2 Sign-in screens | [subtasks/2.2-signin-screens.md](subtasks/2.2-signin-screens.md) | ✅ Done (2026-07-07) |
 | 2.3 App chrome | [subtasks/2.3-app-chrome.md](subtasks/2.3-app-chrome.md) | ✅ Done (2026-07-07) |
-| 2.4 Map view | [subtasks/2.4-map-view.md](subtasks/2.4-map-view.md) | |
+| 2.4 Map view | [subtasks/2.4-map-view.md](subtasks/2.4-map-view.md) | ✅ Done (2026-07-07) |
 | 2.5 List view + empty state + distance | [subtasks/2.5-list-view.md](subtasks/2.5-list-view.md) | |
 | 2.6 Detail drawer | [subtasks/2.6-detail-drawer.md](subtasks/2.6-detail-drawer.md) | |
 | 2.7 Add/edit sheet | [subtasks/2.7-add-edit-sheet.md](subtasks/2.7-add-edit-sheet.md) | |

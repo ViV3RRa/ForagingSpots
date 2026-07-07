@@ -2,11 +2,30 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, Coordinates, ForagingSpotWithPending } from '../lib/types';
-import { TreePine, Compass, Locate, LocateFixed } from 'lucide-react';
+import { TreePine, Compass } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
-import { getForagingSpotConfig } from './icons';
+import TypeBadge from './TypeBadge';
 import { PendingSyncIcon } from './PendingSyncBadge';
+
+/* Crosshair icon from the design's LOCATE button (same glyph in both states, colors invert) */
+function LocateIcon() {
+  return (
+    <svg
+      width="23"
+      height="23"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3.4" />
+      <path d="M12 2v3.2M12 18.8V22M2 12h3.2M18.8 12H22" />
+    </svg>
+  );
+}
 
 interface MapViewProps {
   foragingSpots: ForagingSpot[];
@@ -15,17 +34,15 @@ interface MapViewProps {
   centerOnSpot?: ForagingSpot | null;
   initialViewState?: { longitude: number; latitude: number; zoom: number };
   onViewStateChange?: (viewState: { longitude: number; latitude: number; zoom: number }) => void;
-  onCenterOnUserLocation?: () => void;
 }
 
-export default function MapView({ 
-  foragingSpots, 
-  currentPosition, 
-  onPinClick, 
-  centerOnSpot, 
+export default function MapView({
+  foragingSpots,
+  currentPosition,
+  onPinClick,
+  centerOnSpot,
   initialViewState,
-  onViewStateChange,
-  onCenterOnUserLocation
+  onViewStateChange
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
@@ -73,31 +90,16 @@ export default function MapView({
     }
   }, []);
 
-  // Update view state when initialViewState changes (e.g., when user location is obtained)
+  // Sync view state from the parent only before the map has loaded (e.g. the
+  // first GPS fix arriving between mount and load). After load, all camera
+  // changes are animated by this component (auto-follow, locate, centerOnSpot);
+  // reacting to the prop here would just restart those animations, since the
+  // parent echoes every move back through onViewStateChange.
   useEffect(() => {
-    if (initialViewState && mapRef.current && mapLoaded) {
-      // Check if the new view state is significantly different from current state
-      const isSignificantChange = 
-        Math.abs(initialViewState.longitude - viewState.longitude) > 0.01 ||
-        Math.abs(initialViewState.latitude - viewState.latitude) > 0.01 ||
-        Math.abs(initialViewState.zoom - viewState.zoom) > 1;
-
-      if (isSignificantChange) {
-        // Use flyTo for smooth animation to user's location
-        mapRef.current.flyTo({
-          center: [initialViewState.longitude, initialViewState.latitude],
-          zoom: initialViewState.zoom,
-          duration: 2000 // 2 second smooth animation
-        });
-        
-        // Also update local state
-        setViewState(initialViewState);
-      }
-    } else if (initialViewState && !mapLoaded) {
-      // If map isn't loaded yet, just update the state
+    if (initialViewState && !mapLoaded) {
       setViewState(initialViewState);
     }
-  }, [initialViewState, mapLoaded, viewState.longitude, viewState.latitude, viewState.zoom]);
+  }, [initialViewState, mapLoaded]);
 
   // Follow user location when enabled and location changes
   useEffect(() => {
@@ -239,7 +241,18 @@ export default function MapView({
         onMove={evt => {
           setViewState(evt.viewState);
           setBearing(evt.viewState.bearing || 0);
-          
+
+          // Any user gesture (drag, pinch, keyboard) breaks GPS-follow.
+          // Programmatic moves (follow easing, fly-to) carry no originalEvent.
+          // Scroll-wheel zoom is the exception — its move events lack
+          // originalEvent, so it's caught by onWheel below.
+          if (evt.originalEvent) {
+            setHasUserInteracted(true);
+            if (isFollowingUser) {
+              setIsFollowingUser(false);
+            }
+          }
+
           // Notify parent of view state changes
           if (onViewStateChange) {
             onViewStateChange({
@@ -249,11 +262,8 @@ export default function MapView({
             });
           }
         }}
-        onDrag={() => {
-          // Mark that user has interacted with the map
+        onWheel={() => {
           setHasUserInteracted(true);
-          
-          // Detect user drag interaction - stop following
           if (isFollowingUser) {
             setIsFollowingUser(false);
           }
@@ -264,77 +274,67 @@ export default function MapView({
         mapStyle={getMapStyle(theme)}
       >
         
-        {/* Custom Location Button — bottom-right above the FAB per the new chrome (restyled in subtask 2.4) */}
-        {onCenterOnUserLocation && (
-          <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] right-[24px] z-10">
-            <button
-              onClick={() => {
-                if (mapRef.current && currentPosition) {
-                  mapRef.current.flyTo({
-                    center: [currentPosition.lng, currentPosition.lat],
-                    zoom: 18,
-                    duration: 1500
-                  });
-                }
-                
-                // Enable following
-                setIsFollowingUser(true);
-                
-                onCenterOnUserLocation();
-              }}
-              className={'bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 rounded-md p-2 shadow-md transition-colors duration-200 mb-2'}
-              title={currentPosition && isFollowingUser ? "Følger din position" : "Centrer på min position"}
-            >
-              {currentPosition && isFollowingUser ? (
-                <LocateFixed className="h-5 w-5" />
-              ) : (
-                <Locate className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        )}
+        {/* Locate button — 52px circle above the FAB; active GPS-follow inverts to brand colors */}
+        <button
+          onClick={() => {
+            if (mapRef.current && currentPosition) {
+              mapRef.current.flyTo({
+                center: [currentPosition.lng, currentPosition.lat],
+                zoom: 18,
+                duration: 1500
+              });
+            }
 
-        {/* Custom Compass Button - animate opacity based on bearing */}
-        <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+152px)] right-[24px] z-10">
-          <button
-            onClick={() => {
-              if (mapRef.current) {
-                mapRef.current.flyTo({
-                  bearing: 0, // Reset to north
-                  pitch: 0,   // Reset pitch to flat
-                  duration: 500
-                });
-              }
-            }}
-            className="bg-white hover:bg-gray-50 border border-gray-300 rounded-md p-2 shadow-md transition-all duration-300 mb-2"
-            title="Reset to north"
+            // Enable following
+            setIsFollowingUser(true);
+          }}
+          className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] transition-colors duration-200 active:scale-95 ${
+            currentPosition && isFollowingUser
+              ? 'bg-brand text-brand-ink'
+              : 'bg-surface text-brand'
+          }`}
+          title={currentPosition && isFollowingUser ? "Følger din position" : "Centrer på min position"}
+        >
+          <LocateIcon />
+        </button>
+
+        {/* Compass button — appears when the map is rotated, resets bearing to north */}
+        <button
+          onClick={() => {
+            if (mapRef.current) {
+              mapRef.current.flyTo({
+                bearing: 0, // Reset to north
+                pitch: 0,   // Reset pitch to flat
+                duration: 500
+              });
+            }
+          }}
+          className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+156px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line bg-surface text-brand shadow-[0_6px_16px_var(--shadow)]"
+          title="Reset to north"
+          style={{
+            opacity: bearing === 0 ? 0 : 1,
+            transition: 'opacity 0.3s ease-in-out',
+            pointerEvents: bearing === 0 ? 'none' : 'auto'
+          }}
+        >
+          <Compass
+            className="h-[23px] w-[23px]"
+            strokeWidth={1.8}
             style={{
-              opacity: bearing === 0 ? 0 : 1,
-              transition: 'opacity 0.3s ease-in-out',
-              pointerEvents: bearing === 0 ? 'none' : 'auto'
+              transform: `rotate(${bearing - 45}deg)`,
+              transition: 'transform 0.3s ease-out'
             }}
-          >
-            <Compass 
-              className="h-5 w-5 text-gray-600" 
-              style={{
-                transform: `rotate(${bearing - 45}deg)`,
-                transition: 'transform 0.3s ease-out'
-              }}
-            />
-          </button>
-        </div>
+          />
+        </button>
 
-        {/* Current Position Marker - only show if we have a valid location */}
+        {/* Current position dot — brand color with pin ring and pulse */}
         {currentPosition && (
           <Marker
             longitude={currentPosition.lng}
             latitude={currentPosition.lat}
             anchor="center"
           >
-            <div className="relative">
-              <div className="h-4 w-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse" />
-              <div className="absolute -inset-2 border-2 border-blue-400 rounded-full animate-ping opacity-75" />
-            </div>
+            <div className="size-4 animate-ss-pulse rounded-full border-[3px] border-pin-ring bg-brand" />
           </Marker>
         )}
 
@@ -344,6 +344,8 @@ export default function MapView({
           const { cluster: isCluster, point_count: pointCount } = cluster.properties;
 
           if (isCluster) {
+            // The design defines no cluster treatment — derived from its pin language:
+            // brand circle, --pin-ring border, Spectral 600 count
             return (
               <Marker
                 key={`cluster-${cluster.id}`}
@@ -353,21 +355,15 @@ export default function MapView({
               >
                 <button
                   onClick={() => handleClusterClick(cluster.id as number, longitude, latitude)}
-                  className="transition-all duration-300 hover:scale-110 z-10 flex flex-col items-center"
+                  className="flex size-[52px] items-center justify-center rounded-full border-[3px] border-pin-ring bg-brand font-serif text-[17px] font-semibold text-brand-ink shadow-[inset_0_0_0_2px_rgba(255,255,255,0.2),0_4px_10px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-110"
                 >
-                  <div className="h-12 w-12 bg-green-600 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow">
-                    <span className="text-sm">{pointCount}</span>
-                  </div>
-                  <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm">
-                    {pointCount} spots
-                  </div>
+                  {pointCount}
                 </button>
               </Marker>
             );
           }
 
           const spot = cluster.properties.spot as ForagingSpotWithPending;
-          const config = getForagingSpotConfig(spot.type, 20);
           const isPending = spot._pending;
           const hasError = !!spot._syncError;
 
@@ -376,24 +372,14 @@ export default function MapView({
               key={spot.id}
               longitude={longitude}
               latitude={latitude}
-              anchor="center"
+              anchor="bottom"
             >
               <button
                 onClick={() => onPinClick(spot)}
-                className="transition-all duration-300 hover:scale-110 z-10 flex flex-col items-center"
+                className="relative transition-transform duration-300 hover:scale-110"
               >
-                <div className="relative">
-                  <div
-                    className={`h-12 w-12 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white font-bold hover:shadow-xl transition-shadow ${isPending ? 'opacity-80' : ''}`}
-                    style={config.background}
-                  >
-                    {config.icon}
-                  </div>
-                  {isPending && <PendingSyncIcon hasError={hasError} />}
-                </div>
-                <div className="mt-1 px-2 py-1 bg-white/90 backdrop-blur rounded text-xs font-medium text-gray-700 shadow-sm whitespace-nowrap">
-                  {config.label}
-                </div>
+                <TypeBadge type={spot.type} size={52} stem className={isPending ? 'opacity-80' : undefined} />
+                {isPending && <PendingSyncIcon hasError={hasError} />}
               </button>
             </Marker>
           );

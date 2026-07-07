@@ -9,6 +9,8 @@ interface TypeBadgeProps {
   size?: number;
   /** Draw the --pin-ring border. The design omits it on list/filter rows. */
   ring?: boolean;
+  /** Map-pin variant: adds the small --pin-ring stem below the badge (52px pins get 9px, ≥60px get 12px). */
+  stem?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -18,26 +20,43 @@ interface TypeBadgeProps {
  * gradient, --pin-ring border, inner white highlight, and drop shadow.
  * Used by map pins, list rows, detail header, type grid, and filter rows.
  */
-export default function TypeBadge({ type, size = 52, ring = true, className, style }: TypeBadgeProps) {
+export default function TypeBadge({ type, size = 52, ring = true, stem = false, className, style }: TypeBadgeProps) {
   const config = getForagingSpotConfig(type, Math.round(size * 0.66));
   const ringWidth = size >= 60 ? 4 : 3;
   const highlightWidth = size >= 60 ? 3 : 2;
 
-  return (
+  const badge = (
     <div
       role="img"
       aria-label={config.label}
-      className={cn('flex shrink-0 items-center justify-center rounded-full', className)}
+      className={cn('flex shrink-0 items-center justify-center rounded-full', !stem && className)}
       style={{
         width: size,
         height: size,
         ...config.background,
         border: ring ? `${ringWidth}px solid var(--pin-ring)` : undefined,
         boxShadow: `inset 0 0 0 ${highlightWidth}px rgba(255,255,255,0.3), 0 4px 10px rgba(0,0,0,0.25)`,
-        ...style,
+        ...(!stem && style),
       }}
     >
       {config.icon}
+    </div>
+  );
+
+  if (!stem) return badge;
+
+  return (
+    <div className={cn('flex flex-col items-center', className)} style={style}>
+      {badge}
+      <div
+        aria-hidden
+        style={{
+          width: 2,
+          height: size >= 60 ? 12 : 9,
+          background: 'var(--pin-ring)',
+          marginTop: -1,
+        }}
+      />
     </div>
   );
 }

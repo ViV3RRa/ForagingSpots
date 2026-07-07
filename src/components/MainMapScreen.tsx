@@ -238,16 +238,6 @@ export default function MainMapScreen({
     setMapViewState(newViewState);
   };
 
-  const handleCenterOnUserLocation = () => {
-    if (currentPosition) {
-      setMapViewState({
-        longitude: currentPosition.lng,
-        latitude: currentPosition.lat,
-        zoom: 18 // Zoom in closer when user manually centers
-      });
-    }
-  };
-
   // Search (driven by the floating top bar) filters both map pins and list rows
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredSpots = foragingSpots.filter(spot => {
@@ -270,7 +260,6 @@ export default function MainMapScreen({
             centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
             initialViewState={mapViewState}
             onViewStateChange={handleMapViewStateChange}
-            onCenterOnUserLocation={handleCenterOnUserLocation}
           />
         ) : (
           <SpotListView
