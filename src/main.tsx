@@ -20,28 +20,25 @@ import '@fontsource/space-mono/latin-400.css'
 import '@fontsource/space-mono/latin-700.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './styles/tokens.css'
+import { registerSW } from 'virtual:pwa-register'
 import App from './App.tsx'
 
-// Register service worker for PWA functionality
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then((registration) => {
-        console.log('SW registered: ', registration)
-        
-        // Check for updates immediately
+// Register service worker for PWA functionality. The virtual module resolves
+// the correct SW URL per environment (/dev-sw.js?dev-sw in dev, /sw.js in prod);
+// the update UX itself is handled by PWAUpdatePrompt.
+registerSW({
+  onRegisteredSW(_swUrl, registration) {
+    if (registration) {
+      // Check for updates every 60 seconds
+      setInterval(() => {
         registration.update()
-        
-        // Then check for updates every 60 seconds
-        setInterval(() => {
-          registration.update()
-        }, 60000)
-      })
-      .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError)
-      })
-  })
-}
+      }, 60000)
+    }
+  },
+  onRegisterError(error) {
+    console.log('SW registration failed: ', error)
+  },
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
