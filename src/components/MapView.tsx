@@ -264,9 +264,9 @@ export default function MapView({
         mapStyle={getMapStyle(theme)}
       >
         
-        {/* Custom Location Button */}
+        {/* Custom Location Button — bottom-right above the FAB per the new chrome (restyled in subtask 2.4) */}
         {onCenterOnUserLocation && (
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] right-[24px] z-10">
             <button
               onClick={() => {
                 if (mapRef.current && currentPosition) {
@@ -295,7 +295,7 @@ export default function MapView({
         )}
 
         {/* Custom Compass Button - animate opacity based on bearing */}
-        <div className="absolute top-16 right-3 z-10">
+        <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+152px)] right-[24px] z-10">
           <button
             onClick={() => {
               if (mapRef.current) {

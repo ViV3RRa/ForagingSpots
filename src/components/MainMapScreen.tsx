@@ -5,11 +5,11 @@ import AddEditModal from './AddEditModal';
 import PinDetailsDrawer from './PinDetailsDrawer';
 import MapView from './MapView';
 import type { User as NewUser, ForagingSpot, ForagingType, Coordinates } from '../lib/types';
-import FilterButton from './FilterButton';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
 import { OfflineBanner } from './OfflineBanner';
 import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
+import { getForagingSpotConfig } from './icons';
 import { useUpdateSpot } from '../hooks/useForagingSpots';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
@@ -36,6 +36,7 @@ export default function MainMapScreen({
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
   const [currentPosition, setCurrentPosition] = useState<Coordinates | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(getAllForagingTypesSet());
   const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
@@ -247,42 +248,35 @@ export default function MainMapScreen({
     }
   };
 
-  const filteredSpots = foragingSpots.filter(spot => activeFilters.has(spot.type));
+  // Search (driven by the floating top bar) filters both map pins and list rows
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredSpots = foragingSpots.filter(spot => {
+    if (!activeFilters.has(spot.type)) return false;
+    if (normalizedSearch === '') return true;
+    return (
+      (spot.notes ?? '').toLowerCase().includes(normalizedSearch) ||
+      getForagingSpotConfig(spot.type).label.toLowerCase().includes(normalizedSearch)
+    );
+  });
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 safe-area-x">
-      <TopBar
-        user={user}
-        onSignOut={onSignOut}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-      />
-
-      <OfflineBanner />
-
-      <div className="flex-1 relative">
+    <div className="relative h-screen overflow-hidden bg-bg">
+      <div className="absolute inset-0">
         {viewMode === 'map' ? (
-          <>
-            <MapView 
-              foragingSpots={filteredSpots}
-              currentPosition={currentPosition}
-              onPinClick={setSelectedSpot}
-              centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
-              initialViewState={mapViewState}
-              onViewStateChange={handleMapViewStateChange}
-              onCenterOnUserLocation={handleCenterOnUserLocation}
-            />
-            
-            <FilterButton
-              onClick={() => setShowFilterDialog(true)}
-              activeFilters={activeFilters}
-              totalTypes={getTotalForagingTypes()}
-            />
-          </>
+          <MapView
+            foragingSpots={filteredSpots}
+            currentPosition={currentPosition}
+            onPinClick={setSelectedSpot}
+            centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
+            initialViewState={mapViewState}
+            onViewStateChange={handleMapViewStateChange}
+            onCenterOnUserLocation={handleCenterOnUserLocation}
+          />
         ) : (
           <SpotListView
             foragingSpots={filteredSpots}
             activeFilters={activeFilters}
+            searchQuery={searchQuery}
             onSpotClick={handleSpotClick}
             onEdit={(spot) => setEditingSpot(spot)}
             onDelete={onDeleteSpot}
@@ -292,9 +286,27 @@ export default function MainMapScreen({
             totalTypes={getTotalForagingTypes()}
           />
         )}
-        
-        <FloatingActionButton onClick={() => setShowAddModal(true)} />
       </div>
+
+      <TopBar
+        user={user}
+        onSignOut={onSignOut}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onFilterClick={() => setShowFilterDialog(true)}
+        hasActiveFilters={activeFilters.size < getTotalForagingTypes()}
+      />
+
+      {/* Floats below the top bar instead of pushing content (restyled in subtask 3.2) */}
+      <div className="absolute inset-x-0 top-[calc(max(14px,env(safe-area-inset-top))+62px)] z-10">
+        <OfflineBanner />
+      </div>
+
+      {viewMode === 'map' && currentPosition && <LocationChip position={currentPosition} />}
+
+      <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+
+      <FloatingActionButton onClick={() => setShowAddModal(true)} />
 
       {showAddModal && currentPosition && (
         <AddEditModal
@@ -338,6 +350,46 @@ export default function MainMapScreen({
         activeFilters={activeFilters}
         onApplyFilters={handleApplyFilters}
       />
+    </div>
+  );
+}
+
+interface ViewToggleProps {
+  viewMode: 'map' | 'list';
+  onViewModeChange: (mode: 'map' | 'list') => void;
+}
+
+// Bottom-centered Kort/Liste pill; active tab is ink-filled in light, gold in dark
+function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
+  return (
+    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+24px)] left-1/2 z-10 flex -translate-x-1/2 rounded-[16px] border border-line bg-surface p-[5px] shadow-[0_6px_18px_var(--shadow)]">
+      {([['map', 'Kort'], ['list', 'Liste']] as const).map(([mode, label]) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onViewModeChange(mode)}
+          className={`rounded-[12px] px-[24px] py-[9px] font-serif text-[14px] font-semibold transition-colors ${
+            viewMode === mode
+              ? 'bg-ink text-bg dark:bg-accent dark:text-accent-ink'
+              : 'text-ink2'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// The design shows a reverse-geocoded locality name ("Silkeborg Skov") here; the
+// app has no reverse geocoding, so we show the user's coarse coordinates instead.
+function LocationChip({ position }: { position: Coordinates }) {
+  const label = `${Math.abs(position.lat).toFixed(3)}° ${position.lat >= 0 ? 'N' : 'S'}, ${Math.abs(position.lng).toFixed(3)}° ${position.lng >= 0 ? 'Ø' : 'V'}`;
+
+  return (
+    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] left-[max(18px,env(safe-area-inset-left))] z-10 flex items-center gap-[8px] rounded-[12px] border border-line bg-surface px-[13px] py-[8px] shadow-[0_3px_10px_var(--shadow)]">
+      <span className="size-[9px] shrink-0 rounded-full bg-brand" />
+      <span className="font-mono text-[11px] text-ink2">{label}</span>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
@@ -15,6 +14,8 @@ import { PendingSyncBadge } from './PendingSyncBadge';
 interface SpotListViewProps {
   foragingSpots: ForagingSpot[];
   activeFilters: Set<ForagingType>;
+  /** Search lives in the floating TopBar; spots arrive already search-filtered. */
+  searchQuery: string;
   onSpotClick: (spot: ForagingSpot) => void;
   onEdit: (spot: ForagingSpot) => void;
   onDelete: (spotId: string) => void;
@@ -29,6 +30,7 @@ type SortOption = 'newest' | 'oldest' | 'type' | 'location';
 export default function SpotListView({
   foragingSpots,
   activeFilters,
+  searchQuery,
   onSpotClick,
   onEdit,
   onDelete,
@@ -37,7 +39,6 @@ export default function SpotListView({
   onFilterClick,
   totalTypes
 }: SpotListViewProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [spotToDelete, setSpotToDelete] = useState<ForagingSpot | null>(null);
 
@@ -59,16 +60,9 @@ export default function SpotListView({
     setSpotToDelete(null);
   };
 
-  // Filter spots based on active filters and search
+  // Filter spots based on active filters (search is applied upstream in MainMapScreen)
   const filteredAndSortedSpots = useMemo(() => {
-    const filtered = foragingSpots.filter(spot => {
-      const matchesFilter = activeFilters.has(spot.type);
-      const matchesSearch = searchQuery === '' || 
-        spot.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getForagingSpotConfig(spot.type).label.toLowerCase().includes(searchQuery.toLowerCase());
-
-      return matchesFilter && matchesSearch;
-    });
+    const filtered = foragingSpots.filter(spot => activeFilters.has(spot.type));
 
     // Sort spots
     switch (sortBy) {
@@ -88,7 +82,7 @@ export default function SpotListView({
     }
 
     return filtered;
-  }, [foragingSpots, activeFilters, searchQuery, sortBy]);
+  }, [foragingSpots, activeFilters, sortBy]);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('da-DK', {
@@ -106,20 +100,10 @@ export default function SpotListView({
   };
 
   return (
-    <div className="h-full bg-earth-background">
-      {/* Search and Filter Bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4 space-y-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Søg blandt skatte..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
+    // Top padding clears the floating TopBar; search itself lives up there now
+    <div className="h-full overflow-y-auto bg-bg pt-[calc(max(14px,env(safe-area-inset-top))+62px)]">
+      {/* Sort and Filter Bar (fully restyled in subtask 2.5) */}
+      <div className="border-b border-line p-4">
         {/* Sort, Filter and Stats */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -161,8 +145,8 @@ export default function SpotListView({
         </div>
       </div>
 
-      {/* Spots List */}
-      <div className="p-4 space-y-3 pb-20">
+      {/* Spots List — bottom padding clears the view toggle and FAB */}
+      <div className="p-4 space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+130px)]">
         {filteredAndSortedSpots.length > 0 ? (
           <>
             {filteredAndSortedSpots.map((spot) => {

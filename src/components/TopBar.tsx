@@ -1,97 +1,122 @@
-import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { TreePine, LogOut, Map, List } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Search, Filter, LogOut, Sun, Moon, Monitor } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
+import type { ThemePreference } from '../contexts/ThemeContext';
 import type { User } from '../lib/types';
 import pb from '../lib/pocketbase';
 
 interface TopBarProps {
   user: User;
   onSignOut: () => void;
-  viewMode: 'map' | 'list';
-  onViewModeChange: (mode: 'map' | 'list') => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onFilterClick: () => void;
+  hasActiveFilters: boolean;
 }
 
-export default function TopBar({ user, onSignOut, viewMode, onViewModeChange }: TopBarProps) {
-  // Helper function to get avatar URL from Pocketbase
-  const getAvatarUrl = (user: User) => {
-    if (user.avatar) {
-      const baseUrl = pb.baseURL;
-      return `${baseUrl}/api/files/users/${user.id}/${user.avatar}?thumb=60x60`;
-    }
-    return null;
-  };
+/**
+ * Floating top bar over the map/list: search field, square filter button and
+ * brand avatar (user menu with theme toggle + logout), on a gradient scrim
+ * that fades the content underneath.
+ */
+export default function TopBar({
+  user,
+  onSignOut,
+  searchQuery,
+  onSearchChange,
+  onFilterClick,
+  hasActiveFilters,
+}: TopBarProps) {
+  const { preference, setPreference } = useTheme();
 
-  const avatarUrl = getAvatarUrl(user);
+  const avatarUrl = user.avatar
+    ? `${pb.baseURL}/api/files/users/${user.id}/${user.avatar}?thumb=96x96`
+    : null;
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        {/* Logo and title */}
-        <div className="flex items-center">
-          <div className="flex items-center text-green-700 mr-3">
-            <TreePine className="h-6 w-6" />
-          </div>
-          <h1 className="text-lg font-bold text-gray-800">Mine Skatte</h1>
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-bg to-transparent pb-[24px] pt-[max(14px,env(safe-area-inset-top))]">
+      <div className="pointer-events-auto flex items-center gap-[10px] pl-[max(24px,env(safe-area-inset-left))] pr-[max(24px,env(safe-area-inset-right))]">
+        {/* Search */}
+        <div className="flex h-[48px] flex-1 items-center gap-[9px] rounded-[14px] border border-line bg-surface px-[15px] shadow-[0_3px_10px_var(--shadow)]">
+          <Search className="size-[17px] shrink-0 text-mono" strokeWidth={1.8} />
+          <input
+            type="text"
+            enterKeyHint="search"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Søg blandt fund…"
+            aria-label="Søg blandt fund"
+            className="h-full w-full min-w-0 bg-transparent font-serif text-[14.5px] text-ink outline-none placeholder:text-muted"
+          />
         </div>
 
-        {/* View Toggle and User menu */}
-        <div className="flex items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('map')}
-              className={`h-8 px-3 ${viewMode === 'map' 
-                ? 'bg-forest-green text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Map className="h-4 w-4 mr-1" />
-              Kort
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('list')}
-              className={`h-8 px-3 ${viewMode === 'list' 
-                ? 'bg-forest-green text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <List className="h-4 w-4 mr-1" />
-              Liste
-            </Button>
-          </div>
-        </div>
+        {/* Filter */}
+        <button
+          type="button"
+          onClick={onFilterClick}
+          aria-label="Filtrér fund"
+          className="relative flex size-[48px] shrink-0 items-center justify-center rounded-[14px] border border-line bg-surface text-brand shadow-[0_3px_10px_var(--shadow)]"
+        >
+          <Filter className="size-[18px]" strokeWidth={1.8} />
+          {hasActiveFilters && (
+            <span className="absolute right-[9px] top-[9px] size-[8px] rounded-full bg-accent" />
+          )}
+        </button>
 
-        {/* User menu */}
+        {/* Avatar + user menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-              <Avatar className="h-10 w-10">
+            <button
+              type="button"
+              aria-label="Brugermenu"
+              className="size-[48px] shrink-0 overflow-hidden rounded-full border-2 border-pin-ring shadow-[0_0_0_1px_var(--line)]"
+            >
+              <Avatar className="size-full">
                 {avatarUrl && (
-                  <AvatarImage 
-                    src={avatarUrl} 
-                    alt={user.name}
-                    className="object-cover"
-                  />
+                  <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />
                 )}
-                <AvatarFallback className="bg-green-100 text-green-700">
+                <AvatarFallback className="bg-brand font-serif text-[18px] font-semibold text-brand-ink">
                   {user.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-            </Button>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <div className="flex items-center justify-start gap-2 p-2">
-              <div className="flex flex-col space-y-1 leading-none">
-                <p className="font-medium text-sm">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
-              </div>
+          <DropdownMenuContent className="w-56" align="end">
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium text-ink">{user.name}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
-            <DropdownMenuItem onClick={onSignOut} className="text-red-600 focus:text-red-600">
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="label-mono">Tema</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={preference}
+              onValueChange={(value) => setPreference(value as ThemePreference)}
+            >
+              <DropdownMenuRadioItem value="light">
+                <Sun className="mr-2 h-4 w-4" />
+                Lyst
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">
+                <Moon className="mr-2 h-4 w-4" />
+                Mørkt
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system">
+                <Monitor className="mr-2 h-4 w-4" />
+                Følg system
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onSignOut} className="text-accent focus:text-accent">
               <LogOut className="mr-2 h-4 w-4" />
               Log ud
             </DropdownMenuItem>
