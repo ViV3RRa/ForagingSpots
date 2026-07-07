@@ -4,6 +4,21 @@ import type { ForagingSpot, ForagingSpotCreate, ForagingSpotUpdate, PocketBaseLi
 
 // API service functions for foraging spots CRUD operations
 
+// Parse a list of records, skipping (and warning about) invalid ones so a
+// single malformed record can't blank the whole map/list
+function parseSpotRecords(records: unknown[]): ForagingSpot[] {
+  const spots: ForagingSpot[] = [];
+  for (const record of records) {
+    const result = ForagingSpotSchema.safeParse(record);
+    if (result.success) {
+      spots.push(result.data);
+    } else {
+      console.warn('Skipping invalid foraging spot record:', record, result.error);
+    }
+  }
+  return spots;
+}
+
 export const foragingSpotsApi = {
   // Fetch all foraging spots for the current user
   async getAll(): Promise<ForagingSpot[]> {
@@ -13,16 +28,7 @@ export const foragingSpotsApi = {
         expand: 'user',
       });
       
-      // Debug logging
-      console.log('Raw foraging spots from API:', records);
-      
-      // Validate and parse each record with Zod
-      return records.map(record => {
-        console.log('Processing record:', record);
-        const parsed = ForagingSpotSchema.parse(record);
-        console.log('Parsed record:', parsed);
-        return parsed;
-      });
+      return parseSpotRecords(records);
     } catch (error) {
       console.error('Failed to fetch foraging spots:', error);
       throw new Error('Failed to fetch foraging spots');
@@ -38,7 +44,7 @@ export const foragingSpotsApi = {
       });
 
       // Validate and parse each record
-      const validatedItems = result.items.map(record => ForagingSpotSchema.parse(record));
+      const validatedItems = parseSpotRecords(result.items);
 
       return {
         page: result.page,
@@ -231,7 +237,7 @@ export const foragingSpotsApi = {
         filter,
       });
       
-      return records.map(record => ForagingSpotSchema.parse(record));
+      return parseSpotRecords(records);
     } catch (error) {
       console.error('Failed to fetch filtered foraging spots:', error);
       throw new Error('Failed to fetch filtered foraging spots');

@@ -36,10 +36,12 @@ export const ForagingSpotSchema = z.object({
   type: ForagingTypeSchema,
   coordinates: CoordinatesSchema,
   notes: z.string().optional(),
-  images: z.array(z.string()).default([]), // Array of file URLs
+  // PocketBase returns null (not undefined) for empty file/JSON fields, so
+  // normalize null to [] instead of relying on .default()
+  images: z.array(z.string()).nullish().transform(v => v ?? []), // Array of file URLs
   created: z.string(),
   updated: z.string(),
-  sharedWith: z.array(z.string()).default([]), // Array of usernames for sharing
+  sharedWith: z.array(z.string()).nullish().transform(v => v ?? []), // Array of usernames for sharing
   // Pocketbase expand fields (populated when using expand query)
   expand: z.object({
     user: UserSchema.optional(),
