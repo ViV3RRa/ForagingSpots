@@ -179,7 +179,7 @@ export default function PinDetailsDrawer({
     <button
       type="button"
       onClick={() => handleImageClick(index)}
-      className={`relative overflow-hidden rounded-[16px] bg-line2 ${className}`}
+      className={`relative overflow-hidden bg-line2 ${className}`}
     >
       <img
         src={thumbnailUrls[index]}
@@ -191,7 +191,7 @@ export default function PinDetailsDrawer({
         }}
       />
       {index === 0 && imageCount >= 3 && (
-        <span className="absolute bottom-[10px] left-[10px] rounded-[8px] bg-[rgba(20,15,8,0.55)] px-[9px] py-[4px] font-mono text-[11px] text-[#f4efe3]">
+        <span className="absolute bottom-[10px] left-[10px] rounded-[20px] bg-[rgba(20,15,8,0.42)] px-[9px] py-[4px] font-mono text-[10px] tracking-[0.08em] text-white">
           {imageCount} fotos
         </span>
       )}
@@ -205,7 +205,7 @@ export default function PinDetailsDrawer({
       onClick={onEdit}
       disabled={isEditDisabled}
       aria-label="Tilføj foto"
-      className={`flex items-center justify-center gap-[8px] rounded-[16px] border-2 border-dashed border-line text-muted transition-colors hover:border-mono hover:text-mono disabled:pointer-events-none disabled:opacity-50 ${className}`}
+      className={`flex items-center justify-center gap-[8px] border border-dashed border-line bg-surface text-faint transition-colors hover:border-mono hover:text-mono disabled:pointer-events-none disabled:opacity-50 ${className}`}
     >
       <Plus className="size-[22px]" strokeWidth={1.8} />
       {withLabel && <span className="font-mono text-[11px] uppercase tracking-[0.1em]">Tilføj foto</span>}
@@ -220,7 +220,7 @@ export default function PinDetailsDrawer({
           className="max-h-[88%] bg-bg sm:mx-auto sm:max-w-[520px]"
         >
           {spot ? (
-            <div className="flex-1 overflow-y-auto overflow-x-hidden px-[22px] pb-[28px] pt-[8px]">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-[26px] pb-[26px] pt-[14px]">
               {/* Header: 72px badge + Spectral 26px name */}
               <div className="flex items-center gap-[16px]">
                 <TypeBadge type={spot.type} size={72} />
@@ -240,16 +240,18 @@ export default function PinDetailsDrawer({
               {(imageCount > 0 || canAddImage) && (
                 <div className="mt-[20px]">
                   {imageCount === 0 ? (
-                    addTile('h-[96px] w-full', true)
+                    addTile('h-[96px] w-full rounded-[14px]', true)
                   ) : (
-                    <div className="flex h-[200px] gap-[10px]">
-                      {photoTile(0, 'flex-[1.7]')}
+                    <div className="flex h-[130px] gap-[8px]">
+                      {photoTile(0, 'flex-[1.7] rounded-[14px]')}
                       {imageCount === 1 ? (
-                        canAddImage && addTile('flex-1')
+                        canAddImage && addTile('flex-1 rounded-[12px]')
                       ) : (
-                        <div className="flex flex-1 flex-col gap-[10px]">
-                          {photoTile(1, 'flex-1')}
-                          {imageCount >= 3 ? photoTile(2, 'flex-1') : canAddImage && addTile('flex-1')}
+                        <div className="flex flex-1 flex-col gap-[8px]">
+                          {photoTile(1, 'flex-1 rounded-[12px]')}
+                          {imageCount >= 3
+                            ? photoTile(2, 'flex-1 rounded-[12px]')
+                            : canAddImage && addTile('flex-1 rounded-[12px]')}
                         </div>
                       )}
                     </div>
@@ -258,32 +260,37 @@ export default function PinDetailsDrawer({
               )}
 
               {/* Meta rows: Space Mono labels, hairline dividers */}
-              <div className="mt-[20px] border-b border-t border-line2">
-                <div className="flex items-center justify-between gap-[12px] py-[15px]">
-                  <MonoLabel>Koordinater</MonoLabel>
-                  <span className="flex min-w-0 items-center gap-[12px]">
-                    <span className="truncate font-mono text-[12.5px] text-ink">
+              <div className="mt-[22px]">
+                {isOwner && !isEditDisabled ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationPicker(true)}
+                    className="flex w-full items-center justify-between gap-[12px] border-b border-line2 py-[13px] text-left"
+                  >
+                    <MonoLabel>Koordinater</MonoLabel>
+                    <span className="flex min-w-0 items-center gap-[8px]">
+                      <span className="truncate font-mono text-[13px] text-ink">
+                        {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
+                      </span>
+                      <span className="shrink-0 font-serif text-[12px] text-accent">Redigér ›</span>
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-between gap-[12px] border-b border-line2 py-[13px]">
+                    <MonoLabel>Koordinater</MonoLabel>
+                    <span className="truncate font-mono text-[13px] text-ink">
                       {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
                     </span>
-                    {isOwner && !isEditDisabled && (
-                      <button
-                        type="button"
-                        onClick={() => setShowLocationPicker(true)}
-                        className="shrink-0 font-serif text-[14px] font-semibold text-accent"
-                      >
-                        Redigér ›
-                      </button>
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-[12px] border-t border-line2 py-[15px]">
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-[12px] border-b border-line2 py-[13px]">
                   <MonoLabel>Fundet</MonoLabel>
-                  <span className="text-[14.5px] font-medium text-ink">{formatFoundDate(spot.created)}</span>
+                  <span className="font-serif text-[15px] text-ink">{formatFoundDate(spot.created)}</span>
                 </div>
                 {distance && (
-                  <div className="flex items-center justify-between gap-[12px] border-t border-line2 py-[15px]">
+                  <div className="flex items-center justify-between gap-[12px] border-b border-line2 py-[13px]">
                     <MonoLabel>Afstand</MonoLabel>
-                    <span className="text-[14.5px] font-medium text-ink">{distance}</span>
+                    <span className="font-serif text-[15px] text-ink">{distance}</span>
                   </div>
                 )}
               </div>
@@ -292,7 +299,7 @@ export default function PinDetailsDrawer({
               {spot.notes && (
                 <div className="mt-[20px]">
                   <MonoLabel>Noter</MonoLabel>
-                  <p className="mt-[8px] font-serif text-[16px] leading-[1.65] text-ink2">{spot.notes}</p>
+                  <p className="mt-[7px] font-serif text-[15.5px] leading-[1.6] text-ink2">{spot.notes}</p>
                 </div>
               )}
 
@@ -307,7 +314,7 @@ export default function PinDetailsDrawer({
               {/* Action row: wide primary + 52px square icon buttons */}
               {isOwner && (
                 <>
-                  <div className="mt-[24px] flex gap-[10px]">
+                  <div className="mt-[26px] flex gap-[10px]">
                     <Button
                       variant="brand"
                       disabled={isEditDisabled}
@@ -318,7 +325,7 @@ export default function PinDetailsDrawer({
                       Redigér fund
                     </Button>
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="icon-lg"
                       onClick={handleShareButtonClick}
                       aria-label="Del fund"
@@ -326,7 +333,7 @@ export default function PinDetailsDrawer({
                       <Share />
                     </Button>
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="icon-lg"
                       disabled={isEditDisabled}
                       onClick={handleDeleteClick}
