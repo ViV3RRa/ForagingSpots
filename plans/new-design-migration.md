@@ -85,6 +85,11 @@ Navigation stays state-driven in `App.tsx` / `MainMapScreen.tsx` (no router intr
 | Photo lightbox | `ImageViewer.tsx` | 2.10 |
 | Delete confirm | `ConfirmationDialog.tsx` | 2.11 |
 | Map error card | `MapView.tsx` (+ `MainMapScreen.tsx` chrome) | 2.12 |
+| List toolbar, sort menu, row action sheet | `SpotListView.tsx` | 2.13 |
+| Map cluster + compass | `MapView.tsx` | 2.14 |
+| Sign-in error/loading states | `SignInScreen.tsx`, `SignUpScreen.tsx` | 2.15 |
+| Top-bar filter dot + photo avatar | `TopBar.tsx` | 2.16 |
+| Detail gallery buckets, share section, offline lock | `PinDetailsDrawer.tsx` | 2.17 |
 | Location permission priming (new) | new component | 3.1 |
 | Offline banner | `OfflineBanner.tsx`, `PendingSyncBadge.tsx` | 3.2 |
 | PWA install sheet | `PWAInstallPrompt.tsx` | 3.3 |
@@ -119,6 +124,11 @@ token values from the Claude Design project via MCP before writing code.
 | 2.10 Photo lightbox | [subtasks/2.10-photo-lightbox.md](subtasks/2.10-photo-lightbox.md) | |
 | 2.11 Delete confirmation | [subtasks/2.11-delete-confirm.md](subtasks/2.11-delete-confirm.md) | |
 | 2.12 Map error state | [subtasks/2.12-map-error.md](subtasks/2.12-map-error.md) | |
+| 2.13 List toolbar, sort menu & row action sheet | [subtasks/2.13-list-toolbar-rowmenu.md](subtasks/2.13-list-toolbar-rowmenu.md) | |
+| 2.14 Map cluster & compass | [subtasks/2.14-map-cluster-compass.md](subtasks/2.14-map-cluster-compass.md) | |
+| 2.15 Sign-in error & loading states | [subtasks/2.15-signin-states.md](subtasks/2.15-signin-states.md) | |
+| 2.16 Top-bar states | [subtasks/2.16-topbar-states.md](subtasks/2.16-topbar-states.md) | |
+| 2.17 Detail drawer states (reconciliation) | [subtasks/2.17-detail-states.md](subtasks/2.17-detail-states.md) | |
 | 3.1 Location permission screen | [subtasks/3.1-permission-screen.md](subtasks/3.1-permission-screen.md) | |
 | 3.2 Offline banner & sync badge | [subtasks/3.2-offline-banner.md](subtasks/3.2-offline-banner.md) | |
 | 3.3 PWA install sheet | [subtasks/3.3-install-sheet.md](subtasks/3.3-install-sheet.md) | |
@@ -397,6 +407,29 @@ hard-coded English red error screen in `MapView.tsx`. Design ref: `isMapError` b
   `showFab`/`isMapReady` logic); keep top bar and view toggle. Needs the error state surfaced to
   `MainMapScreen.tsx`.
 
+### 2.13–2.17 Missing-element designs (added 2026-07-08)
+
+The 1.1–2.6 implementations included provisional token-styled treatments for elements the mock
+didn't show (see `plans/claude-design-brief-missing-elements.md`). Canonical designs for all of
+them now exist in the design file; these subtasks reconcile the code:
+
+- **2.13 List toolbar, sort menu & row action sheet** — count + custom sort popover (replaces
+  the shadcn Select), row meta chip row (shared "Delt · N" chip), and the design's bottom action
+  sheet replacing the row `DropdownMenu`. Design refs: `isList` toolbar, `sortOpen`, `isRowMenu`.
+- **2.14 Map cluster & compass** — canonical cluster marker (brand circle + halo ring) and the
+  compass-rose reset-north button. Design refs: cluster comment in `isMap`, `isCompass`.
+- **2.15 Sign-in error & loading states** — accent-tinted error card, spinner CTA (`ss-spin`
+  keyframe), Danish copy. Design refs: `signinErr`, `signinLoading`.
+- **2.16 Top-bar states** — filter active-dot and photo-avatar variant. Design refs:
+  `filterActive`, `avatarPhoto`.
+- **2.17 Detail drawer states** — gallery buckets `g0`–`g5` (add tile under max, "+N" overlay at
+  max), redesigned share section (always-visible @-input, user rows, "Kun dig" empty card), and
+  the amber offline-lock notice with dimmed actions. Design refs: `showDetail` gallery/share,
+  `detailLocked`.
+
+Pending-sync chips and pin indicators were also designed; they belong to subtask 3.2
+(`PendingSyncBadge`/`PendingSyncIcon`), whose spec has been updated accordingly.
+
 ---
 
 ## Phase 3 — PWA & system surfaces
@@ -501,7 +534,9 @@ Verify visual quality at all badge sizes.
   (search, sort, distance) → detail (gallery, lightbox, edit location, share, delete) → add flow
   (type grid, photo, save) → filter → offline mode (banner, pending sync) → install prompt →
   update toast → theme toggle + system theme change → map error card (invalid/missing token) →
-  success/error toasts (save, delete, failed mutation).
+  success/error toasts (save, delete, failed mutation) → list sort menu + row action sheet →
+  map cluster + compass (rotate) → sign-in error/loading → detail gallery at 0/1/2/3/5 photos →
+  share section (empty + populated) → offline-locked detail.
 
 ---
 
