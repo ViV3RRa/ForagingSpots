@@ -1,165 +1,190 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
-import { Separator } from './ui/separator';
-import{ FORAGING_TYPES, type ForagingType } from './types';
+import { useState, useEffect, useMemo } from 'react';
 import { Check } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { getForagingSpotConfig } from './icons';
+import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
+import { Button } from './ui/button';
+import { MonoLabel } from './ui/MonoLabel';
+import TypeBadge from './TypeBadge';
+import { FORAGING_TYPES, type ForagingType } from './types';
+import type { ForagingSpot } from '../lib/types';
+import { getDanishLabel } from '../utils/danishLabels';
+import { getAllForagingTypesSet, getTypesInCategory, type ForagingCategory } from '../utils/foragingTypes';
 
 interface FilterDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Used to derive the species checklist from the types present in the user's finds. */
+  spots: ForagingSpot[];
   activeFilters: Set<ForagingType>;
   onApplyFilters: (filters: Set<ForagingType>) => void;
 }
 
-export default function FilterDialog({ 
-  open, 
-  onOpenChange, 
-  activeFilters, 
-  onApplyFilters 
-}: FilterDialogProps) {
-  // Local state for temporary filter selections
-  const [tempFilters, setTempFilters] = useState<Set<ForagingType>>(new Set(activeFilters));
+type CategoryKey = 'all' | Extract<ForagingCategory, 'mushroom' | 'berry'>;
 
-  // Reset temp filters when dialog opens or activeFilters change
+const CATEGORY_SEGMENTS: ReadonlyArray<{ key: CategoryKey; label: string }> = [
+  { key: 'all', label: 'Alle' },
+  { key: 'mushroom', label: 'Svampe' },
+  { key: 'berry', label: 'Bær' },
+];
+
+// Highlight the segment that exactly matches the current selection; any other
+// mix (including partial toggles) falls back to "Alle".
+function deriveCategory(filters: Set<ForagingType>): CategoryKey {
+  const matches = (types: ForagingType[]) =>
+    filters.size === types.length && types.every((type) => filters.has(type));
+  if (matches(getTypesInCategory('mushroom'))) return 'mushroom';
+  if (matches(getTypesInCategory('berry'))) return 'berry';
+  return 'all';
+}
+
+export default function FilterDialog({
+  open,
+  onOpenChange,
+  spots,
+  activeFilters,
+  onApplyFilters
+}: FilterDialogProps) {
+  // Local state for temporary filter selections; applied on "Vis resultater"
+  const [tempFilters, setTempFilters] = useState<Set<ForagingType>>(new Set(activeFilters));
+  const [category, setCategory] = useState<CategoryKey>(deriveCategory(activeFilters));
+
+  // Reset temp state when the sheet opens or activeFilters change
   useEffect(() => {
     if (open) {
       setTempFilters(new Set(activeFilters));
+      setCategory(deriveCategory(activeFilters));
     }
   }, [open, activeFilters]);
 
-  const handleFilterToggle = (type: ForagingType) => {
-    setTempFilters(prev => {
-      const newFilters = new Set(prev);
-      if (newFilters.has(type)) {
-        newFilters.delete(type);
+  // Species rows are driven by the types present in the user's spots (in
+  // FORAGING_TYPES order), falling back to all types when there are no spots.
+  const speciesTypes = useMemo(() => {
+    const present = new Set(spots.map((spot) => spot.type));
+    const presentInOrder = FORAGING_TYPES.filter((type) => present.has(type));
+    return presentInOrder.length > 0 ? presentInOrder : [...FORAGING_TYPES];
+  }, [spots]);
+
+  // Bulk-select over the full type list (not just visible rows) so hidden
+  // types stay consistent with the chosen category on the map and list.
+  const handleCategorySelect = (key: CategoryKey) => {
+    setCategory(key);
+    setTempFilters(key === 'all' ? getAllForagingTypesSet() : new Set(getTypesInCategory(key)));
+  };
+
+  // Individual toggles keep the category highlight as-is (mock behavior)
+  const handleSpeciesToggle = (type: ForagingType) => {
+    setTempFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
       } else {
-        newFilters.add(type);
+        next.add(type);
       }
-      return newFilters;
+      return next;
     });
   };
 
-  const handleShowAll = () => {
-    setTempFilters(new Set(FORAGING_TYPES));
-  };
-
-  const handleHideAll = () => {
-    setTempFilters(new Set());
+  const handleReset = () => {
+    setCategory('all');
+    setTempFilters(getAllForagingTypesSet());
   };
 
   const handleApply = () => {
-    onApplyFilters(tempFilters);
+    onApplyFilters(new Set(tempFilters));
     onOpenChange(false);
   };
 
+  // Scrim tap / swipe-down discards temp changes (state re-syncs on next open)
   const handleCancel = () => {
-    setTempFilters(new Set(activeFilters)); // Reset to original filters
     onOpenChange(false);
   };
+
   return (
-    <Dialog open={open} onOpenChange={handleCancel}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-forest-green">🗂️</span>
-            Filtrer typer af skatte
-          </DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
+      <SheetContent
+        side="bottom"
+        handle={false}
+        className="max-h-[86%] bg-bg sm:mx-auto sm:max-w-[520px]"
+      >
+        {/* Header: Spectral 23px title + accent reset link */}
+        <div className="flex shrink-0 items-center justify-between border-b border-line2 px-[24px] pb-[14px] pt-[20px]">
+          <SheetTitle className="text-[23px] font-semibold leading-none text-ink">
+            Filtrér
+          </SheetTitle>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="font-serif text-[14px] text-accent transition-opacity hover:opacity-80"
+          >
+            Nulstil
+          </button>
+        </div>
 
-        <div className="space-y-4">
-          {/* Filter summary and quick actions */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <span>
-              {tempFilters.size} af {FORAGING_TYPES.length} typer valgt
-            </span>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleShowAll}
-                variant="ghost"
-                size="sm"
-                className="h-auto py-1 px-2 text-xs text-forest-green hover:text-forest-dark"
-              >
-                Alle
-              </Button>
-              <Button
-                onClick={handleHideAll}
-                variant="ghost"
-                size="sm"
-                className="h-auto py-1 px-2 text-xs text-gray-600 hover:text-gray-700"
-              >
-                Ingen
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Filter options - scrollable */}
-          <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
-            {FORAGING_TYPES.map((type) => {
-              const { label, icon, background, description } = getForagingSpotConfig(type, 18);
-              const isActive = tempFilters.has(type);
-              
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[20px] pt-[20px]">
+          {/* Kategori: three equal segments, active = accent fill */}
+          <MonoLabel className="mb-[12px] block">Kategori</MonoLabel>
+          <div className="mb-[22px] flex gap-[9px]">
+            {CATEGORY_SEGMENTS.map(({ key, label }) => {
+              const active = category === key;
               return (
                 <button
-                  key={type}
-                  onClick={() => handleFilterToggle(type)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
-                    isActive
-                      ? 'bg-forest-green/5 border-forest-green/30 shadow-sm'
-                      : 'bg-gray-50/50 border-gray-200 hover:bg-gray-100/50'
+                  key={key}
+                  type="button"
+                  onClick={() => handleCategorySelect(key)}
+                  aria-pressed={active}
+                  className={`h-[46px] flex-1 rounded-[13px] border border-line font-serif text-[14.5px] font-semibold transition-colors ${
+                    active ? 'bg-accent text-accent-ink' : 'bg-surface text-ink2'
                   }`}
                 >
-                  {/* Icon */}
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white shadow-sm`} style={background}>
-                    {typeof icon === 'string' ? (
-                      <span className="text-lg">{icon}</span>
-                    ) : (
-                      <div className="text-white">{type === 'other' ? null : icon}</div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 text-left">
-                    <div className="font-medium text-gray-900">{label}</div>
-                    <div className="text-xs text-gray-500">{description}</div>
-                  </div>
-
-                  {/* Check indicator */}
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                    isActive 
-                      ? 'border-forest-green bg-forest-green' 
-                      : 'border-gray-300'
-                  }`}>
-                    {isActive && <Check className="w-3 h-3 text-white" />}
-                  </div>
+                  {label}
                 </button>
               );
             })}
           </div>
 
-          <Separator />
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <Button
-              onClick={handleCancel}
-              variant="outline"
-              className="flex-1"
-            >
-              Annuller
-            </Button>
-            <Button
-              onClick={handleApply}
-              className="flex-1 bg-forest-green hover:bg-forest-dark"
-            >
-              Filtrer
-            </Button>
+          {/* Arter: checklist rows with 44px badge + square accent checkbox */}
+          <MonoLabel className="mb-[8px] block">Arter</MonoLabel>
+          <div className="flex flex-col">
+            {speciesTypes.map((type) => {
+              const checked = tempFilters.has(type);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleSpeciesToggle(type)}
+                  role="checkbox"
+                  aria-checked={checked}
+                  className="flex w-full items-center gap-[13px] border-b border-line2 px-[2px] py-[12px] text-left"
+                >
+                  <TypeBadge
+                    type={type}
+                    size={44}
+                    ring={false}
+                    style={{ boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.3)' }}
+                  />
+                  <span className="flex-1 truncate font-serif text-[17px] text-ink">
+                    {getDanishLabel(type)}
+                  </span>
+                  <span
+                    aria-hidden
+                    className={`flex size-[26px] shrink-0 items-center justify-center rounded-[8px] border-[1.5px] transition-colors ${
+                      checked ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-transparent'
+                    }`}
+                  >
+                    {checked && <Check className="size-[15px]" strokeWidth={2.5} />}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Footer: accent apply CTA above a hairline top border */}
+        <div className="shrink-0 border-t border-line2 px-[24px] pb-[20px] pt-[14px]">
+          <Button type="button" size="lg" className="w-full" onClick={handleApply}>
+            Vis resultater
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

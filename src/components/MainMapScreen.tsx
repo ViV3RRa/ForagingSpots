@@ -315,6 +315,7 @@ export default function MainMapScreen({
       <FilterDialog
         open={showFilterDialog}
         onOpenChange={setShowFilterDialog}
+        spots={foragingSpots}
         activeFilters={activeFilters}
         onApplyFilters={handleApplyFilters}
       />
