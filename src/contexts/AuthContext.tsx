@@ -89,35 +89,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return unsubscribe;
   }, []);
 
+  // Note: interactive sign-in/up must not toggle the global `isLoading` — that flag
+  // means "restoring auth on boot" and unmounts the auth screens (App.tsx) when set,
+  // which would drop their local error/loading UI mid-attempt.
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      
       // Authenticate with Pocketbase
       const authData = await pb.collection('users').authWithPassword(email, password);
-      
+
       if (authData.record) {
         const validatedUser = UserSchema.parse(authData.record);
         setUser(validatedUser);
         setIsAuthenticated(true);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Sign in failed:', error);
       setUser(null);
       setIsAuthenticated(false);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signUp = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      
       // Create new user account
       const userData = {
         name,
@@ -144,8 +141,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       setIsAuthenticated(false);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 

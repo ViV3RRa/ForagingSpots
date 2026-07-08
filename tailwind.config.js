@@ -145,6 +145,9 @@ module.exports = {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        "ss-spin": {
+          to: { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         // Desktop slide animations (horizontal)
@@ -164,6 +167,7 @@ module.exports = {
         "ss-pulse": "ss-pulse 2.4s infinite",
         "ss-rise": "ss-rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)",
         "ss-fade": "ss-fade 0.2s ease",
+        "ss-spin": "ss-spin 0.8s linear infinite",
       },
     },
   },

@@ -135,6 +135,12 @@
   }
 }
 
+@keyframes ss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
