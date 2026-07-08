@@ -168,6 +168,35 @@ export default function MainMapScreen({
     }
   };
 
+  // Coordinate-only update from the detail drawer's "Redigér ›" location editor
+  const handleUpdateLocation = (spotId: string, coordinates: Coordinates) => {
+    const spot = foragingSpots.find(s => s.id === spotId);
+    if (!spot) return;
+
+    const updatedSpot = { ...spot, coordinates };
+
+    // Optimistically update the cache (pending spots live in their own store
+    // and are handled by the mutation itself)
+    queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, (oldData) => {
+      if (!oldData) return oldData;
+      return oldData.map(s => (s.id === spotId ? updatedSpot : s));
+    });
+
+    // Update the selected spot state so the open drawer reflects the change
+    if (selectedSpot?.id === spotId) {
+      setSelectedSpot(updatedSpot);
+    }
+
+    updateSpotMutation.mutate(
+      { id: spotId, data: { coordinates } },
+      {
+        onSettled: () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
+        }
+      }
+    );
+  };
+
   const handleApplyFilters = (filters: Set<ForagingType>) => {
     setActiveFilters(filters);
   };
@@ -279,6 +308,7 @@ export default function MainMapScreen({
           }}
           onShare={handleShare}
           onUnshare={handleUnshare}
+          onUpdateLocation={handleUpdateLocation}
         />
       {/* )} */}
 
