@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { Button } from './ui/button';
-import { Card } from './ui/card';
 import { Camera, Upload, X } from 'lucide-react';
 import { compressImageFile, validateImageFile, getOptimalCompressionOptions } from '../utils/imageCompression';
 
@@ -110,123 +109,76 @@ export default function ImageCapture({ images, onImagesChange, maxImages = 5 }: 
   const isProcessing = isCapturing || isCompressing;
 
   return (
-    <div className="space-y-4">
-      {/* Image Preview Grid */}
+    <div className="space-y-[12px]">
+      {/* Thumbnail strip */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-4 gap-[8px]">
           {images.map((image) => (
-            <div key={image.url} className="relative group">
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted border border-border">
+            <div key={image.url} className="relative">
+              <div className="aspect-square overflow-hidden rounded-[12px] bg-line2">
                 <img
                   src={image.url}
-                  alt="Skat billede"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  alt="Foto af fund"
+                  className="h-full w-full object-cover"
                   loading="lazy"
                   onError={(e) => {
                     console.error(`Failed to load image: ${image.url}`, image);
-                    // Add a red border to indicate failed loading
-                    (e.target as HTMLImageElement).style.border = '2px solid red';
-                  }}
-                  onLoad={() => {
-                    console.log(`Successfully loaded image: ${image.url}`);
+                    (e.target as HTMLImageElement).style.opacity = '0.3';
                   }}
                 />
               </div>
               <button
+                type="button"
                 onClick={() => removeImage(image.url)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-full flex items-center justify-center shadow-sm transition-all duration-300 mushroom-shadow"
                 aria-label="Fjern billede"
+                className="absolute right-[5px] top-[5px] flex size-[22px] items-center justify-center rounded-full bg-[rgba(20,15,8,0.55)] text-white transition-colors hover:bg-[rgba(20,15,8,0.75)]"
               >
-                <X className="w-3 h-3" />
+                <X className="size-[12px]" />
               </button>
-              
-              {/* Image overlay info */}
-              {/* <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <p className="text-white text-xs">
-                  {image.timestamp.toLocaleDateString()}
-                </p>
-              </div> */}
             </div>
           ))}
         </div>
       )}
 
       {/* Capture/Select Controls */}
-      {images.length === 0 ? (
-        /* Empty State */
-        <Card className="p-8 text-center border-2 border-dashed border-border bg-gradient-to-br from-forest-green/5 to-light-green/5">
-          <div className="w-16 h-8 bg-forest-green/10 rounded-full flex items-center justify-center mx-auto">
-            <Camera className="w-8 h-8 text-forest-green" />
-          </div>
-          <h3 className="text-lg text-foreground">Tilføj billeder</h3>
-          <p className="text-sm text-muted-foreground">
-            {isCompressing ? 'Komprimerer billeder...' : 'Tag billeder af dine opdagelser for at huske dem bedre'}
-          </p>
-          <div className="flex flex-col gap-3 max-w-sm mx-auto">
-            <Button
-              type="button"
-              onClick={handleCameraCapture}
-              disabled={isProcessing}
-              className="w-full bg-forest-green hover:bg-forest-dark text-white transition-all duration-300 forest-shadow"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {isCapturing ? 'Åbner kamera...' : isCompressing ? 'Behandler...' : 'Tag billede'}
-            </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGallerySelect}
-              disabled={isProcessing}
-              className="w-full border-light-green/30 text-light-green hover:bg-light-green/10 hover:border-light-green transition-all duration-300"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {isCompressing ? 'Behandler...' : 'Vælg fra galleri'}
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        /* Add More Controls */
-        canAddMore && (
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              onClick={handleCameraCapture}
-              disabled={isProcessing}
-              className="flex-1 bg-forest-green/10 border border-forest-green/30 text-forest-green hover:bg-forest-green hover:text-white transition-all duration-300"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {isCapturing ? 'Åbner...' : isCompressing ? 'Behandler...' : 'Kamera'}
-            </Button>
-            
-            <Button
-              type="button"
-              onClick={handleGallerySelect}
-              disabled={isProcessing}
-              className="flex-1 bg-light-green/10 border border-light-green/30 text-light-green hover:bg-light-green hover:text-white transition-all duration-300"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {isCompressing ? 'Behandler...' : 'Vælg fra galleri'}
-            </Button>
-          </div>
-        )
+      {canAddMore && (
+        <div className="flex gap-[10px]">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleCameraCapture}
+            disabled={isProcessing}
+            className="min-w-0 flex-1 text-[15px]"
+          >
+            <Camera strokeWidth={1.6} />
+            {isCapturing ? 'Åbner kamera…' : 'Tilføj foto'}
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleGallerySelect}
+            disabled={isProcessing}
+            className="min-w-0 flex-1 text-[15px]"
+          >
+            <Upload strokeWidth={1.6} />
+            Fra galleri
+          </Button>
+        </div>
       )}
 
       {/* Image count indicator */}
       {images.length > 0 && (
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
-          <span>{images.length} billed{images.length !== 1 ? 'er' : ''} tilføjet</span>
-          <span>{maxImages - images.length} tilbageværende</span>
+        <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-faint">
+          {images.length} / {maxImages} fotos
         </div>
       )}
 
       {/* Processing indicator */}
       {isCompressing && (
-        <div className="text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            <span className="text-sm text-blue-700">Komprimerer billeder...</span>
-          </div>
+        <div className="flex items-center gap-[8px] text-[13px] text-ink2">
+          <div className="size-[14px] animate-spin rounded-full border-2 border-line border-t-mono" />
+          Komprimerer billeder…
         </div>
       )}
 

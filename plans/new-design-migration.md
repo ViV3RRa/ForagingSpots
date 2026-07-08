@@ -118,7 +118,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.4 Map view | [subtasks/2.4-map-view.md](subtasks/2.4-map-view.md) | ✅ Done (2026-07-07) |
 | 2.5 List view + empty state + distance | [subtasks/2.5-list-view.md](subtasks/2.5-list-view.md) | ✅ Done (2026-07-07) |
 | 2.6 Detail drawer | [subtasks/2.6-detail-drawer.md](subtasks/2.6-detail-drawer.md) | ✅ Done (2026-07-08) |
-| 2.7 Add/edit sheet | [subtasks/2.7-add-edit-sheet.md](subtasks/2.7-add-edit-sheet.md) | |
+| 2.7 Add/edit sheet | [subtasks/2.7-add-edit-sheet.md](subtasks/2.7-add-edit-sheet.md) | ✅ Done (2026-07-08) |
 | 2.8 Filter sheet | [subtasks/2.8-filter-sheet.md](subtasks/2.8-filter-sheet.md) | |
 | 2.9 Location editor | [subtasks/2.9-location-editor.md](subtasks/2.9-location-editor.md) | |
 | 2.10 Photo lightbox | [subtasks/2.10-photo-lightbox.md](subtasks/2.10-photo-lightbox.md) | |

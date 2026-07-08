@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { Camera, MapPin, Target } from 'lucide-react';
+import { MonoLabel } from './ui/MonoLabel';
+import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
+import { X } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import LocationPickerModal from './LocationPickerModal';
 import { FORAGING_TYPES } from './types';
 import { getForagingSpotConfig } from './icons';
+import { getDanishLabel } from '../utils/danishLabels';
 import ImageCapture, { type SpotImage } from './ImageCapture';
 
 import { getSpotImageThumbnailUrls } from '../lib/pocketbase';
@@ -21,11 +21,17 @@ interface AddEditModalProps {
   onClose: () => void;
 }
 
+const formatCoordinates = (lat: number, lng: number) =>
+  `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
+
 export default function AddEditModal({ spot, coordinates, onSave, onClose }: AddEditModalProps) {
+  const isEdit = spot !== undefined;
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
   const [notes, setNotes] = useState(spot?.notes || '');
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(coordinates);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [manuallyPicked, setManuallyPicked] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   // Check if this is a pending spot
   const isPendingSpot = spot?.id?.startsWith('pending-') || (spot as ForagingSpotWithPending)?._pending;
@@ -73,163 +79,155 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spot?.id, isPendingSpot]);
 
+  const handleClose = () => {
+    setIsOpen(false);
+    // Wait for the sheet's exit animation before unmounting
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Extract files from images (only new images that have files)
     const newImageFiles = images
       .filter(img => img.file && !img.isExisting)
       .map(img => img.file!)
       .filter(file => file instanceof File);
-    
+
     // Extract existing image filenames that should be kept
     const existingImageFilenames = images
       .filter(img => img.isExisting && img.filename)
       .map(img => img.filename!);
-    
+
     console.log('Submitting with:', {
       newFiles: newImageFiles.length,
       existingFilenames: existingImageFilenames
     });
-    
+
     onSave(selectedType, notes, currentCoordinates, newImageFiles, existingImageFilenames);
   };
 
   const handleLocationUpdate = (newCoordinates: Coordinates) => {
     setCurrentCoordinates(newCoordinates);
+    setManuallyPicked(true);
     setShowLocationPicker(false);
   };
 
+  // "Nuværende" while the add flow still holds the live GPS fix; otherwise
+  // indicate where the coordinates came from
+  const locationHint = manuallyPicked ? 'Valgt manuelt' : isEdit ? 'Gemt placering' : 'Nuværende';
+
   return (
-    <Dialog open onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="flex-shrink-0 p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2">
-            <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(selectedType).background}>
-              {getForagingSpotConfig(selectedType, 20).icon}
-            </div>
-            {spot === undefined ? 'Tilføj skat' : 'Rediger skat'}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+        <SheetContent
+          side="bottom"
+          handle={false}
+          className="max-h-[92%] bg-bg sm:mx-auto sm:max-w-[520px]"
+        >
+          {/* Header: Spectral 23px title + 36px circular close button */}
+          <div className="flex shrink-0 items-center justify-between border-b border-line2 px-[24px] pb-[14px] pt-[20px]">
+            <SheetTitle className="text-[23px] font-semibold leading-none text-ink">
+              {isEdit ? 'Redigér fund' : 'Nyt fund'}
+            </SheetTitle>
+            <button
+              type="button"
+              onClick={handleClose}
+              aria-label="Luk"
+              className="flex size-[36px] shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink2 transition-colors hover:bg-line2"
+            >
+              <X className="size-[16px]" strokeWidth={1.9} />
+            </button>
+          </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 min-h-0">
-            <div className="space-y-6 pb-6">
-              {/* GPS Coordinates */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">GPS lokation</span>
-                  </div>
-                  {spot !== undefined && (
-                    <Button
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            {/* Scrollable content — the CTA lives inside so it stays reachable with the keyboard open */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[24px] pt-[20px]">
+              {/* Type grid: 4 columns, square gradient tiles */}
+              <MonoLabel className="mb-[12px] block">Vælg art</MonoLabel>
+              <div className="grid grid-cols-4 gap-[12px]">
+                {FORAGING_TYPES.map((type) => {
+                  const config = getForagingSpotConfig(type, 34);
+                  const selected = type === selectedType;
+                  return (
+                    <button
+                      key={type}
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowLocationPicker(true)}
-                      className="text-xs px-2 py-1 h-auto"
+                      onClick={() => setSelectedType(type)}
+                      aria-pressed={selected}
+                      className="flex flex-col items-center gap-[6px]"
                     >
-                      <Target className="h-3 w-3 mr-1" />
-                      Rediger
-                    </Button>
-                  )}
-                </div>
-                <div className="text-sm text-gray-600 font-mono">
-                  {currentCoordinates.lat.toFixed(6)}, {currentCoordinates.lng.toFixed(6)}
-                </div>
-                {spot !== undefined && (currentCoordinates.lat !== coordinates.lat || currentCoordinates.lng !== coordinates.lng) && (
-                  <div className="mt-2 text-xs text-green-600 font-medium">
-                    Lokation redigeret
-                  </div>
-                )}
+                      <div
+                        className="flex aspect-square w-full items-center justify-center rounded-[16px]"
+                        style={{
+                          ...config.background,
+                          border: `3px solid ${selected ? 'var(--accent)' : 'transparent'}`,
+                          boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.3)',
+                        }}
+                      >
+                        {config.icon}
+                      </div>
+                      <span className="text-center text-[10.5px] leading-[1.15] text-ink2">
+                        {getDanishLabel(type)}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="space-y-6">
+              {/* Placering: surface field with pulsing brand dot, opens the location picker */}
+              <MonoLabel className="mb-[8px] mt-[24px] block">Placering</MonoLabel>
+              <button
+                type="button"
+                onClick={() => setShowLocationPicker(true)}
+                className="flex h-[52px] w-full items-center gap-[10px] rounded-[14px] border border-line bg-surface px-[15px] text-left transition-colors hover:border-mono"
+              >
+                <span className="size-[9px] shrink-0 animate-ss-pulse rounded-full bg-brand" />
+                <span className="truncate font-mono text-[13px] text-ink">
+                  {formatCoordinates(currentCoordinates.lat, currentCoordinates.lng)}
+                </span>
+                <span className="ml-auto shrink-0 font-serif text-[12px] text-mono">{locationHint}</span>
+              </button>
 
-              {/* What did you find? */}
-              <div className="space-y-2">
-                <Label htmlFor="type">Hvad har du fundet?</Label>
-                <Select value={selectedType} onValueChange={(e) => setSelectedType(e as ForagingType)}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto">
-                    {FORAGING_TYPES.map(type => {
-                      const config = getForagingSpotConfig(type, 10);
-                      return (
-                        <SelectItem key={type} value={type} className="flex items-center">
-                          <div className="flex items-center gap-2">
-                              <div className={`h-6 w-6 rounded-full flex items-center justify-center !text-white flex-shrink-0 shadow-sm`} style={getForagingSpotConfig(type).background}>
-                                {config.icon}
-                              </div>
-                            <span>{config.label}</span>
-                          </div>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Noter */}
+              <label htmlFor="notes" className="mb-[8px] mt-[22px] block">
+                <MonoLabel>Noter</MonoLabel>
+              </label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Fx: under birketræerne, tre store eksemplarer…"
+              />
 
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">Note (valgfri)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Tilføj detaljer om placeringen, mængden, størrelsen osv."
-                  className="min-h-[100px] resize-none"
-                />
-              </div>
-
-              {/* Images */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-forest-green" />
-                  Billeder
-                </Label>
+              {/* Foto */}
+              <div className="mt-[16px]">
                 <ImageCapture
                   images={images}
                   onImagesChange={setImages}
                   maxImages={5}
                 />
               </div>
-            </div>
-          </div>
-        </div>
 
-          <DialogFooter>
-            <div className="flex gap-3 p-6 pt-0 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="flex-1"
-              >
-                Fortryd
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {spot === undefined ? 'Gem skat' : 'Opdater skat'}
+              {/* Accent CTA */}
+              <Button type="submit" size="lg" className="mt-[20px] w-full">
+                {isEdit ? 'Gem ændringer' : 'Gem fund'}
               </Button>
             </div>
-          </DialogFooter>
-        </form>
+          </form>
+        </SheetContent>
+      </Sheet>
 
-        {/* Location Picker Modal */}
-        {showLocationPicker && (
-          <LocationPickerModal
-            initialCoordinates={currentCoordinates}
-            onSave={handleLocationUpdate}
-            onClose={() => setShowLocationPicker(false)}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+      {/* Location Picker Modal */}
+      {showLocationPicker && (
+        <LocationPickerModal
+          initialCoordinates={currentCoordinates}
+          onSave={handleLocationUpdate}
+          onClose={() => setShowLocationPicker(false)}
+        />
+      )}
+    </>
   );
 }
