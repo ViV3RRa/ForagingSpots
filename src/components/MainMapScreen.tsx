@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import TopBar from './TopBar';
 import FloatingActionButton from './FloatingActionButton';
 import AddEditModal from './AddEditModal';
 import PinDetailsDrawer from './PinDetailsDrawer';
 import MapView from './MapView';
-import type { User as NewUser, ForagingSpot, ForagingType, Coordinates } from '../lib/types';
+import type { User as NewUser, ForagingSpot, ForagingSpotWithPending, ForagingType, Coordinates } from '../lib/types';
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
 import { OfflineBanner } from './OfflineBanner';
@@ -101,6 +101,27 @@ export default function MainMapScreen({
   const handleSpotClick = (spot: ForagingSpot) => {
     setSelectedSpot(spot);
   };
+
+  // selectedSpot is a click-time snapshot; the open drawer must track live query
+  // data (pending→synced flips, share/edit updates) instead of the stale object.
+  const liveSelectedSpot = useMemo(() => {
+    if (!selectedSpot) return null;
+    const byId = foragingSpots.find(s => s.id === selectedSpot.id);
+    if (byId) return byId;
+    // A pending spot that synced while the drawer was open reappears under a new
+    // server id — reconnect to it via its identifying fields
+    if ((selectedSpot as ForagingSpotWithPending)._pending) {
+      const twin = foragingSpots.find(s =>
+        !(s as ForagingSpotWithPending)._pending &&
+        s.type === selectedSpot.type &&
+        s.coordinates.lat === selectedSpot.coordinates.lat &&
+        s.coordinates.lng === selectedSpot.coordinates.lng
+      );
+      if (twin) return twin;
+    }
+    // Deleted, or mid-refetch between sync and reload — keep the snapshot
+    return selectedSpot;
+  }, [selectedSpot, foragingSpots]);
 
   // Simple sharing functions with optimistic updates
   const handleShare = (spotId: string, username: string) => {
@@ -301,16 +322,16 @@ export default function MainMapScreen({
 
       {/* {selectedSpot && ( */}
         <PinDetailsDrawer
-          spot={selectedSpot}
+          spot={liveSelectedSpot}
           currentUser={user}
           onClose={() => setSelectedSpot(null)}
           onEdit={() => {
-            setEditingSpot(selectedSpot);
+            setEditingSpot(liveSelectedSpot);
             setSelectedSpot(null);
           }}
           onDelete={() => {
-            if (!selectedSpot) return;
-            onDeleteSpot(selectedSpot.id);
+            if (!liveSelectedSpot) return;
+            onDeleteSpot(liveSelectedSpot.id);
             setSelectedSpot(null);
           }}
           onShare={handleShare}
