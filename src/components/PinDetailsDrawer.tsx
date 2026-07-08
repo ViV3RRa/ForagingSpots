@@ -426,9 +426,13 @@ export default function PinDetailsDrawer({
       {imageCount > 0 && spot && (
         <ImageViewer
           images={fullImageUrls.map(url => ({ url }))}
+          thumbnailUrls={thumbnailUrls}
           initialIndex={selectedImageIndex}
           isOpen={imageViewerOpen}
           onClose={() => setImageViewerOpen(false)}
+          spotName={getDanishLabel(spot.type)}
+          spotDate={formatFoundDate(spot.created)}
+          spotCoordinates={formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
         />
       )}
 
