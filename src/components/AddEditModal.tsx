@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
-import { X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import LocationEditorScreen from './LocationEditorScreen';
 import { FORAGING_TYPES } from './types';
@@ -32,6 +32,44 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [manuallyPicked, setManuallyPicked] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [speciesQuery, setSpeciesQuery] = useState('');
+  const [activeSpeciesPage, setActiveSpeciesPage] = useState(0);
+  const speciesPagerRef = useRef<HTMLDivElement>(null);
+
+  const matchingTypes = FORAGING_TYPES.filter((type) =>
+    getDanishLabel(type).toLowerCase().includes(speciesQuery.trim().toLowerCase())
+  );
+  // The generic picks are always on offer, appended in this order when the search misses them
+  const fallbackTypes: ForagingType[] = ['generic_berry', 'generic_mushroom', 'other'];
+  const visibleTypes: ForagingType[] = [
+    ...matchingTypes,
+    ...fallbackTypes.filter((type) => !matchingTypes.includes(type)),
+  ];
+  // Horizontally snap-scrolled pages of 8 tiles (4×2); the dots track the page
+  const speciesPages: ForagingType[][] = [];
+  for (let i = 0; i < visibleTypes.length; i += 8) {
+    speciesPages.push(visibleTypes.slice(i, i + 8));
+  }
+  const activeSpeciesDot = Math.min(Math.max(speciesPages.length - 1, 0), activeSpeciesPage);
+
+  // Back to the first page whenever the search narrows the list
+  useEffect(() => {
+    if (speciesPagerRef.current) speciesPagerRef.current.scrollLeft = 0;
+    setActiveSpeciesPage(0);
+  }, [speciesQuery]);
+
+  // Open on the page holding the pre-selected species (edit mode starts mid-list).
+  // Declared after the reset effect so this one wins on mount.
+  useEffect(() => {
+    const pager = speciesPagerRef.current;
+    const index = FORAGING_TYPES.indexOf(selectedType);
+    if (pager && index > 0) {
+      const page = Math.floor(index / 8);
+      pager.scrollLeft = page * pager.clientWidth;
+      setActiveSpeciesPage(page);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check if this is a pending spot
   const isPendingSpot = spot?.id?.startsWith('pending-') || (spot as ForagingSpotWithPending)?._pending;
@@ -145,37 +183,74 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             {/* Scrollable content — the CTA lives inside so it stays reachable with the keyboard open */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[24px] pt-[20px]">
-              {/* Type grid: 4 columns, square gradient tiles */}
+              {/* Species selector: search field + scrollable 4-column tile grid + page dots */}
               <MonoLabel className="mb-[12px] block">Vælg art</MonoLabel>
-              <div className="grid grid-cols-4 gap-[12px]">
-                {FORAGING_TYPES.map((type) => {
-                  const config = getForagingSpotConfig(type, 34);
-                  const selected = type === selectedType;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setSelectedType(type)}
-                      aria-pressed={selected}
-                      className="flex flex-col items-center gap-[6px]"
-                    >
-                      <div
-                        className="flex aspect-square w-full items-center justify-center rounded-[16px]"
-                        style={{
-                          ...config.background,
-                          border: `3px solid ${selected ? 'var(--accent)' : 'transparent'}`,
-                          boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.3)',
-                        }}
-                      >
-                        {config.icon}
-                      </div>
-                      <span className="text-center text-[10.5px] leading-[1.15] text-ink2">
-                        {getDanishLabel(type)}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="mb-[14px] flex h-[46px] items-center gap-[9px] rounded-[13px] border border-line bg-surface px-[14px]">
+                <Search className="size-[16px] shrink-0 text-mono" strokeWidth={1.8} />
+                <input
+                  type="text"
+                  value={speciesQuery}
+                  onChange={(e) => setSpeciesQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.preventDefault();
+                  }}
+                  placeholder="Søg art…"
+                  aria-label="Søg art"
+                  className="min-w-0 flex-1 bg-transparent font-serif text-[15px] text-ink placeholder:text-muted focus:outline-none"
+                />
               </div>
+              <div
+                ref={speciesPagerRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  setActiveSpeciesPage(Math.round(el.scrollLeft / el.clientWidth));
+                }}
+                className="scrollbar-hide -mx-[24px] flex snap-x snap-mandatory overflow-x-auto"
+              >
+                {speciesPages.map((page, pageIndex) => (
+                  <div key={pageIndex} className="w-full shrink-0 snap-start px-[24px] py-[2px]">
+                    <div className="grid grid-cols-4 gap-[12px]">
+                      {page.map((type) => {
+                        const config = getForagingSpotConfig(type, 34);
+                        const selected = type === selectedType;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setSelectedType(type)}
+                            aria-pressed={selected}
+                            className="flex flex-col items-center gap-[6px]"
+                          >
+                            <div
+                              className="flex aspect-square w-full items-center justify-center rounded-[16px]"
+                              style={{
+                                ...config.background,
+                                border: `3px solid ${selected ? 'var(--accent)' : 'transparent'}`,
+                                boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.3)',
+                              }}
+                            >
+                              {config.icon}
+                            </div>
+                            <span className="text-center text-[10.5px] leading-[1.15] text-ink2">
+                              {getDanishLabel(type)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {speciesPages.length > 1 && (
+                <div className="mt-[12px] flex justify-center gap-[5px]" aria-hidden>
+                  {speciesPages.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`size-[6px] rounded-full ${i === activeSpeciesDot ? 'bg-map-trail' : 'bg-line'}`}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Placering: surface field with pulsing brand dot, opens the location picker */}
               <MonoLabel className="mb-[8px] mt-[24px] block">Placering</MonoLabel>

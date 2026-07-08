@@ -219,6 +219,18 @@
   }
 }
 
+@layer utilities {
+  /* Hide scrollbars on snap-paged carousels that use dots as their indicator */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 html {
   @apply font-sans;
   font-size: var(--font-size);

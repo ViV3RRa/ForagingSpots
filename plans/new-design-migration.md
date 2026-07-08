@@ -340,6 +340,11 @@ Design ref: `isAdd` block.
 - Type picker: 4-column grid of square gradient tiles (all 25 types, PNG icons, Danish labels
   from the completed 1.3 label map), selected tile ringed with accent. Replaces the current
   select-based picker.
+  - *Design revision (2026-07-08):* the grid became a **species selector** — a 46px "Søg art…"
+    search field (Spectral placeholder, mono search icon) above the grid, and the grid showing
+    max 8 tiles (4×2) at a time as horizontally snap-scrolled pages, with 6px pagination dots
+    below (one per page, active dot `--map-trail`); the generic picks (Andre bær, Andre svampe,
+    Andet) are always appended to search results. Implemented post-2.7.
 - Placering row: surface field with pulsing brand dot + Space Mono coords + "Nuværende" hint;
   tapping opens the location editor (2.9).
 - Notes textarea, "Tilføj foto" secondary button (existing `ImageCapture` flow), accent "Gem fund"
