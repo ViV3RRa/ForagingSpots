@@ -218,6 +218,11 @@ export default function PinDetailsDrawer({
         <SheetContent
           side="bottom"
           className="max-h-[88%] bg-bg sm:mx-auto sm:max-w-[520px]"
+          // The lightbox and location editor are plain overlays outside this Radix
+          // layer — interacting with them must not dismiss the sheet underneath.
+          onInteractOutside={(e) => {
+            if (imageViewerOpen || showLocationPicker) e.preventDefault();
+          }}
         >
           {spot ? (
             <div className="flex-1 overflow-y-auto overflow-x-hidden px-[26px] pb-[26px] pt-[14px]">
