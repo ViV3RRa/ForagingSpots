@@ -235,7 +235,7 @@ export default function PinDetailsDrawer({
                   </SheetTitle>
                   {isPending && (
                     <div className="mt-[7px]">
-                      <PendingSyncBadge hasError={hasError} />
+                      <PendingSyncBadge hasError={hasError} long />
                     </div>
                   )}
                 </div>

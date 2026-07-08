@@ -39,6 +39,8 @@
   --offline-border: #e2cf9a;
   --offline-ink: #7a5a1e;
   --offline-ink2: #a3853f;
+  /* Sync-failed chip tint (design failBg; failInk is --accent) */
+  --fail-bg: rgba(181, 80, 47, 0.12);
 
   /* shadcn/Tailwind semantic tokens mapped onto the design palette */
   --background: var(--bg);
@@ -114,6 +116,7 @@
   --offline-border: #5c5330;
   --offline-ink: #e8dcae;
   --offline-ink2: #bcae82;
+  --fail-bg: rgba(201, 162, 75, 0.18);
 }
 
 /* Design keyframes (also registered as Tailwind animations in tailwind.config.js) */

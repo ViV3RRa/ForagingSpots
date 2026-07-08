@@ -1,53 +1,83 @@
-import { Cloud, CloudOff } from 'lucide-react';
-
 interface PendingSyncBadgeProps {
   hasError?: boolean;
+  /** Detail-drawer copy: "Afventer synkronisering" / "Synkronisering fejlede" */
+  long?: boolean;
   className?: string;
 }
 
-export function PendingSyncBadge({ hasError, className = '' }: PendingSyncBadgeProps) {
-  if (hasError) {
-    return (
-      <div
-        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs ${className}`}
-        title="Sync failed"
-      >
-        <CloudOff className="w-3 h-3" />
-        <span>Fejl</span>
-      </div>
-    );
-  }
+const clockIcon = (
+  <svg
+    width="11"
+    height="11"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+
+const warningIcon = (
+  <svg
+    width="11"
+    height="11"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <path d="M12 8v5M12 16.5v.5" />
+    <circle cx="12" cy="12" r="9" />
+  </svg>
+);
+
+export function PendingSyncBadge({ hasError, long, className = '' }: PendingSyncBadgeProps) {
+  const label = hasError
+    ? long
+      ? 'Synkronisering fejlede'
+      : 'Synk fejlede'
+    : long
+      ? 'Afventer synkronisering'
+      : 'Afventer synk';
 
   return (
-    <div
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs ${className}`}
-      title="Waiting to sync"
+    <span
+      className={`inline-flex items-center gap-[5px] rounded-[8px] px-[9px] py-[3px] font-sans text-[11px] font-semibold ${
+        hasError ? 'bg-fail-bg text-accent' : 'bg-offline-bg text-offline-ink'
+      } ${className}`}
     >
-      <Cloud className="w-3 h-3" />
-      <span>Offline</span>
-    </div>
+      {hasError ? warningIcon : clockIcon}
+      {label}
+    </span>
   );
 }
 
-// Small icon-only badge for map pins
+// Map-pin corner indicator: 18px disc at the badge's top-right corner
 export function PendingSyncIcon({ hasError, className = '' }: PendingSyncBadgeProps) {
-  if (hasError) {
-    return (
-      <div
-        className={`absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center ${className}`}
-        title="Sync failed"
-      >
-        <CloudOff className="w-2.5 h-2.5 text-white" />
-      </div>
-    );
-  }
-
   return (
-    <div
-      className={`absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center ${className}`}
-      title="Waiting to sync"
+    <span
+      className={`absolute -right-[3px] -top-[3px] flex size-[18px] items-center justify-center rounded-full border-2 border-pin-ring text-pin-ring ${
+        hasError ? 'bg-accent' : 'bg-offline-ink'
+      } ${className}`}
+      title={hasError ? 'Synkronisering fejlede' : 'Afventer synkronisering'}
     >
-      <Cloud className="w-2.5 h-2.5 text-white" />
-    </div>
+      {hasError ? (
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      ) : (
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 7v5l3 2" />
+        </svg>
+      )}
+    </span>
   );
 }

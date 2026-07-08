@@ -130,7 +130,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.16 Top-bar states | [subtasks/2.16-topbar-states.md](subtasks/2.16-topbar-states.md) | ✅ Done (2026-07-08) |
 | 2.17 Detail drawer states (reconciliation) | [subtasks/2.17-detail-states.md](subtasks/2.17-detail-states.md) | ✅ Done (2026-07-08) |
 | 3.1 Location permission screen | [subtasks/3.1-permission-screen.md](subtasks/3.1-permission-screen.md) | ✅ Done (2026-07-08) |
-| 3.2 Offline banner & sync badge | [subtasks/3.2-offline-banner.md](subtasks/3.2-offline-banner.md) | |
+| 3.2 Offline banner & sync badge | [subtasks/3.2-offline-banner.md](subtasks/3.2-offline-banner.md) | ✅ Done (2026-07-08) |
 | 3.3 PWA install sheet | [subtasks/3.3-install-sheet.md](subtasks/3.3-install-sheet.md) | |
 | 3.4 PWA update toast | [subtasks/3.4-update-toast.md](subtasks/3.4-update-toast.md) | |
 | 3.5 Splash, manifest & identity | [subtasks/3.5-splash-manifest.md](subtasks/3.5-splash-manifest.md) | |

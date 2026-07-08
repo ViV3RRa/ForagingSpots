@@ -269,8 +269,8 @@ export default function MainMapScreen({
         hasActiveFilters={activeFilters.size < getTotalForagingTypes()}
       />
 
-      {/* Floats below the top bar instead of pushing content (restyled in subtask 3.2) */}
-      <div className="absolute inset-x-0 top-[calc(max(14px,env(safe-area-inset-top))+62px)] z-10">
+      {/* Floating card 8px below the top bar (design: bar bottom 104px, banner top 112px) */}
+      <div className="absolute inset-x-0 top-[calc(max(14px,env(safe-area-inset-top))+70px)] z-10">
         <OfflineBanner />
       </div>
 

@@ -60,6 +60,7 @@ module.exports = {
         "offline-border": "var(--offline-border)",
         "offline-ink": "var(--offline-ink)",
         "offline-ink2": "var(--offline-ink2)",
+        "fail-bg": "var(--fail-bg)",
 
         // Foraging app specific colors
         "forest-green": "var(--forest-green)",
