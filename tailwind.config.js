@@ -56,6 +56,10 @@ module.exports = {
         "map-water": "var(--map-water)",
         "map-line": "var(--map-line)",
         "map-trail": "var(--map-trail)",
+        "offline-bg": "var(--offline-bg)",
+        "offline-border": "var(--offline-border)",
+        "offline-ink": "var(--offline-ink)",
+        "offline-ink2": "var(--offline-ink2)",
 
         // Foraging app specific colors
         "forest-green": "var(--forest-green)",

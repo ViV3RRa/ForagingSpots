@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import { Edit, Trash2, Share, Plus, X, WifiOff } from 'lucide-react';
@@ -51,7 +50,6 @@ export default function PinDetailsDrawer({
   onUpdateLocation
 }: PinDetailsDrawerProps) {
   const [shareUsername, setShareUsername] = useState('');
-  const [isSharing, setIsSharing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -60,6 +58,7 @@ export default function PinDetailsDrawer({
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingImageUrls, setPendingImageUrls] = useState<string[]>([]);
   const shareSectionRef = useRef<HTMLDivElement>(null);
+  const shareInputRef = useRef<HTMLInputElement>(null);
   const { isOnline } = useNetworkStatus();
   const { position } = useUserLocation();
 
@@ -104,7 +103,6 @@ export default function PinDetailsDrawer({
       setIsOpen(true);
     } else {
       setIsOpen(false);
-      setIsSharing(false);
       setShareUsername('');
     }
   }, [spot]);
@@ -121,7 +119,6 @@ export default function PinDetailsDrawer({
     if (shareUsername.trim() && isOwner && spot) {
       onShare(spot.id, shareUsername.trim());
       setShareUsername('');
-      setIsSharing(false);
     }
   };
 
@@ -131,12 +128,10 @@ export default function PinDetailsDrawer({
     }
   };
 
+  // Design's actShareClick semantics: scroll to the always-visible share input and focus it
   const handleShareButtonClick = () => {
-    setIsSharing(true);
-    // Scroll after the input has rendered
-    setTimeout(() => {
-      shareSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 0);
+    shareSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    shareInputRef.current?.focus({ preventScroll: true });
   };
 
   const handleImageClick = (index: number) => {
@@ -174,8 +169,9 @@ export default function PinDetailsDrawer({
     setShowLocationPicker(false);
   };
 
-  // Gallery tile showing a real thumbnail; opens the lightbox
-  const photoTile = (index: number, className: string) => (
+  // Gallery tile showing a real thumbnail; opens the lightbox at its index.
+  // overlayLabel renders the design's dark "+N" veil (5-photo bucket).
+  const photoTile = (index: number, className: string, overlayLabel?: string) => (
     <button
       type="button"
       onClick={() => handleImageClick(index)}
@@ -190,25 +186,29 @@ export default function PinDetailsDrawer({
           (e.target as HTMLImageElement).src = fullImageUrls[index];
         }}
       />
-      {index === 0 && imageCount >= 3 && (
+      {index === 0 && imageCount >= 2 && (
         <span className="absolute bottom-[10px] left-[10px] rounded-[20px] bg-[rgba(20,15,8,0.42)] px-[9px] py-[4px] font-mono text-[10px] tracking-[0.08em] text-white">
           {imageCount} fotos
+        </span>
+      )}
+      {overlayLabel && (
+        <span className="absolute inset-0 flex items-center justify-center bg-[rgba(20,15,8,0.5)] font-serif text-[18px] font-semibold text-white">
+          {overlayLabel}
         </span>
       )}
     </button>
   );
 
   // Dashed "+" tile — hooks into the existing add-image flow (ImageCapture lives in the edit sheet)
-  const addTile = (className: string, withLabel = false) => (
+  const addTile = (className: string, label?: string) => (
     <button
       type="button"
       onClick={onEdit}
-      disabled={isEditDisabled}
       aria-label="Tilføj foto"
-      className={`flex items-center justify-center gap-[8px] border border-dashed border-line bg-surface text-faint transition-colors hover:border-mono hover:text-mono disabled:pointer-events-none disabled:opacity-50 ${className}`}
+      className={`flex flex-col items-center justify-center gap-[4px] border-[1.5px] border-dashed border-line bg-surface text-faint transition-colors hover:border-mono hover:text-mono ${className}`}
     >
-      <Plus className="size-[22px]" strokeWidth={1.8} />
-      {withLabel && <span className="font-mono text-[11px] uppercase tracking-[0.1em]">Tilføj foto</span>}
+      <Plus className="size-[20px]" strokeWidth={1.9} />
+      {label && <span className="font-serif text-[12px]">{label}</span>}
     </button>
   );
 
@@ -234,28 +234,50 @@ export default function PinDetailsDrawer({
                     {getDanishLabel(spot.type)}
                   </SheetTitle>
                   {isPending && (
-                    <div className="mt-[6px]">
+                    <div className="mt-[7px]">
                       <PendingSyncBadge hasError={hasError} />
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Photo gallery: large tile + column of small tiles per the design */}
+              {/* Photo gallery buckets (design g0–g5): the count chip carries 3rd/4th
+                  photos; at max (5) the third tile gets a "+N" overlay instead of an add tile */}
               {(imageCount > 0 || canAddImage) && (
                 <div className="mt-[20px]">
                   {imageCount === 0 ? (
-                    addTile('h-[96px] w-full rounded-[14px]', true)
+                    <button
+                      type="button"
+                      onClick={onEdit}
+                      className="flex h-[120px] w-full flex-col items-center justify-center gap-[6px] rounded-[14px] border-[1.5px] border-dashed border-line bg-surface text-muted transition-colors hover:border-mono hover:text-mono"
+                    >
+                      <svg
+                        width="26"
+                        height="26"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 8h3l1.5-2h9L18 8h3v11H3z" />
+                        <circle cx="12" cy="13" r="3.2" />
+                        <path d="M12 11v4M10 13h4" />
+                      </svg>
+                      <span className="font-serif text-[14.5px]">Tilføj foto</span>
+                    </button>
                   ) : (
                     <div className="flex h-[130px] gap-[8px]">
                       {photoTile(0, 'flex-[1.7] rounded-[14px]')}
                       {imageCount === 1 ? (
-                        canAddImage && addTile('flex-1 rounded-[12px]')
+                        canAddImage && addTile('flex-1 rounded-[12px]', 'Foto')
                       ) : (
                         <div className="flex flex-1 flex-col gap-[8px]">
                           {photoTile(1, 'flex-1 rounded-[12px]')}
-                          {imageCount >= 3
-                            ? photoTile(2, 'flex-1 rounded-[12px]')
+                          {imageCount >= MAX_IMAGES
+                            ? photoTile(2, 'flex-1 rounded-[12px]', `+${imageCount - 3}`)
                             : canAddImage && addTile('flex-1 rounded-[12px]')}
                         </div>
                       )}
@@ -308,112 +330,125 @@ export default function PinDetailsDrawer({
                 </div>
               )}
 
-              {/* Offline notice for synced spots */}
-              {isOwner && isEditDisabled && (
-                <div className="mt-[20px] flex items-start gap-[10px] rounded-[14px] border border-line bg-surface px-[14px] py-[12px] text-[13px] leading-[1.5] text-ink2">
-                  <WifiOff className="mt-[2px] size-[16px] shrink-0 text-muted" />
-                  <span>Du er offline. Redigér og slet er ikke tilgængelige for synkroniserede fund.</span>
+              {/* Sharing section: user rows / "Kun dig" empty card + always-visible @-input */}
+              {isOwner && (
+                <div ref={shareSectionRef} className="mt-[24px]">
+                  <div className="mb-[12px] flex items-center justify-between">
+                    <MonoLabel>Delt med</MonoLabel>
+                    {sharedWith.length > 0 && (
+                      <span className="font-mono text-[11px] text-faint">
+                        {sharedWith.length === 1 ? '1 person' : `${sharedWith.length} personer`}
+                      </span>
+                    )}
+                  </div>
+
+                  {sharedWith.length > 0 ? (
+                    <div className="mb-[12px] flex flex-col gap-[8px]">
+                      {sharedWith.map((username) => (
+                        <div
+                          key={username}
+                          className="flex items-center gap-[12px] rounded-[13px] border border-line bg-surface px-[12px] py-[9px]"
+                        >
+                          <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-brand font-serif text-[14px] font-semibold text-brand-ink">
+                            {username.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate font-serif text-[15.5px] text-ink">
+                            @{username}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleUnshare(username)}
+                            aria-label={`Fjern deling med ${username}`}
+                            className="flex size-[28px] shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-line2 hover:text-accent"
+                          >
+                            <X className="size-[15px]" strokeWidth={1.9} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mb-[12px] rounded-[13px] border border-dashed border-line bg-surface p-[14px] text-center">
+                      <div className="font-serif text-[14.5px] text-ink2">Kun dig</div>
+                      <div className="mt-[2px] text-[12.5px] text-muted">
+                        Dette fund er privat. Del det med en ven for at give adgang.
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-[8px]">
+                    <div className="flex h-[48px] min-w-0 flex-1 items-center gap-[8px] rounded-[13px] border border-line bg-surface px-[14px]">
+                      <span className="font-serif text-[16px] text-mono">@</span>
+                      <input
+                        ref={shareInputRef}
+                        type="text"
+                        value={shareUsername}
+                        onChange={(e) => setShareUsername(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleShare();
+                        }}
+                        placeholder="Del med brugernavn…"
+                        aria-label="Del med brugernavn"
+                        className="min-w-0 flex-1 bg-transparent font-serif text-[15px] text-ink outline-none placeholder:text-muted"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      disabled={!shareUsername.trim()}
+                      aria-label="Del fund"
+                      className="flex size-[48px] shrink-0 items-center justify-center rounded-[13px] bg-brand text-brand-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Plus className="size-[20px]" strokeWidth={1.9} />
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* Action row: wide primary + 52px square icon buttons */}
+              {/* Offline-lock notice for synced spots (amber offline palette, shared with 3.2) */}
+              {isOwner && isEditDisabled && (
+                <div className="mt-[20px] flex items-start gap-[11px] rounded-[14px] border border-offline-border bg-offline-bg px-[14px] py-[12px]">
+                  <WifiOff className="mt-[1px] size-[18px] shrink-0 text-offline-ink" strokeWidth={1.6} />
+                  <span className="text-[12.5px] leading-[1.5] text-offline-ink">
+                    Du er offline. Redigér og slet er ikke tilgængelige for synkroniserede fund.
+                  </span>
+                </div>
+              )}
+
+              {/* Action row: wide primary + 52px square icon buttons; dims to .5 and
+                  goes inert when offline-locked (buttons keep disabled semantics, so
+                  cancel their own disabled:opacity to avoid double dimming) */}
               {isOwner && (
-                <>
-                  <div className="mt-[26px] flex gap-[10px]">
-                    <Button
-                      variant="brand"
-                      disabled={isEditDisabled}
-                      onClick={onEdit}
-                      className="min-w-0 flex-1"
-                    >
-                      <Edit />
-                      Redigér fund
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="icon-lg"
-                      onClick={handleShareButtonClick}
-                      aria-label="Del fund"
-                    >
-                      <Share />
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="icon-lg"
-                      disabled={isEditDisabled}
-                      onClick={handleDeleteClick}
-                      aria-label="Slet fund"
-                      className="text-accent hover:text-accent"
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-
-                  {/* Sharing */}
-                  <div ref={shareSectionRef} className="mt-[26px]">
-                    <div className="flex items-center justify-between">
-                      <MonoLabel>Delt med</MonoLabel>
-                      <button
-                        type="button"
-                        onClick={() => setIsSharing(!isSharing)}
-                        className="font-serif text-[14px] font-semibold text-accent"
-                      >
-                        {isSharing ? 'Annullér' : '+ Tilføj bruger'}
-                      </button>
-                    </div>
-
-                    {isSharing && (
-                      <div className="mt-[12px] flex gap-[8px]">
-                        <Input
-                          type="text"
-                          value={shareUsername}
-                          onChange={(e) => setShareUsername(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleShare();
-                          }}
-                          placeholder="brugernavn"
-                          className="min-w-0 flex-1"
-                          autoFocus
-                        />
-                        <Button
-                          variant="brand"
-                          disabled={!shareUsername.trim()}
-                          onClick={handleShare}
-                          className="h-[54px] px-[20px]"
-                        >
-                          Del
-                        </Button>
-                      </div>
-                    )}
-
-                    {sharedWith.length > 0 ? (
-                      <div className="mt-[12px] space-y-[8px]">
-                        {sharedWith.map((username) => (
-                          <div
-                            key={username}
-                            className="flex items-center justify-between rounded-[14px] border border-line bg-surface px-[16px] py-[11px]"
-                          >
-                            <span className="truncate text-[14.5px] font-medium text-ink">{username}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleUnshare(username)}
-                              aria-label={`Fjern deling med ${username}`}
-                              className="flex size-[30px] shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-line2 hover:text-accent"
-                            >
-                              <X className="size-[15px]" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      !isSharing && (
-                        <p className="mt-[12px] text-[13.5px] text-muted">
-                          Dette fund er privat — ikke delt med nogen.
-                        </p>
-                      )
-                    )}
-                  </div>
-                </>
+                <div className={`mt-[20px] flex gap-[10px] ${isEditDisabled ? 'opacity-50' : ''}`}>
+                  <Button
+                    variant="brand"
+                    disabled={isEditDisabled}
+                    onClick={onEdit}
+                    className="min-w-0 flex-1 disabled:opacity-100"
+                  >
+                    <Edit />
+                    Redigér
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon-lg"
+                    disabled={isEditDisabled}
+                    onClick={handleShareButtonClick}
+                    aria-label="Del fund"
+                    className="disabled:opacity-100"
+                  >
+                    <Share />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon-lg"
+                    disabled={isEditDisabled}
+                    onClick={handleDeleteClick}
+                    aria-label="Slet fund"
+                    className="text-accent hover:text-accent disabled:opacity-100"
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
               )}
 
               {/* Non-owner view */}

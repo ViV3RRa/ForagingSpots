@@ -128,7 +128,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.14 Map cluster & compass | [subtasks/2.14-map-cluster-compass.md](subtasks/2.14-map-cluster-compass.md) | ✅ Done (2026-07-08) |
 | 2.15 Sign-in error & loading states | [subtasks/2.15-signin-states.md](subtasks/2.15-signin-states.md) | ✅ Done (2026-07-08) |
 | 2.16 Top-bar states | [subtasks/2.16-topbar-states.md](subtasks/2.16-topbar-states.md) | ✅ Done (2026-07-08) |
-| 2.17 Detail drawer states (reconciliation) | [subtasks/2.17-detail-states.md](subtasks/2.17-detail-states.md) | |
+| 2.17 Detail drawer states (reconciliation) | [subtasks/2.17-detail-states.md](subtasks/2.17-detail-states.md) | ✅ Done (2026-07-08) |
 | 3.1 Location permission screen | [subtasks/3.1-permission-screen.md](subtasks/3.1-permission-screen.md) | |
 | 3.2 Offline banner & sync badge | [subtasks/3.2-offline-banner.md](subtasks/3.2-offline-banner.md) | |
 | 3.3 PWA install sheet | [subtasks/3.3-install-sheet.md](subtasks/3.3-install-sheet.md) | |
