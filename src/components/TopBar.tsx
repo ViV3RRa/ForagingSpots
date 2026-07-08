@@ -69,7 +69,7 @@ export default function TopBar({
         >
           <Filter className="size-[18px]" strokeWidth={1.8} />
           {hasActiveFilters && (
-            <span className="absolute right-[9px] top-[9px] size-[8px] rounded-full bg-accent" />
+            <span className="absolute -right-[3px] -top-[3px] size-[12px] rounded-full border-2 border-surface bg-accent" />
           )}
         </button>
 
