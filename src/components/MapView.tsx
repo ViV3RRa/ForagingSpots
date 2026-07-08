@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, ForagingSpotWithPending } from '../lib/types';
-import { Compass } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -378,7 +377,8 @@ export default function MapView({
           <LocateIcon />
         </button>
 
-        {/* Compass button — appears when the map is rotated, resets bearing to north */}
+        {/* Compass button — appears when the map is rotated, resets bearing to north.
+            The rose rotates so the accent needle keeps pointing north; the "N" stays fixed. */}
         <button
           onClick={() => {
             if (mapRef.current) {
@@ -389,22 +389,36 @@ export default function MapView({
               });
             }
           }}
-          className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+156px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line bg-surface text-brand shadow-[0_6px_16px_var(--shadow)]"
-          title="Reset to north"
+          className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+152px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line bg-surface shadow-[0_6px_16px_var(--shadow)]"
+          title="Nulstil mod nord"
           style={{
             opacity: bearing === 0 ? 0 : 1,
             transition: 'opacity 0.3s ease-in-out',
             pointerEvents: bearing === 0 ? 'none' : 'auto'
           }}
         >
-          <Compass
-            className="h-[23px] w-[23px]"
-            strokeWidth={1.8}
+          <div
             style={{
-              transform: `rotate(${bearing - 45}deg)`,
+              transform: `rotate(${-bearing}deg)`,
               transition: 'transform 0.3s ease-out'
             }}
-          />
+          >
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" stroke="var(--line)" strokeWidth="1.4" fill="none" />
+              <path d="M12 4l3 8-3-2-3 2z" fill="var(--accent)" />
+              <path d="M12 20l-3-8 3 2 3-2z" fill="var(--muted)" />
+            </svg>
+          </div>
+          <span className="absolute left-1/2 top-[2px] -translate-x-1/2 font-mono text-[8px] font-bold text-accent">
+            N
+          </span>
         </button>
 
         {/* Current position dot — brand color with pin ring and pulse */}
@@ -424,8 +438,6 @@ export default function MapView({
           const { cluster: isCluster, point_count: pointCount } = cluster.properties;
 
           if (isCluster) {
-            // The design defines no cluster treatment — derived from its pin language:
-            // brand circle, --pin-ring border, Spectral 600 count
             return (
               <Marker
                 key={`cluster-${cluster.id}`}
@@ -435,9 +447,11 @@ export default function MapView({
               >
                 <button
                   onClick={() => handleClusterClick(cluster.id as number, longitude, latitude)}
-                  className="flex size-[52px] items-center justify-center rounded-full border-[3px] border-pin-ring bg-brand font-serif text-[17px] font-semibold text-brand-ink shadow-[inset_0_0_0_2px_rgba(255,255,255,0.2),0_4px_10px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-110"
+                  className="relative flex size-[52px] items-center justify-center rounded-full border-[3px] border-pin-ring bg-brand font-serif text-[19px] font-semibold text-brand-ink shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-110"
                 >
                   {pointCount}
+                  {/* halo ring */}
+                  <span className="pointer-events-none absolute -inset-[6px] rounded-full border-[1.5px] border-brand opacity-30" />
                 </button>
               </Marker>
             );
