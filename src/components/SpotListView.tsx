@@ -262,7 +262,7 @@ export default function SpotListView({
         onConfirm={handleDeleteConfirm}
         title="Slet dette fund?"
         subjectName={spotToDelete ? getForagingSpotConfig(spotToDelete.type).label : undefined}
-        description="fjernes permanent fra din skovbog. Dette kan ikke fortrydes."
+        description="fjernes permanent. Dette kan ikke fortrydes."
         confirmText="Slet fund"
         cancelText="Annullér"
       />
