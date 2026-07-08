@@ -260,11 +260,11 @@ export default function SpotListView({
         isOpen={spotToDelete !== null}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Er du sikker?"
-        description={`Er du sikker på, at du vil slette denne skat?`}
-        confirmText="Slet permanent"
-        cancelText="Annuller"
-        variant="destructive"
+        title="Slet dette fund?"
+        subjectName={spotToDelete ? getForagingSpotConfig(spotToDelete.type).label : undefined}
+        description="fjernes permanent fra din skovbog. Dette kan ikke fortrydes."
+        confirmText="Slet fund"
+        cancelText="Annullér"
       />
     </div>
   );

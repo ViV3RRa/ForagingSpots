@@ -122,7 +122,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.8 Filter sheet | [subtasks/2.8-filter-sheet.md](subtasks/2.8-filter-sheet.md) | ✅ Done (2026-07-08) |
 | 2.9 Location editor | [subtasks/2.9-location-editor.md](subtasks/2.9-location-editor.md) | ✅ Done (2026-07-08) |
 | 2.10 Photo lightbox | [subtasks/2.10-photo-lightbox.md](subtasks/2.10-photo-lightbox.md) | ✅ Done (2026-07-08) |
-| 2.11 Delete confirmation | [subtasks/2.11-delete-confirm.md](subtasks/2.11-delete-confirm.md) | |
+| 2.11 Delete confirmation | [subtasks/2.11-delete-confirm.md](subtasks/2.11-delete-confirm.md) | ✅ Done (2026-07-08) |
 | 2.12 Map error state | [subtasks/2.12-map-error.md](subtasks/2.12-map-error.md) | |
 | 2.13 List toolbar, sort menu & row action sheet | [subtasks/2.13-list-toolbar-rowmenu.md](subtasks/2.13-list-toolbar-rowmenu.md) | |
 | 2.14 Map cluster & compass | [subtasks/2.14-map-cluster-compass.md](subtasks/2.14-map-cluster-compass.md) | |

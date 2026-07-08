@@ -1,13 +1,11 @@
+import type { ReactNode } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -15,11 +13,29 @@ interface ConfirmationDialogProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  /** Subject rendered quoted before the description, e.g. "“Kantarel” fjernes permanent…" */
+  subjectName?: string;
+  /** Glyph inside the tinted circle; defaults to the design's trash icon */
+  icon?: ReactNode;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'destructive' | 'default';
   isLoading?: boolean;
 }
+
+const trashIcon = (
+  <svg
+    width="26"
+    height="26"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" />
+  </svg>
+);
 
 export default function ConfirmationDialog({
   isOpen,
@@ -27,50 +43,47 @@ export default function ConfirmationDialog({
   onConfirm,
   title,
   description,
+  subjectName,
+  icon = trashIcon,
   confirmText = 'Bekræft',
-  cancelText = 'Annuller',
-  variant = 'default',
+  cancelText = 'Annullér',
   isLoading = false,
 }: ConfirmationDialogProps) {
-  const handleConfirm = () => {
-    onConfirm();
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border border-border/50 mushroom-shadow max-w-sm rounded-xl">
-        <DialogHeader className="text-center sm:text-center">
-          <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-            <AlertTriangle className="h-12 w-12 text-destructive" />
-          </div>
-          <DialogTitle className="text-lg font-semibold text-foreground">
-            {title}
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-sm leading-relaxed px-2">
-            {description}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex-col gap-2 sm:flex-col pt-4">
+      <DialogContent
+        showCloseButton={false}
+        className="block w-[calc(100%-68px)] max-w-[340px] rounded-[24px] border-none bg-bg px-[26px] pb-[22px] pt-[28px] text-center shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:max-w-[340px]"
+      >
+        {/* delTint circle — accent at low opacity, per theme */}
+        <div className="mx-auto mb-[16px] flex size-[60px] items-center justify-center rounded-full bg-[rgba(181,80,47,0.12)] text-accent dark:bg-[rgba(201,162,75,0.16)]">
+          {icon}
+        </div>
+        <DialogTitle className="mb-[8px] font-serif text-[22px] font-semibold leading-[1.25] text-ink">
+          {title}
+        </DialogTitle>
+        <DialogDescription className="mb-[24px] text-[14.5px] leading-[1.55] text-ink2">
+          {subjectName && <>“{subjectName}” </>}
+          {description}
+        </DialogDescription>
+        <div className="flex flex-col gap-[10px]">
           <Button
-            onClick={handleConfirm}
+            variant="destructive"
+            className="w-full"
+            onClick={onConfirm}
             disabled={isLoading}
-            className={
-              variant === 'destructive'
-                ? 'w-full h-11 bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200'
-                : 'w-full h-11 bg-forest-green hover:bg-forest-green/90 text-white transition-all duration-200'
-            }
           >
-            {isLoading ? 'Vent...' : confirmText}
+            {isLoading ? 'Vent…' : confirmText}
           </Button>
           <Button
-            onClick={onClose}
             variant="outline"
+            className="w-full"
+            onClick={onClose}
             disabled={isLoading}
-            className="w-full h-11 border-border/50 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all duration-200"
           >
             {cancelText}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
