@@ -84,11 +84,13 @@ Navigation stays state-driven in `App.tsx` / `MainMapScreen.tsx` (no router intr
 | "Flyt placering" fullscreen map editor | `LocationPickerModal.tsx` | 2.9 |
 | Photo lightbox | `ImageViewer.tsx` | 2.10 |
 | Delete confirm | `ConfirmationDialog.tsx` | 2.11 |
+| Map error card | `MapView.tsx` (+ `MainMapScreen.tsx` chrome) | 2.12 |
 | Location permission priming (new) | new component | 3.1 |
 | Offline banner | `OfflineBanner.tsx`, `PendingSyncBadge.tsx` | 3.2 |
 | PWA install sheet | `PWAInstallPrompt.tsx` | 3.3 |
 | PWA update toast | `PWAUpdatePrompt.tsx` | 3.4 |
 | Splash / manifest | `vite.config.ts`, `index.html`, icons | 3.5 |
+| Success/error toasts | `src/main.tsx` Toaster, `ui/sonner.tsx`, call sites | 3.6 |
 
 ---
 
@@ -116,11 +118,13 @@ token values from the Claude Design project via MCP before writing code.
 | 2.9 Location editor | [subtasks/2.9-location-editor.md](subtasks/2.9-location-editor.md) | |
 | 2.10 Photo lightbox | [subtasks/2.10-photo-lightbox.md](subtasks/2.10-photo-lightbox.md) | |
 | 2.11 Delete confirmation | [subtasks/2.11-delete-confirm.md](subtasks/2.11-delete-confirm.md) | |
+| 2.12 Map error state | [subtasks/2.12-map-error.md](subtasks/2.12-map-error.md) | |
 | 3.1 Location permission screen | [subtasks/3.1-permission-screen.md](subtasks/3.1-permission-screen.md) | |
 | 3.2 Offline banner & sync badge | [subtasks/3.2-offline-banner.md](subtasks/3.2-offline-banner.md) | |
 | 3.3 PWA install sheet | [subtasks/3.3-install-sheet.md](subtasks/3.3-install-sheet.md) | |
 | 3.4 PWA update toast | [subtasks/3.4-update-toast.md](subtasks/3.4-update-toast.md) | |
 | 3.5 Splash, manifest & identity | [subtasks/3.5-splash-manifest.md](subtasks/3.5-splash-manifest.md) | |
+| 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | |
 | 4.3 Asset optimization | [subtasks/4.3-asset-optimization.md](subtasks/4.3-asset-optimization.md) | |
@@ -378,6 +382,21 @@ used from both detail drawer (2.6) and add sheet (2.7). Design ref: `isLocation`
   (`delTint`), Spectral title "Slet dette fund?", body copy with spot name, stacked accent
   "Slet fund" + outlined "Annullér" buttons. Keep it generic enough for other confirmations.
 
+### 2.12 Map error state
+
+**Fits into plan:** added to the design after the initial scoping (2026-07-08); replaces the
+hard-coded English red error screen in `MapView.tsx`. Design ref: `isMapError` block.
+
+- Design's error card over a `--map-bg` + faded-contours backdrop: surface card (22px radius)
+  with `--map-land` disc + brand broken-map icon, Spectral "Kortet kunne ikke indlæses", body
+  copy, accent "Prøv igen" (retry/remount), outlined "Vis fund som liste" (switch to list view),
+  Space Mono error-detail footer.
+- Extend detection beyond the missing-token check to runtime style-load failures
+  (react-map-gl `onError`).
+- While the error shows: hide FAB, locate button, and location chip (per the design's
+  `showFab`/`isMapReady` logic); keep top bar and view toggle. Needs the error state surfaced to
+  `MainMapScreen.tsx`.
+
 ---
 
 ## Phase 3 — PWA & system surfaces
@@ -438,6 +457,20 @@ block.
   nice-to-have in-app boot screen — implement only if trivial (e.g. brief branded div while
   AuthContext restores), otherwise note as future.
 
+### 3.6 Action toasts (success / error)
+
+**Fits into plan:** added to the design after the initial scoping (2026-07-08); the design gives
+the sonner feedback toasts a dedicated treatment. Design ref: `isToastSuccess` / `isToastError`
+blocks + `fireToast` (3200ms auto-dismiss).
+
+- Restyle sonner to the design's bottom-anchored cards (~110px above bottom, 16px radius,
+  `ss-rise`, Spectral 15px message, circular dismiss ✕): success on `--brand` with gold check
+  disc, error on rust-brown `#7a2e1c` with warning-triangle disc.
+- Move the Toaster (mounted in `src/main.tsx`, currently top-right) to bottom-center, 3200ms
+  default duration, themed via the app's `useTheme`.
+- Align all toast copy to Danish "fund" terminology ("Fund gemt", "Fund slettet",
+  "Kunne ikke gemme — prøv igen"); fix remaining English messages.
+
 ---
 
 ## Phase 4 — Polish & cleanup
@@ -467,7 +500,8 @@ Verify visual quality at all badge sizes.
 - Manual QA script: welcome → sign-in → permission priming → map (locate, pins, cluster) → list
   (search, sort, distance) → detail (gallery, lightbox, edit location, share, delete) → add flow
   (type grid, photo, save) → filter → offline mode (banner, pending sync) → install prompt →
-  update toast → theme toggle + system theme change.
+  update toast → theme toggle + system theme change → map error card (invalid/missing token) →
+  success/error toasts (save, delete, failed mutation).
 
 ---
 
