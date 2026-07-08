@@ -12,7 +12,7 @@ import { useUserLocation } from '../hooks/useUserLocation';
 import { distanceToSpot } from '../utils/distance';
 import ImageViewer from './ImageViewer';
 import ConfirmationDialog from './ConfirmationDialog';
-import LocationPickerModal from './LocationPickerModal';
+import LocationEditorScreen from './LocationEditorScreen';
 import { PendingSyncBadge } from './PendingSyncBadge';
 import { getPendingImageUrls } from '../hooks/usePendingSpots';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -432,10 +432,11 @@ export default function PinDetailsDrawer({
         />
       )}
 
-      {/* Location editor (redesigned in subtask 2.9) */}
+      {/* Fullscreen location editor */}
       {showLocationPicker && spot && (
-        <LocationPickerModal
+        <LocationEditorScreen
           initialCoordinates={spot.coordinates}
+          type={spot.type}
           onSave={handleLocationSave}
           onClose={() => setShowLocationPicker(false)}
         />

@@ -5,7 +5,7 @@ import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import { X } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates, ForagingSpotWithPending } from '../lib/types';
-import LocationPickerModal from './LocationPickerModal';
+import LocationEditorScreen from './LocationEditorScreen';
 import { FORAGING_TYPES } from './types';
 import { getForagingSpotConfig } from './icons';
 import { getDanishLabel } from '../utils/danishLabels';
@@ -220,10 +220,11 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
         </SheetContent>
       </Sheet>
 
-      {/* Location Picker Modal */}
+      {/* Fullscreen location editor */}
       {showLocationPicker && (
-        <LocationPickerModal
+        <LocationEditorScreen
           initialCoordinates={currentCoordinates}
+          type={selectedType}
           onSave={handleLocationUpdate}
           onClose={() => setShowLocationPicker(false)}
         />

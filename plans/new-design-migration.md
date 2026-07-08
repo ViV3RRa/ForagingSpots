@@ -120,7 +120,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.6 Detail drawer | [subtasks/2.6-detail-drawer.md](subtasks/2.6-detail-drawer.md) | ✅ Done (2026-07-08) |
 | 2.7 Add/edit sheet | [subtasks/2.7-add-edit-sheet.md](subtasks/2.7-add-edit-sheet.md) | ✅ Done (2026-07-08) |
 | 2.8 Filter sheet | [subtasks/2.8-filter-sheet.md](subtasks/2.8-filter-sheet.md) | ✅ Done (2026-07-08) |
-| 2.9 Location editor | [subtasks/2.9-location-editor.md](subtasks/2.9-location-editor.md) | |
+| 2.9 Location editor | [subtasks/2.9-location-editor.md](subtasks/2.9-location-editor.md) | ✅ Done (2026-07-08) |
 | 2.10 Photo lightbox | [subtasks/2.10-photo-lightbox.md](subtasks/2.10-photo-lightbox.md) | |
 | 2.11 Delete confirmation | [subtasks/2.11-delete-confirm.md](subtasks/2.11-delete-confirm.md) | |
 | 2.12 Map error state | [subtasks/2.12-map-error.md](subtasks/2.12-map-error.md) | |
