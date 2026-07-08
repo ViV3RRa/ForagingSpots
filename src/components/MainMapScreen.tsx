@@ -41,6 +41,9 @@ export default function MainMapScreen({
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(getAllForagingTypesSet());
   const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
+  // Map load failure (reported by MapView) — hides the FAB and location chip
+  // while the error card shows; the top bar and Kort/Liste toggle stay
+  const [mapError, setMapError] = useState(false);
   
   // TanStack Query hooks for optimistic updates
   const queryClient = useQueryClient();
@@ -236,6 +239,8 @@ export default function MainMapScreen({
             centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
             initialViewState={mapViewState}
             onViewStateChange={handleMapViewStateChange}
+            onShowList={() => setViewMode('list')}
+            onMapErrorChange={setMapError}
           />
         ) : (
           <SpotListView
@@ -269,11 +274,13 @@ export default function MainMapScreen({
         <OfflineBanner />
       </div>
 
-      {viewMode === 'map' && currentPosition && <LocationChip position={currentPosition} />}
+      {viewMode === 'map' && !mapError && currentPosition && <LocationChip position={currentPosition} />}
 
       <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
 
-      <FloatingActionButton onClick={() => setShowAddModal(true)} />
+      {!(viewMode === 'map' && mapError) && (
+        <FloatingActionButton onClick={() => setShowAddModal(true)} />
+      )}
 
       {showAddModal && currentPosition && (
         <AddEditModal

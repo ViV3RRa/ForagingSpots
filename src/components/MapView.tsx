@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, ForagingSpotWithPending } from '../lib/types';
-import { TreePine, Compass } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -28,12 +28,16 @@ function LocateIcon() {
   );
 }
 
+type MapErrorReason = 'missing-token' | 'load-failed';
+
 interface MapViewProps {
   foragingSpots: ForagingSpot[];
   onPinClick: (spot: ForagingSpot) => void;
   centerOnSpot?: ForagingSpot | null;
   initialViewState?: { longitude: number; latitude: number; zoom: number };
   onViewStateChange?: (viewState: { longitude: number; latitude: number; zoom: number }) => void;
+  onShowList?: () => void;
+  onMapErrorChange?: (hasError: boolean) => void;
 }
 
 export default function MapView({
@@ -41,12 +45,16 @@ export default function MapView({
   onPinClick,
   centerOnSpot,
   initialViewState,
-  onViewStateChange
+  onViewStateChange,
+  onShowList,
+  onMapErrorChange
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
   const { position: currentPosition } = useUserLocation();
-  const [mapError, setMapError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<MapErrorReason | null>(() =>
+    validateMapboxToken() ? null : 'missing-token'
+  );
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -84,11 +92,10 @@ export default function MapView({
     }
   }, [currentPosition, hasUserInteracted, mapLoaded]);
 
+  // The parent chrome (FAB, location chip) hides while the error card shows
   useEffect(() => {
-    if (!validateMapboxToken()) {
-      setMapError('Mapbox access token is not configured. Please check your .env file.');
-    }
-  }, []);
+    onMapErrorChange?.(mapError !== null);
+  }, [mapError, onMapErrorChange]);
 
   // Sync view state from the parent only before the map has loaded (e.g. the
   // first GPS fix arriving between mount and load). After load, all camera
@@ -194,27 +201,92 @@ export default function MapView({
     return { clusters, supercluster };
   }, [foragingSpots, viewState]);
 
-  // Show error state if Mapbox token is not configured
+  // Error card (failed load / missing token) — the map itself is unmounted
+  // while this shows, so "Prøv igen" remounts it by clearing the state
   if (mapError) {
     return (
-      <div className="h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-        <div className="text-center max-w-md px-6">
-          <div className="mb-4 text-red-500">
-            <TreePine className="h-16 w-16 mx-auto opacity-60" />
+      <div className="relative flex h-full items-center justify-center bg-map-bg p-[34px]">
+        {/* faded contour lines, echoing the map placeholder art */}
+        <svg
+          className="absolute inset-0 h-full w-full opacity-40"
+          viewBox="0 0 390 838"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <g stroke="var(--map-line)" strokeWidth="1.4" fill="none">
+            <path d="M-20 260 Q160 200 420 300" />
+            <path d="M-20 320 Q160 260 420 360" />
+            <path d="M-20 380 Q160 320 420 420" />
+            <path d="M-20 500 Q160 440 420 540" />
+            <path d="M-20 560 Q160 500 420 600" />
+          </g>
+        </svg>
+
+        <div className="relative w-full max-w-[340px] rounded-[22px] border border-line bg-surface px-[26px] pb-[24px] pt-[30px] text-center shadow-[0_14px_34px_-10px_var(--shadow)]">
+          <div className="relative mx-auto mb-[18px] size-[78px]">
+            <div className="absolute inset-0 rounded-full bg-map-land" />
+            {/* brand "broken map" icon — map outline crossed by a slash */}
+            <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 text-brand">
+              <svg
+                width="38"
+                height="38"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
+                <path d="M9 4v14M15 6v14" />
+                <path d="M3 3l18 18" />
+              </svg>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-red-700 mb-2">
-            Map Configuration Error
-          </h3>
-          <p className="text-red-600 mb-4 text-sm">
-            {mapError}
+
+          <h2 className="mb-[8px] font-serif text-[23px] font-semibold text-ink">
+            Kortet kunne ikke indlæses
+          </h2>
+          <p className="mb-[22px] text-[14.5px] leading-[1.6] text-ink2">
+            Vi kan ikke nå korttjenesten lige nu. Tjek din forbindelse — dine fund er stadig gemt
+            og kan ses som liste.
           </p>
-          <div className="bg-red-100 border border-red-300 rounded-lg p-3 text-xs text-red-700">
-            <p className="font-medium mb-1">To fix this:</p>
-            <ol className="list-decimal list-inside space-y-1 text-left">
-              <li>Sign up at https://account.mapbox.com/</li>
-              <li>Copy your access token</li>
-              <li>Add it to your .env file</li>
-            </ol>
+
+          <div className="flex flex-col gap-[10px]">
+            <button
+              type="button"
+              onClick={() => {
+                setMapLoaded(false);
+                setMapError(validateMapboxToken() ? null : 'missing-token');
+              }}
+              className="flex h-[52px] items-center justify-center gap-[8px] rounded-[14px] bg-accent font-serif text-[16px] font-semibold text-accent-ink shadow-[0_8px_22px_-6px_var(--accent)] transition-transform active:scale-95"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 11a8 8 0 0 0-14-4M4 5v3h3M4 13a8 8 0 0 0 14 4M20 19v-3h-3" />
+              </svg>
+              Prøv igen
+            </button>
+            <button
+              type="button"
+              onClick={onShowList}
+              className="flex h-[52px] items-center justify-center rounded-[14px] border border-line font-serif text-[16px] font-medium text-ink transition-transform active:scale-95"
+            >
+              Vis fund som liste
+            </button>
+          </div>
+
+          <div className="mt-[18px] font-mono text-[10.5px] tracking-[0.06em] text-faint">
+            {mapError === 'missing-token'
+              ? 'Fejl: kort-token mangler'
+              : 'Fejl: kortet kunne ikke hentes'}
           </div>
         </div>
       </div>
@@ -269,6 +341,14 @@ export default function MapView({
           }
         }}
         onLoad={() => setMapLoaded(true)}
+        onError={() => {
+          // Tile hiccups while browsing an already-loaded map are transient;
+          // only treat failures before the first successful load as fatal
+          // (offline first-load, invalid token rejected by the API).
+          if (!mapLoaded) {
+            setMapError('load-failed');
+          }
+        }}
         mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
         style={{ width: '100%', height: '100%' }}
         mapStyle={getMapStyle(theme)}
