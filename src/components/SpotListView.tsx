@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Button } from './ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { MonoLabel } from './ui/MonoLabel';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { Search, MoreVertical, Edit, Trash2, Share, MapPin } from 'lucide-react';
+import { Search } from 'lucide-react';
 import type { ForagingSpot, ForagingType, ForagingSpotWithPending } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +10,7 @@ import { distanceToSpot } from '../utils/distance';
 import { formatRelativeDate } from '../utils/relativeDate';
 import ConfirmationDialog from './ConfirmationDialog';
 import { PendingSyncBadge } from './PendingSyncBadge';
+import SpotActionSheet from './SpotActionSheet';
 import TypeBadge from './TypeBadge';
 
 interface SpotListViewProps {
@@ -33,6 +32,13 @@ interface SpotListViewProps {
 
 type SortOption = 'newest' | 'oldest' | 'type' | 'location';
 
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'newest', label: 'Nyeste først' },
+  { value: 'oldest', label: 'Ældste først' },
+  { value: 'type', label: 'Efter type' },
+  { value: 'location', label: 'Efter lokation' },
+];
+
 const formatCoordinates = (lat: number, lng: number) =>
   `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
 
@@ -51,6 +57,8 @@ export default function SpotListView({
   totalTypes
 }: SpotListViewProps) {
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortOpen, setSortOpen] = useState(false);
+  const [menuSpot, setMenuSpot] = useState<ForagingSpot | null>(null);
   const [spotToDelete, setSpotToDelete] = useState<ForagingSpot | null>(null);
 
   const { user } = useAuth();
@@ -127,26 +135,63 @@ export default function SpotListView({
 
   return (
     <div className="h-full overflow-y-auto bg-bg [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {/* Spacer clears the floating top bar (design leaves ~150px incl. status bar) */}
-      <div className="h-[calc(max(14px,env(safe-area-inset-top))+68px)]" />
+      {/* Spacer clears the floating top bar (design: 120px incl. its 56px status bar) */}
+      <div className="h-[calc(max(14px,env(safe-area-inset-top))+64px)]" />
 
       <div className="pb-[calc(env(safe-area-inset-bottom,0px)+130px)] pl-[max(22px,env(safe-area-inset-left))] pr-[max(22px,env(safe-area-inset-right))]">
-        {/* Count + sort — no equivalent in the design mock, so styled as a quiet mono/serif row */}
-        <div className="flex items-center justify-between">
-          <MonoLabel>
+        {/* Toolbar: mono count + custom sort popover (design: isList toolbar / sortOpen) */}
+        <div className="flex items-center justify-between px-[2px] pb-[12px] pt-[8px]">
+          <MonoLabel className="text-[12px] tracking-[.12em]">
             {sortedSpots.length} fund
           </MonoLabel>
-          <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-            <SelectTrigger className="w-auto gap-[7px] rounded-[10px] border-line bg-surface px-[13px] font-serif text-[13.5px] text-ink2 shadow-none data-[size=default]:h-[38px] dark:bg-surface dark:hover:bg-surface">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Nyeste først</SelectItem>
-              <SelectItem value="oldest">Ældste først</SelectItem>
-              <SelectItem value="type">Efter type</SelectItem>
-              <SelectItem value="location">Efter lokation</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="relative">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={sortOpen}
+              onClick={() => setSortOpen((open) => !open)}
+              className="flex h-[38px] items-center gap-[8px] rounded-[11px] border border-line bg-surface px-[12px] shadow-[0_2px_6px_var(--shadow)]"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-mono" aria-hidden>
+                <path d="M7 4v16M7 20l-3-3M7 4l3 3M17 20V4M17 4l-3 3M17 20l3-3" />
+              </svg>
+              <span className="font-serif text-[14px] text-ink">
+                {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden>
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {sortOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setSortOpen(false)} />
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 w-[220px] animate-[ss-fade_.16s_ease] rounded-[16px] border border-line bg-surface p-[6px] shadow-[0_14px_34px_-8px_rgba(0,0,0,.32)]"
+                >
+                  {SORT_OPTIONS.map(({ value, label }) => {
+                    const active = sortBy === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={active}
+                        onClick={() => { setSortBy(value); setSortOpen(false); }}
+                        className={`flex w-full items-center justify-between rounded-[11px] px-[12px] py-[11px] text-left ${
+                          active ? 'bg-[rgba(181,80,47,.08)] dark:bg-[rgba(201,162,75,.14)]' : ''
+                        }`}
+                      >
+                        <span className={`font-serif text-[15px] ${active ? 'text-accent' : 'text-ink2'}`}>{label}</span>
+                        {active && <span className="text-[14px] text-accent">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {sortedSpots.length > 0 ? (
@@ -162,7 +207,7 @@ export default function SpotListView({
               <div
                 key={spot.id}
                 onClick={() => onSpotClick(spot)}
-                className={`flex cursor-pointer gap-[15px] border-b border-line2 px-[4px] py-[18px] ${isPending ? 'opacity-90' : ''}`}
+                className={`flex cursor-pointer gap-[14px] border-b border-line2 px-[4px] py-[18px] ${isPending ? 'opacity-90' : ''}`}
               >
                 <TypeBadge type={spot.type} size={60} ring={false} />
 
@@ -180,57 +225,41 @@ export default function SpotListView({
                     <p className="mt-[3px] truncate text-[13.5px] leading-[1.5] text-ink2">{spot.notes}</p>
                   )}
 
-                  <div className="mt-[9px] flex items-center justify-between gap-[10px]">
-                    <span className="truncate font-mono text-[11px] text-mono">
-                      {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
-                      {distance && ` · ${distance}`}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-[7px]">
+                  <div className="mt-[9px] truncate font-mono text-[11px] text-mono">
+                    {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
+                    {distance && ` · ${distance}`}
+                  </div>
+
+                  {(isPending || sharedWith.length > 0) && (
+                    <div className="mt-[9px] flex flex-wrap items-center gap-[6px]">
                       {isPending && <PendingSyncBadge hasError={hasError} />}
                       {sharedWith.length > 0 && (
-                        <span className="font-mono text-[11px] text-faint">Delt · {sharedWith.length}</span>
+                        <span className="inline-flex items-center gap-[5px] rounded-[8px] bg-line2 px-[9px] py-[3px] text-[11px] font-semibold text-ink2">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <circle cx="18" cy="6" r="2.5" />
+                            <circle cx="6" cy="12" r="2.5" />
+                            <circle cx="18" cy="18" r="2.5" />
+                            <path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6" />
+                          </svg>
+                          Delt · {sharedWith.length}
+                        </span>
                       )}
-                    </span>
-                  </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Not in the design mock, but "Vis på kort" is only reachable from here */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      aria-label="Flere handlinger"
-                      className="flex size-[32px] shrink-0 items-center justify-center self-center rounded-full text-faint transition-colors hover:bg-surface hover:text-ink2"
-                    >
-                      <MoreVertical className="size-[17px]" strokeWidth={1.8} />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewOnMap(spot); }}>
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Vis på kort
-                    </DropdownMenuItem>
-                    {user?.id === spot.user && (
-                      <>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(spot); }}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Rediger
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(spot); }}>
-                          <Share className="mr-2 h-4 w-4" />
-                          Del
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(spot); }}
-                          className="text-accent focus:text-accent"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Slet
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <button
+                  type="button"
+                  aria-label="Flere handlinger"
+                  onClick={(e) => { e.stopPropagation(); setMenuSpot(spot); }}
+                  className="flex size-[32px] shrink-0 items-center justify-center self-start rounded-[9px] text-faint transition-colors hover:bg-surface hover:text-ink2"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <circle cx="12" cy="5" r="1.7" />
+                    <circle cx="12" cy="12" r="1.7" />
+                    <circle cx="12" cy="19" r="1.7" />
+                  </svg>
+                </button>
               </div>
             );
           })
@@ -254,6 +283,17 @@ export default function SpotListView({
           </div>
         )}
       </div>
+
+      {/* Row overflow menu — design's bottom action sheet */}
+      <SpotActionSheet
+        spot={menuSpot}
+        isOwner={menuSpot !== null && user?.id === menuSpot.user}
+        onClose={() => setMenuSpot(null)}
+        onViewOnMap={onViewOnMap}
+        onEdit={onEdit}
+        onShare={onShare}
+        onDelete={handleDeleteClick}
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog

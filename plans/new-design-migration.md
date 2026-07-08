@@ -124,7 +124,7 @@ token values from the Claude Design project via MCP before writing code.
 | 2.10 Photo lightbox | [subtasks/2.10-photo-lightbox.md](subtasks/2.10-photo-lightbox.md) | ✅ Done (2026-07-08) |
 | 2.11 Delete confirmation | [subtasks/2.11-delete-confirm.md](subtasks/2.11-delete-confirm.md) | ✅ Done (2026-07-08) |
 | 2.12 Map error state | [subtasks/2.12-map-error.md](subtasks/2.12-map-error.md) | ✅ Done (2026-07-08) |
-| 2.13 List toolbar, sort menu & row action sheet | [subtasks/2.13-list-toolbar-rowmenu.md](subtasks/2.13-list-toolbar-rowmenu.md) | |
+| 2.13 List toolbar, sort menu & row action sheet | [subtasks/2.13-list-toolbar-rowmenu.md](subtasks/2.13-list-toolbar-rowmenu.md) | ✅ Done (2026-07-08) |
 | 2.14 Map cluster & compass | [subtasks/2.14-map-cluster-compass.md](subtasks/2.14-map-cluster-compass.md) | |
 | 2.15 Sign-in error & loading states | [subtasks/2.15-signin-states.md](subtasks/2.15-signin-states.md) | |
 | 2.16 Top-bar states | [subtasks/2.16-topbar-states.md](subtasks/2.16-topbar-states.md) | |
