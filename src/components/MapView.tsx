@@ -4,7 +4,7 @@ import Supercluster from 'supercluster';
 import type { ForagingSpot, ForagingSpotWithPending } from '../lib/types';
 import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
-import { useUserLocation } from '../hooks/useUserLocation';
+import { startUserLocation, useUserLocation } from '../hooks/useUserLocation';
 import TypeBadge from './TypeBadge';
 import { PendingSyncIcon } from './PendingSyncBadge';
 
@@ -356,6 +356,11 @@ export default function MapView({
         {/* Locate button — 52px circle above the FAB; active GPS-follow inverts to brand colors */}
         <button
           onClick={() => {
+            // Re-entry point after the priming screen was skipped: if the
+            // location gate is still closed (permission 'prompt'), this fires
+            // the browser's native prompt directly. No-op when already active.
+            startUserLocation();
+
             if (mapRef.current && currentPosition) {
               mapRef.current.flyTo({
                 center: [currentPosition.lng, currentPosition.lat],

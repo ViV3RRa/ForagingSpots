@@ -6,7 +6,9 @@ import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
+import LocationPermissionScreen from './components/LocationPermissionScreen';
 import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from './hooks/useForagingSpots';
+import { queryGeolocationPermission, startUserLocation } from './hooks/useUserLocation';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { usePendingSpots } from './hooks/usePendingSpots';
 import type { ForagingSpot } from './lib/types';
@@ -15,9 +17,21 @@ import IconShowcase from './components/IconShowcase';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from './lib/queryClient';
 
+// Set once either priming action is taken, so the screen never nags again.
+const LOCATION_ASKED_KEY = 'ss-location-asked';
+
+function hasBeenAskedForLocation(): boolean {
+  try {
+    return localStorage.getItem(LOCATION_ASKED_KEY) !== null;
+  } catch {
+    return true; // No storage → we could never remember the answer; don't nag.
+  }
+}
+
 function AppContent() {
   const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'map' | 'icons'>('welcome');
+  const [showLocationPriming, setShowLocationPriming] = useState(false);
   const queryClient = useQueryClient();
 
   // TanStack Query hooks for data management
@@ -50,12 +64,38 @@ function AppContent() {
     }
   }, [isAuthenticated, pendingSpots.length, syncPendingSpots, queryClient]);
 
-  // Check geolocation permission
+  // Location permission priming (subtask 3.1): once after sign-in, while the
+  // permission state is still 'prompt' and the user was never asked before,
+  // show the priming screen over the map. Any failure just lands on the map.
   useEffect(() => {
-    navigator.permissions.query({ name: 'geolocation' }).then((permissionStatus) =>
-      console.log('Geolocation permission status:', permissionStatus.state)
-    );
-  }, []);
+    if (!isAuthenticated || !user) {
+      setShowLocationPriming(false);
+      return;
+    }
+    if (hasBeenAskedForLocation()) return;
+
+    let cancelled = false;
+    queryGeolocationPermission()
+      .then((permission) => {
+        if (!cancelled && permission === 'prompt') setShowLocationPriming(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user]);
+
+  const dismissLocationPriming = (allow: boolean) => {
+    try {
+      localStorage.setItem(LOCATION_ASKED_KEY, '1');
+    } catch {
+      // Storage unavailable — worst case the screen shows again next session.
+    }
+    // Opening the location gate is what fires the browser's native prompt;
+    // the map shows regardless of what the user answers there.
+    if (allow) startUserLocation();
+    setShowLocationPriming(false);
+  };
 
   // Update screen based on authentication state
   useEffect(() => {
@@ -132,14 +172,22 @@ function AppContent() {
   // Show map screen if authenticated
   if (isAuthenticated && user) {
     return (
-      <MainMapScreen 
-        user={user}
-        foragingSpots={foragingSpots}
-        onSignOut={handleSignOut}
-        onAddSpot={addForagingSpot}
-        onUpdateSpot={updateForagingSpot}
-        onDeleteSpot={deleteForagingSpot}
-      />
+      <>
+        <MainMapScreen
+          user={user}
+          foragingSpots={foragingSpots}
+          onSignOut={handleSignOut}
+          onAddSpot={addForagingSpot}
+          onUpdateSpot={updateForagingSpot}
+          onDeleteSpot={deleteForagingSpot}
+        />
+        {showLocationPriming && (
+          <LocationPermissionScreen
+            onAllow={() => dismissLocationPriming(true)}
+            onSkip={() => dismissLocationPriming(false)}
+          />
+        )}
+      </>
     );
   }
 
