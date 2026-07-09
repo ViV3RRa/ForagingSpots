@@ -299,9 +299,10 @@ export default function MainMapScreen({
 
       <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
 
-      {!(viewMode === 'map' && mapError) && (
-        <FloatingActionButton onClick={() => setShowAddModal(true)} />
-      )}
+      {/* Deviation from the design's map-error state (2.12): the FAB stays —
+          adding a find works fine without the map, as the list view shows */}
+      <FloatingActionButton onClick={() => setShowAddModal(true)} />
+
 
       {showAddModal && currentPosition && (
         <AddEditModal
