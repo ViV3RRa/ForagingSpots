@@ -98,6 +98,7 @@ Navigation stays state-driven in `App.tsx` / `MainMapScreen.tsx` (no router intr
 | Success/error toasts | `src/main.tsx` Toaster, `ui/sonner.tsx`, call sites | 3.6 |
 | App icon set (monogram, new) | `public/app-icon/`, `vite.config.ts`, `index.html` | 3.7 |
 | No-location badge + degraded chrome (new) | `MainMapScreen.tsx`, `MapView.tsx`, `useUserLocation.ts` | 3.8 |
+| Satellite map mode (new) | `MapView.tsx`, `MainMapScreen.tsx`, `src/utils/mapbox.ts` | 3.9 |
 
 ---
 
@@ -139,6 +140,7 @@ token values from the Claude Design project via MCP before writing code.
 | 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | ✅ Done (2026-07-09) |
 | 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | |
 | 3.8 No-location state | [subtasks/3.8-no-location-state.md](subtasks/3.8-no-location-state.md) | |
+| 3.9 Satellite map mode | [subtasks/3.9-satellite-mode.md](subtasks/3.9-satellite-mode.md) | |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | |
 | 4.3 Asset optimization | [subtasks/4.3-asset-optimization.md](subtasks/4.3-asset-optimization.md) | |
@@ -542,6 +544,23 @@ degradation. Design ref: `showNoLoc` block + `noLoc` state in `Skovens Skatte.dc
   location editor), and "Gem fund" stays disabled until a location arrives automatically
   ("Nuværende") or is picked manually ("Manuel"). Design ref: `addLocEl`/`addLoc` in the script.
 
+### 3.9 Satellite map mode (added 2026-07-09)
+
+**Fits into plan:** added to the design after the initial scoping; lets users inspect terrain
+(canopy, clearings, field edges) on real imagery. Design ref: `mapStyle` state, `toggleMapStyle`,
+`mapBgEl` / `layersBg` / `layersInk` / `layersLabel` in `Skovens Skatte.dc.html`.
+
+- 52px circular "layers" toggle top-right below the floating bar (visible when map ready — also
+  in the no-location state; hidden with sheets/map error). Inactive: surface + brand icon;
+  active: inverted brand fill, same pattern as the locate button. Icon-only, `aria-label`
+  "Satellit"/"Kort".
+- Basemap swaps to a **custom Mapbox Studio satellite style** (single, theme-independent;
+  Satellite Streets classic template thinned per the 1.4 recipe, trails as light-gold dashes) —
+  stock `satellite-streets-v12` fallback via `VITE_MAPBOX_STYLE_SATELLITE`. All other map chrome
+  (pins, clusters, user dot, chip, locate, compass) is unchanged.
+- Mode is session-only (persists across view switches/sheets; boots in base mode). Location
+  editor stays on the base style.
+
 ## Phase 4 — Polish & cleanup
 
 ### 4.1 Dark-mode + safe-area audit
@@ -571,6 +590,8 @@ Verify visual quality at all badge sizes.
   (type grid, photo, save) → filter → offline mode (banner, pending sync) → install prompt →
   update toast → theme toggle + system theme change → map error card (invalid/missing token) →
   no-location badge + hidden locate button (DevTools Sensors: "Location unavailable") →
+  satellite toggle (imagery, inverted button, persists across view switch, hidden with
+  sheets/map error, offline tiles) →
   success/error toasts (save, delete, failed mutation) → list sort menu + row action sheet →
   map cluster + compass (rotate) → sign-in error/loading → detail gallery at 0/1/2/3/5 photos →
   share section (empty + populated) → offline-locked detail.
