@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, ForagingSpotWithPending } from '../lib/types';
-import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken } from '../utils/mapbox';
+import { MAPBOX_ACCESS_TOKEN, getMapStyle, validateMapboxToken, type MapMode } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
 import { startUserLocation, useUserLocation } from '../hooks/useUserLocation';
 import TypeBadge from './TypeBadge';
@@ -37,6 +37,7 @@ interface MapViewProps {
   onViewStateChange?: (viewState: { longitude: number; latitude: number; zoom: number }) => void;
   onShowList?: () => void;
   onMapErrorChange?: (hasError: boolean) => void;
+  mapMode?: MapMode;
 }
 
 export default function MapView({
@@ -46,7 +47,8 @@ export default function MapView({
   initialViewState,
   onViewStateChange,
   onShowList,
-  onMapErrorChange
+  onMapErrorChange,
+  mapMode = 'base'
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
@@ -350,7 +352,7 @@ export default function MapView({
         }}
         mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={getMapStyle(theme)}
+        mapStyle={getMapStyle(theme, mapMode)}
       >
         
         {/* Locate button — 52px circle above the FAB; active GPS-follow inverts to

@@ -11,6 +11,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
 import { getForagingSpotConfig } from './icons';
 import { useUserLocation } from '../hooks/useUserLocation';
+import type { MapMode } from '../utils/mapbox';
 import { useUpdateSpot } from '../hooks/useForagingSpots';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
@@ -44,6 +45,10 @@ export default function MainMapScreen({
   // Map load failure (reported by MapView) — hides the FAB and location chip
   // while the error card shows; the top bar and Kort/Liste toggle stay
   const [mapError, setMapError] = useState(false);
+  // Basemap mode — session-only by construction (plain state, no persistence):
+  // it survives Kort/Liste switches and sheets because this component stays
+  // mounted, and a reload boots back in base mode
+  const [mapMode, setMapMode] = useState<MapMode>('base');
   
   // TanStack Query hooks for optimistic updates
   const queryClient = useQueryClient();
@@ -239,6 +244,10 @@ export default function MainMapScreen({
     setMapViewState(newViewState);
   };
 
+  // Any bottom sheet (add, edit, detail drawer, filter) hides the map-style toggle
+  const sheetOpen =
+    showAddModal || editingSpot !== null || selectedSpot !== null || showFilterDialog;
+
   // Search (driven by the floating top bar) filters both map pins and list rows
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredSpots = foragingSpots.filter(spot => {
@@ -262,6 +271,7 @@ export default function MainMapScreen({
             onViewStateChange={handleMapViewStateChange}
             onShowList={() => setViewMode('list')}
             onMapErrorChange={setMapError}
+            mapMode={mapMode}
           />
         ) : (
           <SpotListView
@@ -300,6 +310,16 @@ export default function MainMapScreen({
           arrives or drops out */}
       {viewMode === 'map' && !mapError && currentPosition && <LocationChip position={currentPosition} />}
       {viewMode === 'map' && !mapError && locationStatus === 'unavailable' && <NoLocationBadge />}
+
+      {/* Basemap toggle gates on the design's isMapReady (map view, no sheet,
+          no map error) — deliberately not on location: it stays visible in the
+          no-location state, unlike the locate button */}
+      {viewMode === 'map' && !mapError && !sheetOpen && (
+        <MapStyleToggle
+          satellite={mapMode === 'satellite'}
+          onToggle={() => setMapMode((mode) => (mode === 'satellite' ? 'base' : 'satellite'))}
+        />
+      )}
 
       <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
 
@@ -383,6 +403,46 @@ function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
         </button>
       ))}
     </div>
+  );
+}
+
+/* Stacked-diamonds "layers" icon from the design's map-style toggle */
+function LayersIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3l9 5-9 5-9-5 9-5z" />
+      <path d="M3 13l9 5 9-5" />
+    </svg>
+  );
+}
+
+// 52px circular basemap toggle, top-right below the floating bar; satellite
+// mode inverts to brand colors, same pattern as the locate button's active
+// state. Label names the mode you'd switch to. No mode-switch animation.
+function MapStyleToggle({ satellite, onToggle }: { satellite: boolean; onToggle: () => void }) {
+  const label = satellite ? 'Kort' : 'Satellit';
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      title={label}
+      className={`absolute right-[max(24px,env(safe-area-inset-right))] top-[calc(max(14px,env(safe-area-inset-top))+88px)] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] active:scale-95 ${
+        satellite ? 'bg-brand text-brand-ink' : 'bg-surface text-brand'
+      }`}
+    >
+      <LayersIcon />
+    </button>
   );
 }
 
