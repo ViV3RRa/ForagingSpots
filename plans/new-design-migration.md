@@ -96,6 +96,7 @@ Navigation stays state-driven in `App.tsx` / `MainMapScreen.tsx` (no router intr
 | PWA update toast | `PWAUpdatePrompt.tsx` | 3.4 |
 | Splash / manifest | `vite.config.ts`, `index.html`, icons | 3.5 |
 | Success/error toasts | `src/main.tsx` Toaster, `ui/sonner.tsx`, call sites | 3.6 |
+| App icon set (monogram, new) | `public/app-icon/`, `vite.config.ts`, `index.html` | 3.7 |
 
 ---
 
@@ -135,6 +136,7 @@ token values from the Claude Design project via MCP before writing code.
 | 3.4 PWA update toast | [subtasks/3.4-update-toast.md](subtasks/3.4-update-toast.md) | |
 | 3.5 Splash, manifest & identity | [subtasks/3.5-splash-manifest.md](subtasks/3.5-splash-manifest.md) | |
 | 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | |
+| 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | |
 | 4.3 Asset optimization | [subtasks/4.3-asset-optimization.md](subtasks/4.3-asset-optimization.md) | |
@@ -485,8 +487,9 @@ a dedicated treatment. Design ref: `isOffline` block.
 **Fits into plan:** makes the installed PWA match the design end-to-end. Design ref: `isSplash`
 block.
 
-- Regenerate app icons (192/512/maskable) from the design's icon concept (brand-green rounded
-  square with the three type-badge cluster) — export from the design project or rebuild in SVG.
+- ~~Regenerate app icons from the badge-cluster concept~~ — superseded: the design's final
+  monogram icon set landed 2026-07-09 and its rollout is subtask **3.7**; this subtask no longer
+  touches icon files.
 - `vite.config.ts` manifest: `theme_color: #2f4a32` (or `#f4efe3` — match chrome), 
   `background_color: #f4efe3`, name/short_name check.
 - `index.html`: theme-color metas (light/dark media variants — coordinated with 1.1's dynamic
@@ -509,7 +512,18 @@ blocks + `fireToast` (3200ms auto-dismiss).
 - Align all toast copy to Danish "fund" terminology ("Fund gemt", "Fund slettet",
   "Kunne ikke gemme — prøv igen"); fix remaining English messages.
 
----
+### 3.7 App icon replacement (added 2026-07-09)
+
+**Fits into plan:** the design gained a final app icon — a Spectral "S" monogram in paper white
+on terracotta with faint contour rings (`App Icon - Skovens Skatte.dc.html`), superseding the
+badge-cluster concept 3.5 originally described. The exported PNG ladder (40–1024px) is already
+committed in `public/app-icon/` and the install sheet (3.3) uses it.
+
+- Point favicon, apple-touch-icons (`index.html`), and the manifest 192/512/maskable entries
+  (`vite.config.ts`) at the new set; fix the stale `includeAssets` list (phantom `favicon.ico` /
+  `masked-icon.svg`).
+- Verify the maskable safe zone; generate a padded maskable variant only if needed.
+- Delete the six old green icon files from `public/` after confirming nothing references them.
 
 ## Phase 4 — Polish & cleanup
 

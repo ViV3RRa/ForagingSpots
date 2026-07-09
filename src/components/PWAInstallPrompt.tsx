@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import { Button } from './ui/button';
-import { getForagingSpotConfig } from './icons';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -50,37 +49,18 @@ const BENEFITS = [
   },
 ];
 
-/* The design's 64px app-icon tile: brand square holding the mini badge cluster
-   (chanterelle/blueberry/porcini) — same concept subtask 3.5 turns into manifest icons. */
+/* The final app icon from the design ("App Icon - Skovens Skatte": Spectral "S"
+   monogram on terracotta) — full ladder lives in public/app-icon/, which subtask 3.5
+   wires into the manifest. */
 function AppIconTile() {
-  const chanterelle = getForagingSpotConfig('chanterelle', 21);
-  const blueberry = getForagingSpotConfig('blueberry', 16);
-  const porcini = getForagingSpotConfig('porcini', 17);
-
   return (
-    <div
-      aria-hidden
-      className="relative h-[64px] w-[64px] shrink-0 overflow-hidden rounded-[16px] bg-brand shadow-[0_6px_16px_-4px_var(--brand)]"
-    >
-      <div
-        className="absolute left-[12px] top-[8px] flex h-[30px] w-[30px] items-center justify-center rounded-full"
-        style={chanterelle.background}
-      >
-        {chanterelle.icon}
-      </div>
-      <div
-        className="absolute right-[9px] top-[22px] flex h-[24px] w-[24px] items-center justify-center rounded-full"
-        style={blueberry.background}
-      >
-        {blueberry.icon}
-      </div>
-      <div
-        className="absolute bottom-[6px] left-[20px] flex h-[26px] w-[26px] items-center justify-center rounded-full"
-        style={porcini.background}
-      >
-        {porcini.icon}
-      </div>
-    </div>
+    <img
+      src="/app-icon/icon-192.png"
+      alt=""
+      width={64}
+      height={64}
+      className="h-[64px] w-[64px] shrink-0 rounded-[16px] shadow-[0_6px_16px_-4px_var(--shadow)]"
+    />
   );
 }
 
