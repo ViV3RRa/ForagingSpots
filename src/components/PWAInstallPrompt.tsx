@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { Download, X, Share, Plus } from 'lucide-react';
 import { getForagingSpotConfig } from './icons';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,6 +12,78 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+const benefitIconProps = {
+  width: 22,
+  height: 22,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+} as const;
+
+const BENEFITS = [
+  {
+    label: ['Åbner', 'lynhurtigt'],
+    icon: (
+      <svg {...benefitIconProps} strokeWidth={1.6}>
+        <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
+      </svg>
+    ),
+  },
+  {
+    label: ['Virker', 'offline'],
+    icon: (
+      <svg {...benefitIconProps} strokeWidth={1.6}>
+        <path d="M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18z" />
+      </svg>
+    ),
+  },
+  {
+    label: ['Fuld', 'skærm'],
+    icon: (
+      <svg {...benefitIconProps} strokeWidth={1.7}>
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+      </svg>
+    ),
+  },
+];
+
+/* The design's 64px app-icon tile: brand square holding the mini badge cluster
+   (chanterelle/blueberry/porcini) — same concept subtask 3.5 turns into manifest icons. */
+function AppIconTile() {
+  const chanterelle = getForagingSpotConfig('chanterelle', 21);
+  const blueberry = getForagingSpotConfig('blueberry', 16);
+  const porcini = getForagingSpotConfig('porcini', 17);
+
+  return (
+    <div
+      aria-hidden
+      className="relative h-[64px] w-[64px] shrink-0 overflow-hidden rounded-[16px] bg-brand shadow-[0_6px_16px_-4px_var(--brand)]"
+    >
+      <div
+        className="absolute left-[12px] top-[8px] flex h-[30px] w-[30px] items-center justify-center rounded-full"
+        style={chanterelle.background}
+      >
+        {chanterelle.icon}
+      </div>
+      <div
+        className="absolute right-[9px] top-[22px] flex h-[24px] w-[24px] items-center justify-center rounded-full"
+        style={blueberry.background}
+      >
+        {blueberry.icon}
+      </div>
+      <div
+        className="absolute bottom-[6px] left-[20px] flex h-[26px] w-[26px] items-center justify-center rounded-full"
+        style={porcini.background}
+      >
+        {porcini.icon}
+      </div>
+    </div>
+  );
+}
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -20,22 +91,12 @@ export default function PWAInstallPrompt() {
 
   // Detect iOS
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isIOSPWA = 'standalone' in window.navigator && 
+  const isIOSPWA = 'standalone' in window.navigator &&
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
   useEffect(() => {
-    // Debug logging for iOS detection
-    console.log('PWA Install Prompt - Debug Info:', {
-      isIOS,
-      isIOSPWA,
-      userAgent: navigator.userAgent,
-      standalone: 'standalone' in window.navigator ? (window.navigator as Navigator & { standalone?: boolean }).standalone : 'not available',
-      displayMode: window.matchMedia('(display-mode: standalone)').matches
-    });
-
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches || isIOSPWA) {
-      console.log('PWA Install Prompt - App already installed, hiding prompt');
       setIsInstalled(true);
       return;
     }
@@ -57,60 +118,26 @@ export default function PWAInstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // For iOS: Show install prompt after delay since beforeinstallprompt doesn't exist
-    if (isIOS && !isIOSPWA) {
-      console.log('PWA Install Prompt - Setting iOS timer for 3 seconds');
-      const timer = setTimeout(() => {
-        console.log('PWA Install Prompt - iOS timer fired, checking session storage');
-        if (!sessionStorage.getItem('pwa-install-dismissed')) {
-          console.log('PWA Install Prompt - Showing iOS install prompt');
-          setShowInstallPrompt(true);
-        } else {
-          console.log('PWA Install Prompt - iOS prompt dismissed in session storage');
-        }
-      }, 3000); // Show after 3 seconds on iOS
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        window.removeEventListener('appinstalled', handleAppInstalled);
-      };
-    }
-
-    // For development: show install prompt after 3 seconds if on localhost
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      const timer = setTimeout(() => {
+    // iOS has no beforeinstallprompt, and localhost (dev) rarely fires it —
+    // both show the sheet after a delay instead
+    const isLocalhost =
+      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    let timer: number | undefined;
+    if ((isIOS && !isIOSPWA) || isLocalhost) {
+      timer = window.setTimeout(() => {
         if (!sessionStorage.getItem('pwa-install-dismissed')) {
           setShowInstallPrompt(true);
         }
-      }, 3000);
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        window.removeEventListener('appinstalled', handleAppInstalled);
-      };
+      }, 2000);
     }
 
     return () => {
+      if (timer !== undefined) clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setShowInstallPrompt(false);
-    }
-    
-    setDeferredPrompt(null);
-  };
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
@@ -118,82 +145,106 @@ export default function PWAInstallPrompt() {
     sessionStorage.setItem('pwa-install-dismissed', 'true');
   };
 
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      setShowInstallPrompt(false);
+    } else {
+      // Declining the native prompt consumes the event, so the CTA can't fire again
+      handleDismiss();
+    }
+
+    setDeferredPrompt(null);
+  };
+
   // Don't show if already installed or dismissed this session
-  if (isInstalled || !showInstallPrompt || sessionStorage.getItem('pwa-install-dismissed')) {
+  if (isInstalled || sessionStorage.getItem('pwa-install-dismissed')) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-80">
-      <Card className="shadow-lg border-forest-green border-2">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl">{getForagingSpotConfig('chanterelle').icon}</div>
-              <div>
-                <h3 className="font-semibold text-sm">Installér Skovens Skatte</h3>
-                <p className="text-xs text-gray-600">Få nem adgang fra din hjemmeskærm</p>
-              </div>
+    <Sheet
+      open={showInstallPrompt}
+      onOpenChange={(open) => {
+        if (!open) handleDismiss();
+      }}
+    >
+      <SheetContent side="bottom" className="bg-bg sm:mx-auto sm:max-w-[520px]">
+        {/* Padding lives here, not on SheetContent, so the primitive's .safe-area-bottom
+            padding (0 without insets) doesn't cancel the 30px bottom spacing */}
+        <div className="px-[26px] pb-[30px]">
+          {/* Header: app-icon tile + title + domain */}
+          <div className="flex items-center gap-[16px] pt-[10px]">
+            <AppIconTile />
+            <div className="flex-1">
+              <SheetTitle className="text-[21px] leading-tight text-ink">
+                Føj til hjemmeskærm
+              </SheetTitle>
+              <p className="mt-[3px] font-mono text-[11px] text-mono">
+                {window.location.hostname}
+              </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDismiss}
-              className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
-          
-          {isIOS ? (
-            // iOS-specific installation instructions
-            <div className="space-y-3">
-              <div className="text-xs text-gray-600 space-y-1">
-                <div className="flex items-center gap-2">
-                  <Share className="h-3 w-3" />
-                  <span>Træk på Del-knappen i Safari</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Plus className="h-3 w-3" />
-                  <span>Vælg "Føj til hjemmeskærm"</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getForagingSpotConfig('chanterelle').icon}</span>
-                  <span>Tryk "Tilføj" for at installere Skovens Skatte</span>
+
+          {/* Benefit cards */}
+          <div className="my-[22px] flex gap-[10px]">
+            {BENEFITS.map(({ label, icon }) => (
+              <div
+                key={label[0]}
+                className="flex-1 rounded-[14px] border border-line bg-surface px-[10px] py-[14px] text-center"
+              >
+                <div className="mb-[7px] flex justify-center text-brand">{icon}</div>
+                <div className="text-[11.5px] leading-[1.3] text-ink2">
+                  {label[0]}
+                  <br />
+                  {label[1]}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDismiss}
-                className="w-full"
-              >
-                Det er forstået!
-              </Button>
-            </div>
+            ))}
+          </div>
+
+          {isIOS ? (
+            /* iOS Safari can't trigger install — show the manual instruction row */
+            <>
+              <div className="mb-[14px] flex items-center gap-[12px]">
+                <div className="h-px flex-1 bg-line2" />
+                <span className="font-serif text-[13px] italic text-muted">på iPhone</span>
+                <div className="h-px flex-1 bg-line2" />
+              </div>
+              <div className="flex items-center justify-center gap-[8px] text-center text-[13.5px] leading-[1.5] text-ink2">
+                <span>Tryk</span>
+                <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] border border-line bg-surface text-brand">
+                  <svg
+                    width={15}
+                    height={15}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.7}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M12 15V4M8.5 7.5L12 4l3.5 3.5M6 12v7h12v-7" />
+                  </svg>
+                </span>
+                <span>
+                  og vælg <b className="font-semibold text-ink">Føj til hjemmeskærm</b>
+                </span>
+              </div>
+            </>
           ) : (
-            // Android/Chrome installation
-            <div className="flex gap-2">
-              <Button
-                onClick={handleInstallClick}
-                size="sm"
-                className="flex-1 bg-forest-green hover:bg-forest-dark text-white"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Installér App
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDismiss}
-                className="px-3"
-              >
-                Senere
-              </Button>
-            </div>
+            /* Android/Chrome: native install via the captured beforeinstallprompt */
+            <Button size="lg" className="w-full" onClick={handleInstallClick}>
+              Installér app
+            </Button>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
