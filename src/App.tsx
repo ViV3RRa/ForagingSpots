@@ -4,6 +4,7 @@ import WelcomeScreen from './components/WelcomeScreen';
 import SignInScreen from './components/SignInScreen';
 import MainMapScreen from './components/MainMapScreen';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
+import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
@@ -199,6 +200,8 @@ export default function App() {
           <AppContent />
           <PWAUpdatePrompt />
         </AuthProvider>
+        {/* Inside ThemeProvider so the toast cards follow the app's useTheme */}
+        <Toaster />
       </div>
     </ThemeProvider>
   );

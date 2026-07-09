@@ -114,7 +114,8 @@ export const foragingSpotsApi = {
       return ForagingSpotSchema.parse(createdRecord);
     } catch (error) {
       console.error('Failed to create foraging spot:', error);
-      throw new Error('Failed to create foraging spot');
+      // Surfaces as the error-toast description, so keep it Danish
+      throw new Error('Fundet kunne ikke oprettes på serveren');
     }
   },
 
@@ -190,7 +191,7 @@ export const foragingSpotsApi = {
       return ForagingSpotSchema.parse(updatedRecord);
     } catch (error) {
       console.error(`Failed to update foraging spot ${id}:`, error);
-      throw new Error('Failed to update foraging spot');
+      throw new Error('Fundet kunne ikke opdateres på serveren');
     }
   },
 
@@ -200,7 +201,7 @@ export const foragingSpotsApi = {
       await pb.collection(Collections.FORAGING_SPOTS).delete(id);
     } catch (error) {
       console.error(`Failed to delete foraging spot ${id}:`, error);
-      throw new Error('Failed to delete foraging spot');
+      throw new Error('Fundet kunne ikke slettes på serveren');
     }
   },
 
@@ -255,5 +256,5 @@ export function handleApiError(error: unknown): Error {
     return new Error(String(error.message));
   }
   
-  return new Error('An unknown error occurred');
+  return new Error('Der opstod en ukendt fejl');
 }

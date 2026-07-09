@@ -106,7 +106,7 @@ export function useCreateSpot() {
     // The UI updates via pendingSpotsQueryKey invalidation after IndexedDB write succeeds
     onError: (error) => {
       const errorMessage = handleApiError(error).message;
-      toast.error('Kunne ikke oprette skat', {
+      toast.error('Kunne ikke gemme — prøv igen', {
         description: errorMessage,
       });
     },
@@ -115,14 +115,14 @@ export function useCreateSpot() {
         // Offline: invalidate and force refetch pending spots query to show the new spot
         // refetchType 'all' ensures immediate refetch even with staleTime: Infinity
         queryClient.invalidateQueries({ queryKey: pendingSpotsQueryKey, refetchType: 'all' });
-        toast.info('Skat gemt offline', {
+        toast.info('Fund gemt offline', {
           description: 'Synkroniseres når forbindelsen genoprettes',
         });
       } else {
         // Online: update server spots cache
         queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(data.id), data);
         queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-        toast.success('Skat oprettet!');
+        toast.success('Fund gemt');
       }
     },
   });
@@ -185,7 +185,7 @@ export function useUpdateSpot() {
       }
 
       const errorMessage = handleApiError(error).message;
-      toast.error('Failed to update foraging spot', {
+      toast.error('Kunne ikke opdatere — prøv igen', {
         description: errorMessage,
       });
     },
@@ -195,12 +195,14 @@ export function useUpdateSpot() {
       if (isPendingSpot) {
         // Pending spot updated in IndexedDB - invalidate and force refetch
         queryClient.invalidateQueries({ queryKey: pendingSpotsQueryKey, refetchType: 'all' });
-        toast.success('Skat opdateret (afventer synkronisering)');
+        toast.success('Fund opdateret', {
+          description: 'Synkroniseres når forbindelsen genoprettes',
+        });
       } else {
         // Server spot - update cache
         queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(data.id), data);
         queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-        toast.success('Skat opdateret!');
+        toast.success('Fund opdateret');
       }
     },
   });
@@ -248,7 +250,7 @@ export function useDeleteSpot() {
       }
 
       const errorMessage = handleApiError(error).message;
-      toast.error('Failed to delete foraging spot', {
+      toast.error('Kunne ikke slette — prøv igen', {
         description: errorMessage,
       });
     },
@@ -256,12 +258,12 @@ export function useDeleteSpot() {
       if (result._pending) {
         // Pending spot deleted from IndexedDB - invalidate and force refetch
         queryClient.invalidateQueries({ queryKey: pendingSpotsQueryKey, refetchType: 'all' });
-        toast.success('Skat slettet');
+        toast.success('Fund slettet');
       } else {
         // Server spot - update cache
         queryClient.removeQueries({ queryKey: queryKeys.foragingSpots.detail(result.id) });
         queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-        toast.success('Skat slettet!');
+        toast.success('Fund slettet');
       }
     },
   });

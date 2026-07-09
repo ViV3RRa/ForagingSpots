@@ -135,7 +135,7 @@ token values from the Claude Design project via MCP before writing code.
 | 3.3 PWA install sheet | [subtasks/3.3-install-sheet.md](subtasks/3.3-install-sheet.md) | ✅ Done (2026-07-09) |
 | 3.4 PWA update toast | [subtasks/3.4-update-toast.md](subtasks/3.4-update-toast.md) | ✅ Done (2026-07-09) |
 | 3.5 Splash, manifest & identity | [subtasks/3.5-splash-manifest.md](subtasks/3.5-splash-manifest.md) | ✅ Done (2026-07-09) |
-| 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | |
+| 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | ✅ Done (2026-07-09) |
 | 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | |

@@ -188,11 +188,12 @@ export function usePendingSpots() {
       const result = await syncPendingSpots();
 
       if (result.synced > 0) {
-        toast.success(`${result.synced} spot${result.synced > 1 ? 's' : ''} synced`);
+        // "fund" is its own plural in Danish
+        toast.success(`${result.synced} fund synkroniseret`);
       }
 
       if (result.failed > 0) {
-        toast.error(`${result.failed} spot${result.failed > 1 ? 's' : ''} failed to sync`);
+        toast.error(`${result.failed} fund kunne ikke synkroniseres`);
       }
 
       // Invalidate to reload pending spots
