@@ -60,13 +60,29 @@ function hasGrantedBefore(): boolean {
   }
 }
 
+/*
+ * 'locating'    — no fix yet, but none has been refused either: the initial
+ *                 request is still pending, or the permission gate never
+ *                 opened (state 'prompt', priming screen skipped). The gated
+ *                 case deliberately does NOT report 'unavailable': no fix was
+ *                 ever attempted, so the "tjek din GPS" badge would mislead —
+ *                 and hiding the Locate button (gated on 'unavailable') would
+ *                 remove the only re-entry point for opting in to location.
+ * 'available'   — we have a fix (possibly stale, kept across watch errors).
+ * 'unavailable' — no position and none coming: geolocation unsupported, or
+ *                 the fix attempt failed (denied / position-unavailable /
+ *                 timeout). Cleared if a watch fix arrives later.
+ */
+export type UserLocationStatus = 'locating' | 'available' | 'unavailable';
+
 interface UserLocationState {
   position: Coordinates | null;
+  status: UserLocationStatus;
   /** True once the initial position request has settled (fix or error). */
   initialized: boolean;
 }
 
-let state: UserLocationState = { position: null, initialized: false };
+let state: UserLocationState = { position: null, status: 'locating', initialized: false };
 const listeners = new Set<() => void>();
 let watchId: number | null = null;
 let gateOpen = false;
@@ -81,7 +97,7 @@ function startWatching() {
 
   if (!('geolocation' in navigator)) {
     console.warn('Geolocation is not supported by this browser');
-    setState({ position: null, initialized: true });
+    setState({ position: null, status: 'unavailable', initialized: true });
     return;
   }
 
@@ -90,12 +106,15 @@ function startWatching() {
       rememberGranted();
       setState({
         position: { lat: position.coords.latitude, lng: position.coords.longitude },
+        status: 'available',
         initialized: true,
       });
     },
     (error) => {
       console.warn('Initial geolocation error:', error.message);
-      setState({ position: null, initialized: true });
+      // The watcher may still deliver a fix later (e.g. timeout on a slow
+      // fix); its success handler flips the status back to 'available'.
+      setState({ position: null, status: 'unavailable', initialized: true });
     },
     {
       enableHighAccuracy: true,
@@ -109,12 +128,16 @@ function startWatching() {
       rememberGranted();
       setState({
         position: { lat: position.coords.latitude, lng: position.coords.longitude },
+        status: 'available',
         initialized: true,
       });
     },
     (error) => {
-      // Keep the last known position on watch errors
+      // Keep the last known position (and 'available' status) on watch errors
       console.warn('Location tracking error:', error.message);
+      if (state.position === null && state.status !== 'unavailable') {
+        setState({ status: 'unavailable', initialized: true });
+      }
     },
     {
       enableHighAccuracy: true,
@@ -182,7 +205,7 @@ function getSnapshot(): UserLocationState {
   return state;
 }
 
-const serverSnapshot: UserLocationState = { position: null, initialized: false };
+const serverSnapshot: UserLocationState = { position: null, status: 'locating', initialized: false };
 
 export function useUserLocation(): UserLocationState {
   return useSyncExternalStore(subscribe, getSnapshot, () => serverSnapshot);

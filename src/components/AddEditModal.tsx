@@ -13,10 +13,17 @@ import ImageCapture, { type SpotImage } from './ImageCapture';
 
 import { getSpotImageThumbnailUrls } from '../lib/pocketbase';
 import { getPendingImages } from '../hooks/usePendingSpots';
+import { useUserLocation } from '../hooks/useUserLocation';
+import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
-  coordinates: Coordinates;
+  /** null → no GPS fix yet: the Placering section shows the no-location warning
+      and the save button stays disabled until a location exists (3.8). */
+  coordinates: Coordinates | null;
+  /** Where the location editor opens when there are no coordinates yet
+      (typically the map's current center). */
+  editorFallbackCenter?: Coordinates;
   onSave: (type: ForagingType, notes: string, coordinates: Coordinates, newImages: File[], existingImageFilenames?: string[]) => void;
   onClose: () => void;
 }
@@ -24,13 +31,23 @@ interface AddEditModalProps {
 const formatCoordinates = (lat: number, lng: number) =>
   `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
 
-export default function AddEditModal({ spot, coordinates, onSave, onClose }: AddEditModalProps) {
+export default function AddEditModal({ spot, coordinates, editorFallbackCenter, onSave, onClose }: AddEditModalProps) {
   const isEdit = spot !== undefined;
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
   const [notes, setNotes] = useState(spot?.notes || '');
-  const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates>(coordinates);
+  const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates | null>(coordinates);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [manuallyPicked, setManuallyPicked] = useState(false);
+  const { position: livePosition } = useUserLocation();
+
+  // A GPS fix landing while the sheet still has no location fills the section
+  // automatically ("Nuværende"). A manually picked location is terminal — it is
+  // never overwritten by a later fix (it sets coordinates, ending this state).
+  useEffect(() => {
+    if (currentCoordinates === null && livePosition) {
+      setCurrentCoordinates(livePosition);
+    }
+  }, [currentCoordinates, livePosition]);
   const [isOpen, setIsOpen] = useState(true);
   const [speciesQuery, setSpeciesQuery] = useState('');
   const [activeSpeciesPage, setActiveSpeciesPage] = useState(0);
@@ -128,6 +145,10 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // No location yet — the save button is disabled, but guard the form's
+    // implicit submit (Enter key) too
+    if (!currentCoordinates) return;
+
     // Extract files from images (only new images that have files)
     const newImageFiles = images
       .filter(img => img.file && !img.isExisting)
@@ -154,8 +175,9 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
   };
 
   // "Nuværende" while the add flow still holds the live GPS fix; otherwise
-  // indicate where the coordinates came from
-  const locationHint = manuallyPicked ? 'Valgt manuelt' : isEdit ? 'Gemt placering' : 'Nuværende';
+  // indicate where the coordinates came from. Only the live fix pulses the dot.
+  const isAutoLocation = !manuallyPicked && !isEdit;
+  const locationHint = manuallyPicked ? 'Manuel' : isEdit ? 'Gemt placering' : 'Nuværende';
 
   return (
     <>
@@ -163,6 +185,12 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
         <SheetContent
           side="bottom"
           handle={false}
+          // The fullscreen location editor renders outside the sheet's portal —
+          // its taps must not dismiss the sheet underneath (see the helper for
+          // why the open-flag alone is not enough on touch)
+          onInteractOutside={(e) => {
+            if (showLocationPicker || outsideInteractionStartedInOverlay(e)) e.preventDefault();
+          }}
           className="max-h-[92%] bg-bg sm:mx-auto sm:max-w-[520px]"
         >
           {/* Header: Spectral 23px title + 36px circular close button */}
@@ -252,19 +280,68 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
                 </div>
               )}
 
-              {/* Placering: surface field with pulsing brand dot, opens the location picker */}
+              {/* Placering: surface field with brand dot (pulsing while it holds the
+                  live fix), opens the location picker. With no location, the design's
+                  amber warning card + manual-add button take its place instead. */}
               <MonoLabel className="mb-[8px] mt-[24px] block">Placering</MonoLabel>
-              <button
-                type="button"
-                onClick={() => setShowLocationPicker(true)}
-                className="flex h-[52px] w-full items-center gap-[10px] rounded-[14px] border border-line bg-surface px-[15px] text-left transition-colors hover:border-mono"
-              >
-                <span className="size-[9px] shrink-0 animate-ss-pulse rounded-full bg-brand" />
-                <span className="truncate font-mono text-[13px] text-ink">
-                  {formatCoordinates(currentCoordinates.lat, currentCoordinates.lng)}
-                </span>
-                <span className="ml-auto shrink-0 font-serif text-[12px] text-mono">{locationHint}</span>
-              </button>
+              {currentCoordinates ? (
+                <button
+                  type="button"
+                  onClick={() => setShowLocationPicker(true)}
+                  className="flex h-[52px] w-full items-center gap-[10px] rounded-[14px] border border-line bg-surface px-[15px] text-left transition-colors hover:border-mono"
+                >
+                  <span
+                    className={`size-[9px] shrink-0 rounded-full bg-brand ${isAutoLocation ? 'animate-ss-pulse' : ''}`}
+                  />
+                  <span className="truncate font-mono text-[13px] text-ink">
+                    {formatCoordinates(currentCoordinates.lat, currentCoordinates.lng)}
+                  </span>
+                  <span className="ml-auto shrink-0 font-serif text-[12px] text-mono">{locationHint}</span>
+                </button>
+              ) : (
+                <div>
+                  <div className="flex items-start gap-[10px] rounded-[14px] border border-offline-border bg-noloc-bg px-[14px] py-[12px]">
+                    <span className="mt-[1px] flex shrink-0 text-offline-ink">
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 10.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z" fill="currentColor" stroke="none" />
+                        <path d="M12 21s-7-6.3-7-11a7 7 0 0 1 12-4.9M3 3l18 18" />
+                      </svg>
+                    </span>
+                    <span className="text-[12.5px] leading-[1.5] text-offline-ink">
+                      Ingen lokation fundet. Tilføj den manuelt for at gemme fundet.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationPicker(true)}
+                    className="mt-[10px] flex h-[50px] w-full items-center justify-center gap-[8px] rounded-[14px] bg-brand font-serif text-[15.5px] font-semibold text-brand-ink transition-transform active:scale-95"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z" />
+                      <circle cx="12" cy="10" r="2.6" />
+                    </svg>
+                    Tilføj lokation manuelt
+                  </button>
+                </div>
+              )}
 
               {/* Noter */}
               <label htmlFor="notes" className="mb-[8px] mt-[22px] block">
@@ -286,8 +363,14 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
                 />
               </div>
 
-              {/* Accent CTA */}
-              <Button type="submit" size="lg" className="mt-[20px] w-full">
+              {/* Accent CTA — inert and dimmed until a location exists (design
+                  addSaveOpacity/.45 + not-allowed cursor, so it stays hit-testable) */}
+              <Button
+                type="submit"
+                size="lg"
+                disabled={!currentCoordinates}
+                className="mt-[20px] w-full disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-[.45]"
+              >
                 {isEdit ? 'Gem ændringer' : 'Gem fund'}
               </Button>
             </div>
@@ -295,10 +378,12 @@ export default function AddEditModal({ spot, coordinates, onSave, onClose }: Add
         </SheetContent>
       </Sheet>
 
-      {/* Fullscreen location editor */}
+      {/* Fullscreen location editor. Without coordinates it opens on the map's
+          current center (Denmark center as a last resort); backing out returns
+          to the sheet with the warning state unchanged. */}
       {showLocationPicker && (
         <LocationEditorScreen
-          initialCoordinates={currentCoordinates}
+          initialCoordinates={currentCoordinates ?? editorFallbackCenter ?? { lat: 56.0, lng: 10.0 }}
           type={selectedType}
           onSave={handleLocationUpdate}
           onClose={() => setShowLocationPicker(false)}

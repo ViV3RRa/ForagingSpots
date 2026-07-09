@@ -50,7 +50,7 @@ export default function MapView({
 }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
-  const { position: currentPosition } = useUserLocation();
+  const { position: currentPosition, status: locationStatus } = useUserLocation();
   const [mapError, setMapError] = useState<MapErrorReason | null>(() =>
     validateMapboxToken() ? null : 'missing-token'
   );
@@ -353,34 +353,38 @@ export default function MapView({
         mapStyle={getMapStyle(theme)}
       >
         
-        {/* Locate button — 52px circle above the FAB; active GPS-follow inverts to brand colors */}
-        <button
-          onClick={() => {
-            // Re-entry point after the priming screen was skipped: if the
-            // location gate is still closed (permission 'prompt'), this fires
-            // the browser's native prompt directly. No-op when already active.
-            startUserLocation();
+        {/* Locate button — 52px circle above the FAB; active GPS-follow inverts to
+            brand colors. Removed entirely (not disabled) while location is
+            'unavailable', per the design gate; reappears if a fix arrives. */}
+        {locationStatus !== 'unavailable' && (
+          <button
+            onClick={() => {
+              // Re-entry point after the priming screen was skipped: if the
+              // location gate is still closed (permission 'prompt'), this fires
+              // the browser's native prompt directly. No-op when already active.
+              startUserLocation();
 
-            if (mapRef.current && currentPosition) {
-              mapRef.current.flyTo({
-                center: [currentPosition.lng, currentPosition.lat],
-                zoom: 18,
-                duration: 1500
-              });
-            }
+              if (mapRef.current && currentPosition) {
+                mapRef.current.flyTo({
+                  center: [currentPosition.lng, currentPosition.lat],
+                  zoom: 18,
+                  duration: 1500
+                });
+              }
 
-            // Enable following
-            setIsFollowingUser(true);
-          }}
-          className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] transition-colors duration-200 active:scale-95 ${
-            currentPosition && isFollowingUser
-              ? 'bg-brand text-brand-ink'
-              : 'bg-surface text-brand'
-          }`}
-          title={currentPosition && isFollowingUser ? "Følger din position" : "Centrer på min position"}
-        >
-          <LocateIcon />
-        </button>
+              // Enable following
+              setIsFollowingUser(true);
+            }}
+            className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] transition-colors duration-200 active:scale-95 ${
+              currentPosition && isFollowingUser
+                ? 'bg-brand text-brand-ink'
+                : 'bg-surface text-brand'
+            }`}
+            title={currentPosition && isFollowingUser ? "Følger din position" : "Centrer på min position"}
+          >
+            <LocateIcon />
+          </button>
+        )}
 
         {/* Compass button — appears when the map is rotated, resets bearing to north.
             The rose rotates so the accent needle keeps pointing north; the "N" stays fixed. */}

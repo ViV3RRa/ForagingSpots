@@ -41,6 +41,9 @@
   --offline-ink2: #a3853f;
   /* Sync-failed chip tint (design failBg; failInk is --accent) */
   --fail-bg: rgba(181, 80, 47, 0.12);
+  /* No-location badge/warning tint (design noLocBg): light shares the amber
+     offline bg; dark is translucent gold — NOT the solid --offline-bg dark value */
+  --noloc-bg: var(--offline-bg);
 
   /* shadcn/Tailwind semantic tokens mapped onto the design palette */
   --background: var(--bg);
@@ -117,6 +120,7 @@
   --offline-ink: #e8dcae;
   --offline-ink2: #bcae82;
   --fail-bg: rgba(201, 162, 75, 0.18);
+  --noloc-bg: rgba(201, 162, 75, 0.16);
 }
 
 /* Design keyframes (also registered as Tailwind animations in tailwind.config.js) */

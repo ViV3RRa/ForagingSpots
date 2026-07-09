@@ -15,6 +15,7 @@ import LocationEditorScreen from './LocationEditorScreen';
 import { PendingSyncBadge } from './PendingSyncBadge';
 import { getPendingImageUrls } from '../hooks/usePendingSpots';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot | null;
@@ -219,9 +220,12 @@ export default function PinDetailsDrawer({
           side="bottom"
           className="max-h-[88%] bg-bg sm:mx-auto sm:max-w-[520px]"
           // The lightbox and location editor are plain overlays outside this Radix
-          // layer — interacting with them must not dismiss the sheet underneath.
+          // layer — interacting with them must not dismiss the sheet underneath
+          // (see the helper for why the open-flags alone are not enough on touch)
           onInteractOutside={(e) => {
-            if (imageViewerOpen || showLocationPicker) e.preventDefault();
+            if (imageViewerOpen || showLocationPicker || outsideInteractionStartedInOverlay(e)) {
+              e.preventDefault();
+            }
           }}
         >
           {spot ? (

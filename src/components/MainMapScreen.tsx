@@ -35,7 +35,7 @@ export default function MainMapScreen({
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
-  const { position: currentPosition } = useUserLocation();
+  const { position: currentPosition, status: locationStatus } = useUserLocation();
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
@@ -295,7 +295,11 @@ export default function MainMapScreen({
         <OfflineBanner />
       </div>
 
+      {/* Chip and no-location badge are mutually exclusive ('unavailable' implies
+          no position); both hide on the map-error card, and swap live when a fix
+          arrives or drops out */}
       {viewMode === 'map' && !mapError && currentPosition && <LocationChip position={currentPosition} />}
+      {viewMode === 'map' && !mapError && locationStatus === 'unavailable' && <NoLocationBadge />}
 
       <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
 
@@ -304,9 +308,12 @@ export default function MainMapScreen({
       <FloatingActionButton onClick={() => setShowAddModal(true)} />
 
 
-      {showAddModal && currentPosition && (
+      {/* The add sheet opens without a GPS fix too — the sheet's Placering
+          section then shows the no-location warning and gates the save */}
+      {showAddModal && (
         <AddEditModal
           coordinates={currentPosition}
+          editorFallbackCenter={{ lat: mapViewState.latitude, lng: mapViewState.longitude }}
           onSave={(type, notes, coordinates, images, existingImageFilenames) => handleAddSpot(type, notes, coordinates, images, existingImageFilenames)}
           onClose={() => setShowAddModal(false)}
         />
@@ -375,6 +382,40 @@ function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
           {label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/* Slashed location pin with filled center dot, from the design's no-location badge */
+function CrossedPinIcon({ size, strokeWidth }: { size: number; strokeWidth: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 10.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z" fill="currentColor" stroke="none" />
+      <path d="M12 21s-7-6.3-7-11a7 7 0 0 1 12-4.9M3 3l18 18" />
+    </svg>
+  );
+}
+
+// Centered amber replacement for the location chip when there is no fix and
+// none coming (same bottom row as the chip, so the swap doesn't jump)
+function NoLocationBadge() {
+  return (
+    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-[9px] whitespace-nowrap rounded-[12px] border border-offline-border bg-noloc-bg px-[15px] py-[8px] shadow-[0_3px_10px_var(--shadow)]">
+      <span className="flex shrink-0 text-offline-ink">
+        <CrossedPinIcon size={16} strokeWidth={1.8} />
+      </span>
+      <span className="font-mono text-[11px] leading-[1.35] text-offline-ink">
+        Ingen lokation — tjek din GPS
+      </span>
     </div>
   );
 }
