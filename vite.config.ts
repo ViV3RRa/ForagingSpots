@@ -46,8 +46,10 @@ export default defineConfig({
         name: 'Skovens Skatte',
         short_name: 'Skovens Skatte',
         description: 'Find and track your foraging spots in Denmark',
-        theme_color: '#4CAF50',
-        background_color: '#fafaf9',
+        // Matches the light-theme --bg chrome (src/styles/tokens.css); the
+        // ThemeContext keeps the in-app theme-color meta in sync after boot
+        theme_color: '#f4efe3',
+        background_color: '#f4efe3',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',

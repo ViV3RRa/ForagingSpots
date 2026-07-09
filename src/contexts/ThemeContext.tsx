@@ -61,12 +61,15 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [preference]);
 
-  // Apply the resolved theme to <html> and the theme-color meta tag
+  // Apply the resolved theme to <html> and the theme-color metas. index.html
+  // ships one meta per prefers-color-scheme as the pre-hydration fallback; the
+  // browser honors whichever matches the OS, so a manual override must rewrite
+  // both for the resolved theme to win.
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', THEME_COLORS[theme]);
+      .querySelectorAll('meta[name="theme-color"]')
+      .forEach((meta) => meta.setAttribute('content', THEME_COLORS[theme]));
   }, [theme]);
 
   const setPreference = useCallback((next: ThemePreference) => {

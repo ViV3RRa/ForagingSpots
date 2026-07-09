@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import BootSplash from './components/BootSplash';
 import WelcomeScreen from './components/WelcomeScreen';
 import SignInScreen from './components/SignInScreen';
 import MainMapScreen from './components/MainMapScreen';
@@ -134,18 +135,9 @@ function AppContent() {
     deleteSpotMutation.mutate(spotId);
   };
 
-  // Show loading screen while initializing auth or loading spots
+  // Branded boot splash while restoring auth or loading the first spots
   if (isLoading || (isAuthenticated && spotsLoading)) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">
-            {isLoading ? 'Loading...' : 'Loading foraging spots...'}
-          </p>
-        </div>
-      </div>
-    );
+    return <BootSplash />;
   }
 
   if (currentScreen === 'icons') {

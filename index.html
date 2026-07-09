@@ -14,8 +14,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Skovens Skatte" />
     <meta name="application-name" content="Skovens Skatte" />
-    <meta name="msapplication-TileColor" content="#4CAF50" />
-    <meta name="theme-color" content="#f4efe3" />
+    <meta name="msapplication-TileColor" content="#2f4a32" />
+    <!-- Static fallback per OS scheme; ThemeContext rewrites both metas to the resolved theme after hydration -->
+    <meta name="theme-color" content="#f4efe3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c261b" media="(prefers-color-scheme: dark)" />
     <title>Skovens Skatte</title>
   </head>
   <body>
