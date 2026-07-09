@@ -97,6 +97,7 @@ Navigation stays state-driven in `App.tsx` / `MainMapScreen.tsx` (no router intr
 | Splash / manifest | `vite.config.ts`, `index.html`, icons | 3.5 |
 | Success/error toasts | `src/main.tsx` Toaster, `ui/sonner.tsx`, call sites | 3.6 |
 | App icon set (monogram, new) | `public/app-icon/`, `vite.config.ts`, `index.html` | 3.7 |
+| No-location badge + degraded chrome (new) | `MainMapScreen.tsx`, `MapView.tsx`, `useUserLocation.ts` | 3.8 |
 
 ---
 
@@ -137,6 +138,7 @@ token values from the Claude Design project via MCP before writing code.
 | 3.5 Splash, manifest & identity | [subtasks/3.5-splash-manifest.md](subtasks/3.5-splash-manifest.md) | ✅ Done (2026-07-09) |
 | 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | ✅ Done (2026-07-09) |
 | 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | |
+| 3.8 No-location state | [subtasks/3.8-no-location-state.md](subtasks/3.8-no-location-state.md) | |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | |
 | 4.3 Asset optimization | [subtasks/4.3-asset-optimization.md](subtasks/4.3-asset-optimization.md) | |
@@ -525,6 +527,21 @@ committed in `public/app-icon/` and the install sheet (3.3) uses it.
 - Verify the maskable safe zone; generate a padded maskable variant only if needed.
 - Delete the six old green icon files from `public/` after confirming nothing references them.
 
+### 3.8 No-location state (added 2026-07-09)
+
+**Fits into plan:** added to the design after the initial scoping; gives the "permission granted
+but no GPS fix" (and denied/unsupported) case a visible treatment instead of today's silent
+degradation. Design ref: `showNoLoc` block + `noLoc` state in `Skovens Skatte.dc.html`.
+
+- Centered amber badge "Ingen lokation — tjek din GPS" (Space Mono 11px, crossed-pin icon)
+  replaces the location chip on the map view; the **locate button is removed** while no location
+  is available.
+- `useUserLocation` exposes a status so consumers can distinguish "locating" from "unavailable".
+- The add sheet always opens (FAB is never a dead button); without a location its Placering
+  section shows the design's amber warning + "Tilføj lokation manuelt" button (opens the 2.9
+  location editor), and "Gem fund" stays disabled until a location arrives automatically
+  ("Nuværende") or is picked manually ("Manuel"). Design ref: `addLocEl`/`addLoc` in the script.
+
 ## Phase 4 — Polish & cleanup
 
 ### 4.1 Dark-mode + safe-area audit
@@ -553,6 +570,7 @@ Verify visual quality at all badge sizes.
   (search, sort, distance) → detail (gallery, lightbox, edit location, share, delete) → add flow
   (type grid, photo, save) → filter → offline mode (banner, pending sync) → install prompt →
   update toast → theme toggle + system theme change → map error card (invalid/missing token) →
+  no-location badge + hidden locate button (DevTools Sensors: "Location unavailable") →
   success/error toasts (save, delete, failed mutation) → list sort menu + row action sheet →
   map cluster + compass (rotate) → sign-in error/loading → detail gallery at 0/1/2/3/5 photos →
   share section (empty + populated) → offline-locked detail.
