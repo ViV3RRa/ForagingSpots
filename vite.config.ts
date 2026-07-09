@@ -41,7 +41,12 @@ export default defineConfig({
           }
         ]
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: [
+        'app-icon/icon-40.png',
+        'app-icon/icon-120.png',
+        'app-icon/icon-152.png',
+        'app-icon/icon-180.png'
+      ],
       manifest: {
         name: 'Skovens Skatte',
         short_name: 'Skovens Skatte',
@@ -56,20 +61,24 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'app-icon/icon-192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
+            src: 'app-icon/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            // Full-bleed terracotta; the monogram sits well inside the
+            // maskable safe zone, so the same asset serves both purposes
+            src: 'app-icon/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },

@@ -138,7 +138,7 @@ token values from the Claude Design project via MCP before writing code.
 | 3.4 PWA update toast | [subtasks/3.4-update-toast.md](subtasks/3.4-update-toast.md) | ✅ Done (2026-07-09) |
 | 3.5 Splash, manifest & identity | [subtasks/3.5-splash-manifest.md](subtasks/3.5-splash-manifest.md) | ✅ Done (2026-07-09) |
 | 3.6 Action toasts | [subtasks/3.6-action-toasts.md](subtasks/3.6-action-toasts.md) | ✅ Done (2026-07-09) |
-| 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | |
+| 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | ✅ Done (2026-07-09) |
 | 3.8 No-location state | [subtasks/3.8-no-location-state.md](subtasks/3.8-no-location-state.md) | |
 | 3.9 Satellite map mode | [subtasks/3.9-satellite-mode.md](subtasks/3.9-satellite-mode.md) | |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
