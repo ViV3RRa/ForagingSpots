@@ -50,7 +50,8 @@ export default defineConfig({
       manifest: {
         name: 'Skovens Skatte',
         short_name: 'Skovens Skatte',
-        description: 'Find and track your foraging spots in Denmark',
+        description: 'Markér og genfind dine svampe- og bærsteder i Danmark',
+        lang: 'da',
         // Matches the light-theme --bg chrome (src/styles/tokens.css); the
         // ThemeContext keeps the in-app theme-color meta in sync after boot
         theme_color: '#f4efe3',
