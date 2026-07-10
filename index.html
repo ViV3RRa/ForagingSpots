@@ -19,6 +19,26 @@
     <meta name="theme-color" content="#f4efe3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1c261b" media="(prefers-color-scheme: dark)" />
     <title>Skovens Skatte</title>
+    <!-- Apply the resolved theme before first paint so a manual override doesn't
+         flash the OS-scheme palette on reload (ThemeContext takes over after mount) -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('ss-theme');
+          var dark =
+            pref === 'dark' ||
+            (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+          if (pref === 'dark' || pref === 'light') {
+            document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
+              meta.setAttribute('content', dark ? '#1c261b' : '#f4efe3');
+            });
+          }
+        } catch (e) {
+          /* no storage access — fall back to the prefers-color-scheme metas */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
