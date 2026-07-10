@@ -20,15 +20,17 @@ const kmOneDecimal = new Intl.NumberFormat('da-DK', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const kmWhole = new Intl.NumberFormat('da-DK', { maximumFractionDigits: 0 });
+const wholeNumber = new Intl.NumberFormat('da-DK', { maximumFractionDigits: 0 });
 
 /**
  * Danish distance formatting per the design's "0,8 km" style: comma decimal,
- * one decimal below 10 km, whole kilometers above.
+ * one decimal below 10 km, whole kilometers above. Very close distances
+ * (≤ 100 m) read better as whole meters.
  */
 export function formatDistance(meters: number): string {
+  if (meters <= 100) return `${wholeNumber.format(meters)} m`;
   const km = meters / 1000;
-  return km < 10 ? `${kmOneDecimal.format(km)} km` : `${kmWhole.format(km)} km`;
+  return km < 10 ? `${kmOneDecimal.format(km)} km` : `${wholeNumber.format(km)} km`;
 }
 
 /** Formatted distance from the user to a spot, or null when no position fix exists. */

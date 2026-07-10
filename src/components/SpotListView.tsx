@@ -6,7 +6,7 @@ import type { ForagingSpot, ForagingType, ForagingSpotWithPending } from '../lib
 import { getForagingSpotConfig } from './icons';
 import { useAuth } from '../hooks/useAuth';
 import { useUserLocation } from '../hooks/useUserLocation';
-import { distanceToSpot } from '../utils/distance';
+import { distanceToSpot, haversineDistance } from '../utils/distance';
 import { formatRelativeDate } from '../utils/relativeDate';
 import ConfirmationDialog from './ConfirmationDialog';
 import { PendingSyncBadge } from './PendingSyncBadge';
@@ -95,13 +95,21 @@ export default function SpotListView({
         sorted.sort((a, b) => getForagingSpotConfig(a.type).label.localeCompare(getForagingSpotConfig(b.type).label));
         break;
       case 'location':
-        // Sort by coordinates (just for demo - could be more sophisticated)
-        sorted.sort((a, b) => a.coordinates.lat - b.coordinates.lat);
+        // Nearest first — matches the distance shown on each row. Without a
+        // position fix distance is meaningless, so fall back to newest first.
+        if (position) {
+          sorted.sort(
+            (a, b) =>
+              haversineDistance(position, a.coordinates) - haversineDistance(position, b.coordinates)
+          );
+        } else {
+          sorted.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+        }
         break;
     }
 
     return sorted;
-  }, [foragingSpots, sortBy]);
+  }, [foragingSpots, sortBy, position]);
 
   const filtersNarrowed = activeFilters.size < totalTypes;
 
