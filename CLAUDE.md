@@ -27,7 +27,7 @@ npm run preview      # Preview production build
 - **State Management**: TanStack Query for server state, React Context for auth
 - **Backend**: PocketBase (self-hosted, binary in `/pocketbase`)
 - **Maps**: Mapbox GL via react-map-gl with Supercluster for marker clustering
-- **Forms**: react-hook-form + Zod validation
+- **Forms**: controlled components + Zod validation (react-hook-form was removed in the redesign)
 - **PWA**: vite-plugin-pwa with Workbox for offline caching
 
 ### Key Directories

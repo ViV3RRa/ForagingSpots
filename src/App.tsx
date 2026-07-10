@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import BootSplash from './components/BootSplash';
 import WelcomeScreen from './components/WelcomeScreen';
 import SignInScreen from './components/SignInScreen';
@@ -15,9 +15,12 @@ import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { usePendingSpots } from './hooks/usePendingSpots';
 import type { ForagingSpot } from './lib/types';
 import './styles/tokens.css'
-import IconShowcase from './components/IconShowcase';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from './lib/queryClient';
+
+// Dev-only living style reference (master plan 1.3) — lazy so it stays out of
+// the production chunk; reached via the commented-out 'icons' screen below.
+const IconShowcase = lazy(() => import('./components/IconShowcase'));
 
 // Set once either priming action is taken, so the screen never nags again.
 const LOCATION_ASKED_KEY = 'ss-location-asked';
@@ -142,7 +145,11 @@ function AppContent() {
   }
 
   if (currentScreen === 'icons') {
-    return <IconShowcase />;
+    return (
+      <Suspense fallback={null}>
+        <IconShowcase />
+      </Suspense>
+    );
   }
 
   if (currentScreen === 'welcome') {
