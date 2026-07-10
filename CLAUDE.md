@@ -51,6 +51,15 @@ npm run preview      # Preview production build
 - `VITE_POCKETBASE_URL` - PocketBase server URL (defaults to http://127.0.0.1:8090)
 - `VITE_MAPBOX_ACCESS_TOKEN` - Mapbox API token (configured in `src/utils/mapbox.ts`)
 
+**Warning:** `.env.production` sets `VITE_POCKETBASE_URL=https://foraging.viverra.dk`, and
+`npm run build` runs in production mode — so a plain build (and `npm run preview` of it) talks
+to the **production** backend. To test a build against a local PocketBase, override the URL at
+build time:
+
+```bash
+VITE_POCKETBASE_URL=http://127.0.0.1:8090 npm run build
+```
+
 ### PocketBase Collections
 - `users` - User accounts
 - `foraging_spots` - Main data: type, coordinates (JSON), notes, images (file field), sharedWith (usernames array)
