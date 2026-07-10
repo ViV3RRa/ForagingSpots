@@ -2,7 +2,6 @@ import { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import BootSplash from './components/BootSplash';
 import WelcomeScreen from './components/WelcomeScreen';
 import SignInScreen from './components/SignInScreen';
-import MainMapScreen from './components/MainMapScreen';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './contexts/AuthContext';
@@ -21,6 +20,13 @@ import { queryKeys } from './lib/queryClient';
 // Dev-only living style reference (master plan 1.3) — lazy so it stays out of
 // the production chunk; reached via the commented-out 'icons' screen below.
 const IconShowcase = lazy(() => import('./components/IconShowcase'));
+
+// The map screen drags in mapbox-gl/react-map-gl — by far the heaviest chunks —
+// so it must not block first paint of the welcome/sign-in screens. The module-
+// level import() still starts the download immediately (parallel with boot),
+// so signed-in users on a cold cache don't get a request waterfall.
+const mainMapScreenImport = import('./components/MainMapScreen');
+const MainMapScreen = lazy(() => mainMapScreenImport);
 
 // Set once either priming action is taken, so the screen never nags again.
 const LOCATION_ASKED_KEY = 'ss-location-asked';
@@ -169,18 +175,22 @@ function AppContent() {
     );
   }
 
-  // Show map screen if authenticated
+  // Show map screen if authenticated. The Suspense fallback matches the
+  // auth/spots boot state above, so a cold-cache load stays on the splash
+  // until the (usually already downloaded) map chunk is ready.
   if (isAuthenticated && user) {
     return (
       <>
-        <MainMapScreen
-          user={user}
-          foragingSpots={foragingSpots}
-          onSignOut={handleSignOut}
-          onAddSpot={addForagingSpot}
-          onUpdateSpot={updateForagingSpot}
-          onDeleteSpot={deleteForagingSpot}
-        />
+        <Suspense fallback={<BootSplash />}>
+          <MainMapScreen
+            user={user}
+            foragingSpots={foragingSpots}
+            onSignOut={handleSignOut}
+            onAddSpot={addForagingSpot}
+            onUpdateSpot={updateForagingSpot}
+            onDeleteSpot={deleteForagingSpot}
+          />
+        </Suspense>
         {showLocationPriming && (
           <LocationPermissionScreen
             onAllow={() => dismissLocationPriming(true)}
