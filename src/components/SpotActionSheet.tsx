@@ -89,7 +89,7 @@ export default function SpotActionSheet({
           {isOwner && (
             <>
               <ActionRow
-                label="Rediger"
+                label="Redigér"
                 onClick={runAction(onEdit)}
                 icon={
                   <svg {...iconProps}>
