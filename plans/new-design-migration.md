@@ -146,7 +146,7 @@ token values from the Claude Design project via MCP before writing code.
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | ✅ Done (2026-07-10) |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | ✅ Done (2026-07-10) |
 | 4.3 Asset optimization | [subtasks/4.3-asset-optimization.md](subtasks/4.3-asset-optimization.md) | ✅ Done (2026-07-10) |
-| 4.4 Final verification & QA | [subtasks/4.4-final-verification.md](subtasks/4.4-final-verification.md) | |
+| 4.4 Final verification & QA | [subtasks/4.4-final-verification.md](subtasks/4.4-final-verification.md) | ✅ Done (2026-07-10) |
 
 The sections below remain the master overview of each phase; the subtask files are the
 implementation-ready specifications.
