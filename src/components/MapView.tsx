@@ -93,7 +93,8 @@ export default function MapView({
     }
   }, [currentPosition, hasUserInteracted, mapLoaded]);
 
-  // The parent chrome (FAB, location chip) hides while the error card shows
+  // The parent chrome (bottom nav bar, map-style toggle) hides while the
+  // error card shows
   useEffect(() => {
     onMapErrorChange?.(mapError !== null);
   }, [mapError, onMapErrorChange]);
@@ -351,42 +352,57 @@ export default function MapView({
           }
         }}
         mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
-        style={{ width: '100%', height: '100%' }}
+        // Near-black behind satellite tiles so loading gaps read as night-earth
+        // instead of cream; base mode keeps the default container background
+        style={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: mapMode === 'satellite' ? '#04070e' : undefined
+        }}
         mapStyle={getMapStyle(theme, mapMode)}
       >
         
-        {/* Locate button — 52px circle above the FAB; active GPS-follow inverts to
-            brand colors. Removed entirely (not disabled) while location is
-            'unavailable', per the design gate; reappears if a fix arrives. */}
-        {locationStatus !== 'unavailable' && (
-          <button
-            onClick={() => {
-              // Re-entry point after the priming screen was skipped: if the
-              // location gate is still closed (permission 'prompt'), this fires
-              // the browser's native prompt directly. No-op when already active.
-              startUserLocation();
+        {/* Locate button — 52px circle bottom-right above the nav bar; active
+            GPS-follow inverts to brand colors. Stays visible with no location:
+            tapping then retries (re-fires the permission prompt / GPS attempt)
+            and the crosshair pulses while the hook reports 'locating'. */}
+        <button
+          onClick={() => {
+            // Re-entry point after the priming screen was skipped, and the
+            // retry path in the no-location state: if the location gate is
+            // still closed (permission 'prompt'), this fires the browser's
+            // native prompt directly. No-op when already active.
+            startUserLocation();
 
-              if (mapRef.current && currentPosition) {
-                mapRef.current.flyTo({
-                  center: [currentPosition.lng, currentPosition.lat],
-                  zoom: 18,
-                  duration: 1500
-                });
-              }
+            if (mapRef.current && currentPosition) {
+              mapRef.current.flyTo({
+                center: [currentPosition.lng, currentPosition.lat],
+                zoom: 18,
+                duration: 1500
+              });
+            }
 
-              // Enable following
-              setIsFollowingUser(true);
-            }}
-            className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] transition-colors duration-200 active:scale-95 ${
-              currentPosition && isFollowingUser
-                ? 'bg-brand text-brand-ink'
-                : 'bg-surface text-brand'
-            }`}
-            title={currentPosition && isFollowingUser ? "Følger din position" : "Centrer på min position"}
-          >
+            // Enable following — with no fix yet, the auto-follow effect flies
+            // to the position as soon as one arrives
+            setIsFollowingUser(true);
+          }}
+          className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+108px)] right-[max(16px,env(safe-area-inset-right))] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] transition-colors duration-200 active:scale-95 ${
+            currentPosition && isFollowingUser
+              ? 'bg-brand text-brand-ink'
+              : 'bg-surface text-brand'
+          }`}
+          title={
+            locationStatus === 'locating'
+              ? 'Søger efter din position…'
+              : currentPosition && isFollowingUser
+                ? 'Følger din position'
+                : 'Centrer på min position'
+          }
+        >
+          <span className={`flex rounded-full ${locationStatus === 'locating' ? 'animate-ss-pulse' : ''}`}>
             <LocateIcon />
-          </button>
-        )}
+          </span>
+        </button>
 
         {/* Compass button — appears when the map is rotated, resets bearing to north.
             The rose rotates so the accent needle keeps pointing north; the "N" stays fixed. */}
@@ -400,7 +416,7 @@ export default function MapView({
               });
             }
           }}
-          className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+152px)] right-[24px] z-10 flex size-[52px] items-center justify-center rounded-full border border-line bg-surface shadow-[0_6px_16px_var(--shadow)]"
+          className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+168px)] right-[max(16px,env(safe-area-inset-right))] z-10 flex size-[52px] items-center justify-center rounded-full border border-line bg-surface shadow-[0_6px_16px_var(--shadow)]"
           title="Nulstil mod nord"
           style={{
             opacity: bearing === 0 ? 0 : 1,

@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import TopBar from './TopBar';
-import FloatingActionButton from './FloatingActionButton';
 import AddEditModal from './AddEditModal';
 import PinDetailsDrawer from './PinDetailsDrawer';
 import MapView from './MapView';
@@ -8,6 +7,7 @@ import type { User as NewUser, ForagingSpot, ForagingSpotWithPending, ForagingTy
 import FilterDialog from './FilterDialog';
 import SpotListView from './SpotListView';
 import { OfflineBanner } from './OfflineBanner';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foragingTypes';
 import { getForagingSpotConfig } from './icons';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -37,13 +37,15 @@ export default function MainMapScreen({
   const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
   const { position: currentPosition, status: locationStatus } = useUserLocation();
+  const { isOnline } = useNetworkStatus();
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(getAllForagingTypesSet());
   const [centerOnSpot, setCenterOnSpot] = useState<ForagingSpot | null>(null);
-  // Map load failure (reported by MapView) — hides the FAB and location chip
-  // while the error card shows; the top bar and Kort/Liste toggle stay
+  // Map load failure (reported by MapView) — hides the whole bottom bar (incl.
+  // the add button) and the floating map buttons while the error card shows;
+  // only the top bar stays
   const [mapError, setMapError] = useState(false);
   // Basemap mode — session-only by construction (plain state, no persistence):
   // it survives Kort/Liste switches and sheets because this component stays
@@ -305,11 +307,12 @@ export default function MainMapScreen({
         <OfflineBanner />
       </div>
 
-      {/* Chip and no-location badge are mutually exclusive ('unavailable' implies
-          no position); both hide on the map-error card, and swap live when a fix
-          arrives or drops out */}
-      {viewMode === 'map' && !mapError && currentPosition && <LocationChip position={currentPosition} />}
-      {viewMode === 'map' && !mapError && locationStatus === 'unavailable' && <NoLocationBadge />}
+      {/* No-location badge sits in the offline banner's slot under the search
+          field (stacking below the banner when both show); hides on the
+          map-error card, and disappears live when a fix arrives */}
+      {viewMode === 'map' && !mapError && locationStatus === 'unavailable' && (
+        <NoLocationBadge offline={!isOnline} />
+      )}
 
       {/* Basemap toggle gates on the design's isMapReady (map view, no sheet,
           no map error) — deliberately not on location: it stays visible in the
@@ -321,12 +324,16 @@ export default function MainMapScreen({
         />
       )}
 
-      <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-
-      {/* Deviation from the design's map-error state (2.12): the FAB stays —
-          adding a find works fine without the map, as the list view shows */}
-      <FloatingActionButton onClick={() => setShowAddModal(true)} />
-
+      {/* Floating bottom bar (replaces the Kort/Liste pill and corner FAB);
+          the map-error card is the one state without it — its "Vis fund som
+          liste" action leads to the list, where the bar (and add) returns */}
+      {!(viewMode === 'map' && mapError) && (
+        <BottomNavBar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onAddClick={() => setShowAddModal(true)}
+        />
+      )}
 
       {/* The add sheet opens without a GPS fix too — the sheet's Placering
           section then shows the no-location warning and gates the save */}
@@ -379,29 +386,120 @@ export default function MainMapScreen({
   );
 }
 
-interface ViewToggleProps {
+interface BottomNavBarProps {
   viewMode: 'map' | 'list';
   onViewModeChange: (mode: 'map' | 'list') => void;
+  onAddClick: () => void;
 }
 
-// Bottom-centered Kort/Liste pill; active tab is ink-filled in light, gold in dark
-function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
+/* Folded-map and three-line glyphs from the design's bottom nav items */
+function MapNavIcon() {
   return (
-    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+24px)] left-1/2 z-10 flex -translate-x-1/2 rounded-[16px] border border-line bg-surface p-[5px] shadow-[0_6px_18px_var(--shadow)]">
-      {([['map', 'Kort'], ['list', 'Liste']] as const).map(([mode, label]) => (
-        <button
-          key={mode}
-          type="button"
-          onClick={() => onViewModeChange(mode)}
-          className={`rounded-[12px] px-[24px] py-[9px] font-serif text-[14px] font-semibold transition-colors ${
-            viewMode === mode
-              ? 'bg-ink text-bg dark:bg-accent dark:text-accent-ink'
-              : 'text-ink2'
-          }`}
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
+      <path d="M9 4v14M15 6v14" />
+    </svg>
+  );
+}
+
+function ListNavIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+// Floating bottom nav bar: forest-green rounded bar with Kort/Liste items
+// flanking the cradled accent add button. The bar is three segments — two
+// plain rounded ends and a fixed-width center SVG carrying the design's exact
+// notch path (eased shoulders included) — so the scoop keeps hugging the
+// button at any viewport width, unlike the design's full-width stretched SVG.
+// The center SVG squeezes the path ~7% horizontally, reproducing how the
+// design frame renders it (notch snug against the halo, seated below); the
+// drop-shadow lives on the wrapper so it follows the notch outline.
+function BottomNavBar({ viewMode, onViewModeChange, onAddClick }: BottomNavBarProps) {
+  const navItem = (mode: 'map' | 'list', label: string, icon: ReactNode) => (
+    <button
+      type="button"
+      onClick={() => onViewModeChange(mode)}
+      className={`flex flex-1 flex-col items-center gap-[3px] transition-colors ${
+        viewMode === mode
+          ? 'text-[#f4efe3]'
+          : 'text-[rgba(244,239,227,.55)] dark:text-[rgba(240,233,214,.5)]'
+      }`}
+    >
+      {icon}
+      <span className="font-serif text-[11.5px] font-semibold">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+22px)] left-[max(16px,env(safe-area-inset-left))] right-[max(16px,env(safe-area-inset-right))] z-10 h-[66px]">
+      {/* barFill: brand forest in light, hardcoded deep forest in dark (design
+          barFill — deliberately not --surface or the dark gold --brand) */}
+      <div className="absolute inset-0 flex text-[#2f4a32] [filter:drop-shadow(0_8px_20px_rgba(20,15,8,.28))] dark:text-[#20301c]">
+        <div className="flex-1 rounded-l-[26px] bg-current" />
+        {/* Notch section of the design's bar path (x 136–222), 1px overlaps
+            against the neighbours to avoid hairline seams at fractional widths */}
+        <svg
+          width="80"
+          height="66"
+          viewBox="136 0 86 66"
+          preserveAspectRatio="none"
+          className="-mx-px h-full shrink-0"
+          aria-hidden
         >
-          {label}
-        </button>
-      ))}
+          <path
+            d="M136,0 C142,0 146,4 149,9 A38,38 0 0 0 209,9 C212,4 216,0 222,0 L222,66 L136,66 Z"
+            fill="currentColor"
+          />
+        </svg>
+        <div className="flex-1 rounded-r-[26px] bg-current" />
+      </div>
+      <div className="absolute inset-0 flex items-center">
+        {navItem('map', 'Kort', <MapNavIcon />)}
+        <div className="w-[88px] shrink-0" />
+        {navItem('list', 'Liste', <ListNavIcon />)}
+      </div>
+      {/* Cradled add button — half above the bar in the notch, with a halo
+          ring in the page-background color */}
+      <button
+        type="button"
+        onClick={onAddClick}
+        aria-label="Tilføj fund"
+        className="absolute left-1/2 top-0 flex size-[60px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-bg bg-accent text-accent-ink shadow-[0_8px_20px_-4px_var(--accent)] transition-transform active:scale-95"
+      >
+        <svg
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -425,9 +523,10 @@ function LayersIcon() {
   );
 }
 
-// 52px circular basemap toggle, top-right below the floating bar; satellite
-// mode inverts to brand colors, same pattern as the locate button's active
-// state. Label names the mode you'd switch to. No mode-switch animation.
+// 52px circular basemap toggle, bottom-left above the nav bar (where the
+// location chip used to sit); satellite mode inverts to brand colors, same
+// pattern as the locate button's active state. Label names the mode you'd
+// switch to. No mode-switch animation.
 function MapStyleToggle({ satellite, onToggle }: { satellite: boolean; onToggle: () => void }) {
   const label = satellite ? 'Kort' : 'Satellit';
 
@@ -437,7 +536,7 @@ function MapStyleToggle({ satellite, onToggle }: { satellite: boolean; onToggle:
       onClick={onToggle}
       aria-label={label}
       title={label}
-      className={`absolute right-[max(24px,env(safe-area-inset-right))] top-[calc(max(14px,env(safe-area-inset-top))+88px)] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] active:scale-95 ${
+      className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+112px)] left-[max(16px,env(safe-area-inset-left))] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] active:scale-95 ${
         satellite ? 'bg-brand text-brand-ink' : 'bg-surface text-brand'
       }`}
     >
@@ -465,30 +564,24 @@ function CrossedPinIcon({ size, strokeWidth }: { size: number; strokeWidth: numb
   );
 }
 
-// Centered amber replacement for the location chip when there is no fix and
-// none coming (same bottom row as the chip, so the swap doesn't jump)
-function NoLocationBadge() {
+// Centered amber badge under the search field when there is no fix and none
+// coming. Same slot as the offline banner (design noLocTop 112/182): it drops
+// to the stacked position while the device is offline so the two never overlap.
+function NoLocationBadge({ offline }: { offline: boolean }) {
   return (
-    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-[9px] whitespace-nowrap rounded-[12px] border border-offline-border bg-noloc-bg px-[15px] py-[8px] shadow-[0_3px_10px_var(--shadow)]">
+    <div
+      className={`absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-[9px] whitespace-nowrap rounded-[12px] border border-offline-border bg-offline-bg px-[15px] py-[9px] shadow-[0_3px_10px_var(--shadow)] ${
+        offline
+          ? 'top-[calc(max(14px,env(safe-area-inset-top))+140px)]'
+          : 'top-[calc(max(14px,env(safe-area-inset-top))+70px)]'
+      }`}
+    >
       <span className="flex shrink-0 text-offline-ink">
         <CrossedPinIcon size={16} strokeWidth={1.8} />
       </span>
       <span className="font-mono text-[11px] leading-[1.35] text-offline-ink">
         Ingen lokation — tjek din GPS
       </span>
-    </div>
-  );
-}
-
-// The design shows a reverse-geocoded locality name ("Silkeborg Skov") here; the
-// app has no reverse geocoding, so we show the user's coarse coordinates instead.
-function LocationChip({ position }: { position: Coordinates }) {
-  const label = `${Math.abs(position.lat).toFixed(3)}° ${position.lat >= 0 ? 'N' : 'S'}, ${Math.abs(position.lng).toFixed(3)}° ${position.lng >= 0 ? 'Ø' : 'V'}`;
-
-  return (
-    <div className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] left-[max(18px,env(safe-area-inset-left))] z-10 flex items-center gap-[8px] rounded-[12px] border border-line bg-surface px-[13px] py-[8px] shadow-[0_3px_10px_var(--shadow)]">
-      <span className="size-[9px] shrink-0 rounded-full bg-brand" />
-      <span className="font-mono text-[11px] text-ink2">{label}</span>
     </div>
   );
 }

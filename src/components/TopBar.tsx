@@ -45,7 +45,7 @@ export default function TopBar({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-bg to-transparent pb-[24px] pt-[max(14px,env(safe-area-inset-top))]">
-      <div className="pointer-events-auto flex items-center gap-[10px] pl-[max(24px,env(safe-area-inset-left))] pr-[max(24px,env(safe-area-inset-right))]">
+      <div className="pointer-events-auto flex items-center gap-[10px] pl-[max(16px,env(safe-area-inset-left))] pr-[max(16px,env(safe-area-inset-right))]">
         {/* Search */}
         <div className="flex h-[48px] flex-1 items-center gap-[9px] rounded-[14px] border border-line bg-surface px-[15px] shadow-[0_3px_10px_var(--shadow)]">
           <Search className="size-[17px] shrink-0 text-mono" strokeWidth={1.8} />

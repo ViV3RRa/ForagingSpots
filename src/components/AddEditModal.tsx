@@ -300,7 +300,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
                 </button>
               ) : (
                 <div>
-                  <div className="flex items-start gap-[10px] rounded-[14px] border border-offline-border bg-noloc-bg px-[14px] py-[12px]">
+                  <div className="flex items-start gap-[10px] rounded-[14px] border border-offline-border bg-offline-bg px-[14px] py-[12px]">
                     <span className="mt-[1px] flex shrink-0 text-offline-ink">
                       <svg
                         width="17"

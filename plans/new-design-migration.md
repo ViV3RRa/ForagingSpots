@@ -99,6 +99,7 @@ Navigation stays state-driven in `App.tsx` / `MainMapScreen.tsx` (no router intr
 | App icon set (monogram, new) | `public/app-icon/`, `vite.config.ts`, `index.html` | 3.7 |
 | No-location badge + degraded chrome (new) | `MainMapScreen.tsx`, `MapView.tsx`, `useUserLocation.ts` | 3.8 |
 | Satellite map mode (new) | `MapView.tsx`, `MainMapScreen.tsx`, `src/utils/mapbox.ts` | 3.9 |
+| Bottom nav bar + map-chrome rework (new) | `MainMapScreen.tsx`, `MapView.tsx`, `TopBar.tsx` | 3.10 |
 
 ---
 
@@ -141,6 +142,7 @@ token values from the Claude Design project via MCP before writing code.
 | 3.7 App icon replacement | [subtasks/3.7-app-icon-replacement.md](subtasks/3.7-app-icon-replacement.md) | ✅ Done (2026-07-09) |
 | 3.8 No-location state | [subtasks/3.8-no-location-state.md](subtasks/3.8-no-location-state.md) | ✅ Done (2026-07-09) |
 | 3.9 Satellite map mode | [subtasks/3.9-satellite-mode.md](subtasks/3.9-satellite-mode.md) | ✅ Done (2026-07-09) |
+| 3.10 Bottom nav bar & map-chrome rework | [subtasks/3.10-bottom-nav-chrome.md](subtasks/3.10-bottom-nav-chrome.md) | ✅ Done (2026-07-09) |
 | 4.1 Dark-mode + safe-area audit | [subtasks/4.1-dark-mode-audit.md](subtasks/4.1-dark-mode-audit.md) | |
 | 4.2 Dead-code cleanup | [subtasks/4.2-cleanup.md](subtasks/4.2-cleanup.md) | |
 | 4.3 Asset optimization | [subtasks/4.3-asset-optimization.md](subtasks/4.3-asset-optimization.md) | |
@@ -561,6 +563,23 @@ degradation. Design ref: `showNoLoc` block + `noLoc` state in `Skovens Skatte.dc
 - Mode is session-only (persists across view switches/sheets; boots in base mode). Location
   editor stays on the base style.
 
+### 3.10 Bottom nav bar & map-chrome rework (added 2026-07-09)
+
+**Fits into plan:** the design's map-screen chrome was reworked after 3.9 landed. Design ref:
+`CUSTOM BOTTOM BAR` block, `barFill`/`mapNavInk`/`listNavInk`/`showBottomBar`, `noLocTop`,
+16px-margin top bar in `Skovens Skatte.dc.html`.
+
+- Floating bottom nav bar (16px side margins, rounded ends, concave top-center notch, forest
+  fill `#2f4a32`/`#20301c`) with Kort/Liste items (cream active, ~55% cream inactive) and a
+  cradled 60px accent add-button with a `--bg` halo ring — replaces the Kort/Liste pill and the
+  corner FAB. Hidden on the map-error state (supersedes the 2.12/3.8 keep-the-FAB deviation).
+- Satellite layers toggle (3.9) moves bottom-left where the location chip was; the chip is
+  removed. Locate/compass keep bottom-right; all floating buttons and the top bar align to
+  consistent 16px edge margins. Satellite tile-loading background `#04070e`.
+- Locate button stays visible with no location (reverses 3.8's removal); tapping retries with
+  locating feedback. No-location badge moves under the search field (stacks below the offline
+  banner when offline) and adopts the offline badge's solid colors in both themes.
+
 ## Phase 4 — Polish & cleanup
 
 ### 4.1 Dark-mode + safe-area audit
@@ -589,9 +608,11 @@ Verify visual quality at all badge sizes.
   (search, sort, distance) → detail (gallery, lightbox, edit location, share, delete) → add flow
   (type grid, photo, save) → filter → offline mode (banner, pending sync) → install prompt →
   update toast → theme toggle + system theme change → map error card (invalid/missing token) →
-  no-location badge + hidden locate button (DevTools Sensors: "Location unavailable") →
+  no-location badge under the search field + locate retry feedback (DevTools Sensors:
+  "Location unavailable") →
   satellite toggle (imagery, inverted button, persists across view switch, hidden with
-  sheets/map error, offline tiles) →
+  sheets/map error, offline tiles, `#04070e` loading bg) →
+  bottom nav bar (view switch, cradled add button, hidden on map error, 16px margins) →
   success/error toasts (save, delete, failed mutation) → list sort menu + row action sheet →
   map cluster + compass (rotate) → sign-in error/loading → detail gallery at 0/1/2/3/5 photos →
   share section (empty + populated) → offline-locked detail.
