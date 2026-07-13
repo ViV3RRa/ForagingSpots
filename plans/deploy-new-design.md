@@ -93,11 +93,11 @@ note the record counts of `users` and `foraging_spots`. (2026-07-10: 6 and 19.)
 
 ## Phase 1 — Build the frontend (on your Mac, any time before the window)
 
-The `new-design` branch is ready (QA'd in subtask 4.4). Build it:
+The redesign is merged to `main` (QA'd in subtask 4.4). Build it:
 
 ```bash
 cd ~/Projects/privat/ForagingSpots
-git checkout new-design
+git checkout main && git pull
 npm ci              # clean install of the exact locked dependencies
 npm run build       # production build → dist/
 ```
@@ -364,9 +364,13 @@ Caveats:
 
 ## Phase 9 — Afterwards (repo housekeeping, no NAS involved)
 
-1. Merge the release: `git checkout main && git merge new-design`, tag it
-   (`git tag v2.0.0`), push.
+1. ~~Merge the release into `main`.~~ Done 2026-07-13: `new-design` fast-forward
+   merged to `main` (`a7fa344`), pushed, and the branch deleted locally and on
+   GitHub. Optionally tag the release once deployed: `git tag v2.0.0 && git push --tags`.
 2. Delete the obsolete local 0.22.27 binary: `rm pocketbase/pocketbase`
    (`pocketbase/` is gitignored; `serve.sh` provides the pinned 0.37.5 for dev).
 3. Mark QA finding #1 in `plans/subtasks/4.4-final-verification.md` resolved —
    this deploy fixes its root cause.
+
+Note for Phase 1: the branch is gone, so build from `main` — skip the
+`git checkout new-design` step.
