@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Map from 'react-map-gl';
 import { ChevronLeft, MapPin } from 'lucide-react';
 import type { Coordinates } from '../lib/types';
@@ -52,9 +53,14 @@ export default function LocationEditorScreen({
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [onClose]);
 
-  return (
-    /* pointer-events-auto: the sheet underneath is a Radix modal that sets
-       pointer-events:none on <body> while open */
+  /* Portaled to <body>: the bottom sheets are body-level Radix portals (z-50)
+     while #root is a fixed layer with its own stacking context — rendered
+     inside #root, no z-index could lift this overlay above an open sheet. At
+     body level its z-[60] wins, and the transformed body (tokens.css) sizes
+     the fixed frame correctly on every surface. pointer-events-auto: the
+     sheet underneath is a Radix modal that sets pointer-events:none on <body>
+     while open. */
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -159,6 +165,7 @@ export default function LocationEditorScreen({
           Bekræft placering
         </Button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

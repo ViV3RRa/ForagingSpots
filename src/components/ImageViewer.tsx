@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { SpotImage } from './ImageCapture';
 
@@ -131,9 +132,14 @@ export default function ImageViewer({
     setDragX(0);
   };
 
-  return (
-    /* pointer-events-auto: the drawer underneath is a Radix modal that sets
-       pointer-events:none on <body> while open */
+  /* Portaled to <body>: the bottom sheets are body-level Radix portals (z-50)
+     while #root is a fixed layer with its own stacking context — rendered
+     inside #root, no z-index could lift the lightbox above an open sheet. At
+     body level its z-[70] wins, and the transformed body (tokens.css) sizes
+     the fixed frame correctly on every surface. pointer-events-auto: the
+     drawer underneath is a Radix modal that sets pointer-events:none on
+     <body> while open. */
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -240,6 +246,7 @@ export default function ImageViewer({
             </button>
           ))}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
