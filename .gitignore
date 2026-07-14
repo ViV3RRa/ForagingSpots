@@ -35,3 +35,6 @@ dev-dist
 
 /pocketbase
 /icons
+
+# Claude Code
+issues/

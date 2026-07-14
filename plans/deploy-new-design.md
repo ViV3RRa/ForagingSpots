@@ -7,9 +7,9 @@ Current production setup (confirmed 2026-07-13):
   serves `./web/build`, proxies `/api/` and `/admin/`→`/_/` to PocketBase) and
   **pocketbase** (built from `./pocketbase/Dockerfile`, `ARG PB_VERSION=0.22.27`,
   data/migrations/hooks host-mounted from `./pocketbase/`).
-- A Cloudflare Tunnel points `foraging.viverra.dk` at nginx (NAS port 8082), with
-  Cloudflare Access in front (default-deny; a "Foraging Spots" Access app
-  Bypass-opens the PWA asset paths).
+- A Cloudflare Tunnel points `foraging.viverra.dk` at nginx (NAS port 8082). A
+  host-wide Cloudflare Access **Bypass** application makes the hostname public —
+  users authenticate with PocketBase only (see 6a).
 
 Target setup after this deploy: **a single pocketbase service** on 0.37.5 that
 also serves the frontend from `pb_public` (verified locally 2026-07-13: correct
@@ -194,8 +194,8 @@ the image to booting the new container, and that first boot converts `pb_data`.
    (stopped), select it → **Action → Delete**. (The nginx *image* can stay or go
    via Image tab — harmless either way.)
 
-4. **Confirm it serves.** In a browser: `https://foraging.viverra.dk` → pass
-   Access → the **old** frontend loads (it's still what's in `web/build`, now
+4. **Confirm it serves.** In a browser: `https://foraging.viverra.dk` → the
+   **old** frontend loads (it's still what's in `web/build`, now
    served by PocketBase itself — the redesign arrives in Phase 5). Optional
    SSH check from the NAS:
 
@@ -208,7 +208,7 @@ the image to booting the new container, and that first boot converts `pb_data`.
 ## Phase 4 — Verify the migrated backend
 
 1. Go to `https://foraging.viverra.dk/_/` — **note: new URL**, `/admin/` died
-   with nginx (pass Cloudflare Access first). Log in with your **old admin email
+   with nginx. Log in with your **old admin email
    + password** — the account was converted into the new `_superusers`
    collection; same credentials. (Your old admin *session* is invalidated —
    having to log in again is expected. Regular users are NOT logged out; the
@@ -254,25 +254,22 @@ What existing users will see:
 
 ## Phase 6 — Update Cloudflare
 
-### 6a. Access bypass paths (required — PWA install breaks on iOS without it)
+### 6a. Access applications — done 2026-07-13, nothing left to change
 
-The redesign moved all icons into `/app-icon/` and dropped the root-level
-`apple-touch-icon*.png` / `favicon.png` / `pwa-*.png` files, so the five current
-bypass destinations no longer match anything. In the Zero Trust dashboard:
+Actual setup (clarified during the deploy): the entire `foraging.viverra.dk`
+hostname has a host-wide **Bypass** Access application — users never see
+Cloudflare Access and sign in with PocketBase auth only (by design: no 2FA
+friction for app users; their session is the 2-year PocketBase token). The old
+five-path PWA bypass app was a leftover from when the host sat behind the
+Access login wall; it became redundant and was deleted. With a host-wide
+bypass, the PWA asset paths need no destinations of their own.
 
-1. **Zero Trust → Access → Applications → "Foraging Spots" → edit → Destinations.**
-2. Delete all five path entries.
-3. Add these two (subdomain `foraging`, domain `viverra.dk`, path in the same
-   format as the old entries, no leading slash):
-   - `app-icon/*`
-   - `manifest.webmanifest`
-4. Keep the existing **PWA / Bypass** policy attached. Save.
-
-Why these two: iOS Safari fetches the manifest and the apple-touch-icon **without
-the Access cookie** when deciding whether the site is installable; if Access
-blocks those anonymous requests, Add-to-Home-Screen breaks. Everything else —
-the app, `/api/*`, `/_/` — stays behind Access: that's the NAS protection,
-unchanged.
+Consequence to stay aware of: PocketBase is the only wall on this hostname,
+including the `/_/` admin dashboard — keep the superuser password strong
+(0.37 adds rate limiting, and can enforce superuser MFA if wanted). Optional
+hardening that users would never notice: add one Access application with
+destination `foraging.viverra.dk` path `_/*` and a login policy — path-specific
+apps take precedence over the host-wide bypass, walling off only the dashboard.
 
 ### 6b. Purge the edge cache (recommended)
 
@@ -281,38 +278,33 @@ assets: **dashboard → viverra.dk zone → Caching → Configuration → Purge
 Everything** (or purge by hostname). Cheap insurance against serving a mix of
 old and new files.
 
-### 6c. Access session duration (optional quality-of-life)
-
-Access → Applications → the app covering `foraging.viverra.dk` → Settings →
-Session Duration → `1 month` (the maximum). The app's own session is 2 years, so
-the Access cookie is what actually decides how often users see a login screen.
-
 ---
 
 ## Phase 7 — End-to-end verification
 
 **Desktop, fresh private window** (no old state):
-1. `https://foraging.viverra.dk` → Access login → new-design welcome screen.
+1. `https://foraging.viverra.dk` → new-design welcome screen (no Access login —
+   the host is bypassed by design, see 6a).
 2. Sign in with a real account → map renders, spots + images load.
 3. Add a test spot **with 2–3 photos** and delete it again — exercises uploads
    without nginx's old 1 MB proxy limit in the way.
 
-**Security spot-check** (that Bypass didn't open more than intended, and that the
-dashboard is still walled off):
+**Reachability spot-check** (host-wide bypass → everything answers anonymously;
+what you're really checking is that the tunnel → 8082 → PocketBase path works
+and the PWA files are all in place):
 
 ```bash
-# Anonymous, no cookies. Icons/manifest must be reachable; nothing else may be:
 curl -s -o /dev/null -w '%{http_code}\n' https://foraging.viverra.dk/app-icon/icon-192.png     # expect 200
 curl -s -o /dev/null -w '%{http_code}\n' https://foraging.viverra.dk/manifest.webmanifest      # expect 200
-curl -s -o /dev/null -w '%{http_code}\n' https://foraging.viverra.dk/api/health                # expect 302 (Access), NOT 200
-curl -s -o /dev/null -w '%{http_code}\n' https://foraging.viverra.dk/_/                        # expect 302 (Access), NOT 200
+curl -s -o /dev/null -w '%{http_code}\n' https://foraging.viverra.dk/api/health                # expect 200
+curl -s -o /dev/null -w '%{http_code}\n' https://foraging.viverra.dk/sw.js                     # expect 200
 ```
 
-**iPhone (the reason 6a exists):**
-1. Safari → site → pass Access → sign in.
+**iPhone:**
+1. Safari → site → sign in.
 2. Share → **Add to Home Screen** → the forest-green app icon appears (a generic
-   screenshot-thumbnail instead means icon/manifest fetches are still blocked —
-   re-check 6a).
+   screenshot-thumbnail instead means the icon/manifest files are missing or
+   wrong — re-check the Phase 5 sync).
 3. Launch from the home screen → standalone (no Safari chrome) → data loads.
 
 **Existing user's device (update path):**

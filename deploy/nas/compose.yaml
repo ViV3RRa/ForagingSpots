@@ -1,0 +1,13 @@
+services:
+  pocketbase:
+    build:
+      context: ./pocketbase
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8095"
+    volumes:
+      - ./pocketbase/pb_data:/pb/pb_data
+      - ./pocketbase/pb_migrations:/pb/pb_migrations
+      - ./pocketbase/pb_hooks:/pb/pb_hooks
+      - ./web/build:/pb/pb_public
+    restart: unless-stopped
