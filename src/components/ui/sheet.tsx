@@ -75,10 +75,62 @@ function SheetContent({
   const withHandle = handle ?? isBottom;
   const withClose = showClose ?? !isBottom;
 
+  // Drag-to-dismiss on the grab handle (bottom sheets): the sheet tracks the
+  // finger 1:1; releasing past a distance or velocity threshold closes it
+  // through the hidden Radix Close (so the sheet's onOpenChange fires exactly
+  // like a scrim tap), anything less snaps back.
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const closeRef = React.useRef<HTMLButtonElement | null>(null);
+  const dragRef = React.useRef<{
+    pointerId: number;
+    startY: number;
+    startT: number;
+    dy: number;
+  } | null>(null);
+
+  const onHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = contentRef.current;
+    if (!el) return;
+    dragRef.current = { pointerId: e.pointerId, startY: e.clientY, startT: e.timeStamp, dy: 0 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    el.style.transition = "none";
+  };
+
+  const onHandlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const el = contentRef.current;
+    if (!drag || !el || e.pointerId !== drag.pointerId) return;
+    const raw = e.clientY - drag.startY;
+    drag.dy = raw < 0 ? raw / 4 : raw; // rubber-band resistance upward
+    el.style.transform = `translateY(${drag.dy}px)`;
+  };
+
+  const onHandlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    const el = contentRef.current;
+    if (!drag || !el || e.pointerId !== drag.pointerId) return;
+    dragRef.current = null;
+    el.style.transition = "";
+    const elapsed = Math.max(e.timeStamp - drag.startT, 1);
+    const velocity = drag.dy / elapsed; // px/ms, positive = downward
+    const shouldClose =
+      e.type !== "pointercancel" &&
+      drag.dy > 24 &&
+      (drag.dy > el.offsetHeight * 0.25 || velocity > 0.5);
+    if (shouldClose) {
+      // Keep the dragged offset — the slide-out-to-bottom exit animation
+      // continues from the sheet's current position.
+      closeRef.current?.click();
+    } else {
+      el.style.transform = ""; // the class transition animates the snap-back
+    }
+  };
+
   return (
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Content
+        ref={contentRef}
         data-slot="sheet-content"
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-[cubic-bezier(0.2,0.8,0.2,1)] data-[state=closed]:duration-300 data-[state=open]:duration-300",
@@ -94,7 +146,20 @@ function SheetContent({
         )}
         {...props}
       >
-        {withHandle && <SheetHandle />}
+        {withHandle && (
+          <SheetHandle
+            onPointerDown={onHandlePointerDown}
+            onPointerMove={onHandlePointerMove}
+            onPointerUp={onHandlePointerEnd}
+            onPointerCancel={onHandlePointerEnd}
+            // pb/-mb enlarge the touch target without shifting layout;
+            // relative+z keep the overlapped strip hit-testing the handle
+            className="relative z-10 -mb-[12px] cursor-grab touch-none select-none pb-[16px] active:cursor-grabbing"
+          />
+        )}
+        {withHandle && (
+          <SheetPrimitive.Close ref={closeRef} className="hidden" tabIndex={-1} aria-hidden="true" />
+        )}
         {children}
         {withClose && (
           <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
