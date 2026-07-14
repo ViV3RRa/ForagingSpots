@@ -20,7 +20,12 @@ import '@fontsource/space-mono/latin-700.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import './styles/tokens.css'
 import { registerSW } from 'virtual:pwa-register'
+import { initAppHeight } from './utils/appHeight'
 import App from './App.tsx'
+
+// Measure the real viewport into --app-height before first paint — the app
+// shell's size depends on it (tokens.css #root; issues/002).
+initAppHeight()
 
 // Register service worker for PWA functionality. The virtual module resolves
 // the correct SW URL per environment (/dev-sw.js?dev-sw in dev, /sw.js in prod);

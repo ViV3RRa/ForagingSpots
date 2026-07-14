@@ -121,7 +121,7 @@ export default function IconShowcase() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#d7d2c7] p-6">
+    <div className="h-full overflow-y-auto bg-[#d7d2c7] p-6">
       <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2 items-start">
         <PrimitivesPanel title="Lys" onOpenSheet={() => setSheetOpen(true)} />
         <div className="dark">

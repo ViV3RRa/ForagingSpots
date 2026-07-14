@@ -262,7 +262,7 @@ export default function MainMapScreen({
   });
 
   return (
-    <div className="relative h-screen overflow-hidden bg-bg">
+    <div className="relative h-full overflow-hidden bg-bg">
       <div className="absolute inset-0">
         {viewMode === 'map' ? (
           <MapView

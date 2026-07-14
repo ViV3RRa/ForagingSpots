@@ -19,7 +19,7 @@ const BADGE_CLUSTER: Array<{ type: ForagingType; size: number; style: CSSPropert
 
 export default function WelcomeScreen({ onSignIn }: WelcomeScreenProps) {
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+    <div className="relative flex h-full flex-col overflow-hidden bg-background">
       {/* Decorative topo curves along the bottom of the viewport */}
       <svg
         className="absolute inset-0 h-full w-full opacity-50"

@@ -40,7 +40,7 @@ export default function SignUpScreen({ onSignUp, onBack, onSignIn }: SignUpScree
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-full flex-col overflow-y-auto bg-background">
       {/* Back to welcome */}
       <div className="px-[26px] pt-[max(20px,calc(env(safe-area-inset-top)+8px))]">
         <Button

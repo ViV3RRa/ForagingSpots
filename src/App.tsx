@@ -212,7 +212,10 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <div className="safe-area-all">
+      {/* No safe-area padding here: #root is the fixed app frame (tokens.css) and
+          every screen/overlay handles its own env() insets. A padded wrapper would
+          double-pad and push the 100%-tall screens past the viewport (issues/001). */}
+      <div className="h-full">
         <AuthProvider>
           <AppContent />
           <PWAUpdatePrompt />

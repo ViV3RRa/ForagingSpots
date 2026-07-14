@@ -11,6 +11,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- black-translucent + viewport-fit=cover = true edge-to-edge in the installed
+         app (content behind the status bar, env() insets populated). Its cold-start
+         stale-viewport bug is handled in JS (src/utils/appHeight.ts) — see
+         issues/002-ios-app-frame-short.md, "Fresh analysis". -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Skovens Skatte" />
     <meta name="application-name" content="Skovens Skatte" />

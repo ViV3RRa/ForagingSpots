@@ -237,6 +237,46 @@ html {
   font-size: var(--font-size);
 }
 
+/*
+ * Fixed app frame — the shell never scrolls (issues/001); only designated
+ * inner regions (list, sheets, forms) do.
+ *
+ * Geometry, measured on-device (issues/002, ViewportDebug chip): the installed
+ * iOS app anchors a status-bar-shortened *viewport* (screen − 59 pt) at the top
+ * of a full-screen display surface. position:fixed elements are clamped and
+ * paint-clipped to that short viewport, but in-flow document canvas below it
+ * IS displayed (the pre-redesign scrollable build proved this by painting to
+ * the physical bottom). Therefore:
+ *
+ * - --app-height (src/utils/appHeight.ts) carries the real usable height per
+ *   surface: outerHeight in iOS standalone (= full screen), innerHeight
+ *   everywhere else (= honest visible viewport in tabs and on Android).
+ * - html/body span exactly that height; overflow stays locked (issue 001).
+ * - body carries a transform, which makes it the CONTAINING BLOCK for every
+ *   position:fixed descendant (#root, portaled sheets/dialogs/toasts): fixed
+ *   elements then size/position against the full-height body box in the
+ *   document canvas instead of the clamped viewport. On healthy surfaces the
+ *   body box equals the viewport, so nothing changes there.
+ */
+html,
+body {
+  height: 100%;
+  height: var(--app-height, 100%);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  /* Containing block for fixed descendants — see the block comment above. */
+  transform: translateZ(0);
+}
+
+#root {
+  position: fixed;
+  inset: 0; /* fills body, its containing block via the transform */
+  overflow: hidden;
+}
+
 /* iOS Safe Area Support */
 @supports (padding: max(0px)) {
   .safe-area-top {
@@ -247,52 +287,10 @@ html {
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 
-  .safe-area-left {
-    padding-left: max(env(safe-area-inset-left), 0px);
-  }
-
-  .safe-area-right {
-    padding-right: max(env(safe-area-inset-right), 0px);
-  }
-
-  .safe-area-x {
-    padding-left: max(env(safe-area-inset-left), 0px);
-    padding-right: max(env(safe-area-inset-right), 0px);
-  }
-
-  .safe-area-y {
-    padding-top: max(env(safe-area-inset-top), 0px);
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
-  }
-
-  .safe-area-all {
-    padding-top: max(env(safe-area-inset-top), 0px);
-    padding-right: max(env(safe-area-inset-right), 0px);
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
-    padding-left: max(env(safe-area-inset-left), 0px);
-  }
 }
 
 /* iOS-specific fixes */
 @media screen and (-webkit-min-device-pixel-ratio: 2) {
-  /* Prevent horizontal scrolling on iOS */
-  body {
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
-
-  /* Ensure full viewport usage */
-  #root {
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    width: 100vw;
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
-
   /* Fix iOS zoom issues */
   html {
     -webkit-text-size-adjust: 100%;
@@ -303,15 +301,5 @@ html {
   /* Prevent iOS Safari from zooming on input focus */
   input, select, textarea {
     font-size: 16px !important;
-  }
-}
-
-/* iPhone-specific viewport fixes */
-@media only screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) {
-  /* iPhone 15/16 Pro specific fixes */
-  body {
-    width: 100vw;
-    max-width: 100vw;
-    overflow-x: hidden;
   }
 }
