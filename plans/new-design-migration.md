@@ -3,7 +3,7 @@
 ## Overview
 
 Migrate the entire PWA to the new visual design authored in Claude Design:
-**https://claude.ai/design/p/67e5a51f-04a0-4dc5-9ca9-0d4bf9a807b3?file=Skovens+Skatte.dc.html**
+**https://claude.ai/design/p/dd75eb78-ea23-46b0-ba4b-7aeb33aff7e4?file=Skovens+Skatte.dc.html**
 
 The design replaces the current green/material look (Inter, `#4CAF50`, shadcn defaults) with an
 earthy, editorial aesthetic: cream/parchment surfaces, deep forest ink, rust accent, serif display

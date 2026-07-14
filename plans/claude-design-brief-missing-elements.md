@@ -1,6 +1,6 @@
 # Extend "Skovens Skatte.dc.html" — design the missing real-world states
 
-> Brief for Claude Design (project `67e5a51f-04a0-4dc5-9ca9-0d4bf9a807b3`, file
+> Brief for Claude Design (project `dd75eb78-ea23-46b0-ba4b-7aeb33aff7e4`, file
 > `Skovens Skatte.dc.html`). Written 2026-07-08 after the backward design-fidelity audit of
 > subtasks 1.1–2.6; paste the section below into a Claude Design conversation. When the new
 > designs land, reconcile the code via new/amended subtasks (the pending-sync badge is already
