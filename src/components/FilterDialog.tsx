@@ -8,6 +8,7 @@ import { FORAGING_TYPES, type ForagingType } from './types';
 import type { ForagingSpot } from '../lib/types';
 import { getDanishLabel } from '../utils/danishLabels';
 import { getAllForagingTypesSet, getTypesInCategory, type ForagingCategory } from '../utils/foragingTypes';
+import { useScrollEdges, headerEdgeClass, footerEdgeClass, topMaskStyle } from '../hooks/useScrollEdges';
 
 interface FilterDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ export default function FilterDialog({
 }: FilterDialogProps) {
   // Local state for temporary filter selections; applied on "Vis resultater"
   const [tempFilters, setTempFilters] = useState<Set<ForagingType>>(new Set(activeFilters));
+  const { ref: bodyRef, atTop, atBottom } = useScrollEdges();
   const [category, setCategory] = useState<CategoryKey>(deriveCategory(activeFilters));
 
   // Reset temp state when the sheet opens or activeFilters change
@@ -105,8 +107,8 @@ export default function FilterDialog({
         handle={false}
         className="max-h-[86%] bg-bg sm:mx-auto sm:max-w-[520px]"
       >
-        {/* Header: Spectral 23px title + accent reset link */}
-        <div className="flex shrink-0 items-center justify-between border-b border-line2 px-[24px] pb-[14px] pt-[20px]">
+        {/* Header: Spectral 23px title + accent reset link; hairline/shadow appear on scroll */}
+        <div className={`flex shrink-0 items-center justify-between px-[24px] pb-[14px] pt-[20px] ${headerEdgeClass(atTop)}`}>
           <SheetTitle className="text-[23px] font-semibold leading-none text-ink">
             Filtrér
           </SheetTitle>
@@ -119,7 +121,11 @@ export default function FilterDialog({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[20px] pt-[20px]">
+        <div
+          ref={bodyRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[20px] pt-[20px]"
+          style={topMaskStyle(atTop)}
+        >
           {/* Kategori: three equal segments, active = accent fill */}
           <MonoLabel className="mb-[12px] block">Kategori</MonoLabel>
           <div className="mb-[22px] flex gap-[9px]">
@@ -178,8 +184,8 @@ export default function FilterDialog({
           </div>
         </div>
 
-        {/* Footer: accent apply CTA above a hairline top border */}
-        <div className="shrink-0 border-t border-line2 px-[24px] pb-[20px] pt-[14px]">
+        {/* Footer: accent apply CTA; hairline/shadow only while content remains below */}
+        <div className={`shrink-0 px-[24px] pb-[20px] pt-[14px] ${footerEdgeClass(atBottom)}`}>
           <Button type="button" size="lg" className="w-full" onClick={handleApply}>
             Vis resultater
           </Button>

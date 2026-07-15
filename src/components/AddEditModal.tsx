@@ -15,6 +15,7 @@ import { getSpotImageThumbnailUrls } from '../lib/pocketbase';
 import { getPendingImages } from '../hooks/usePendingSpots';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
+import { useScrollEdges, headerEdgeClass, footerEdgeClass, topMaskStyle } from '../hooks/useScrollEdges';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
@@ -49,6 +50,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
     }
   }, [currentCoordinates, livePosition]);
   const [isOpen, setIsOpen] = useState(true);
+  const { ref: bodyRef, atTop, atBottom } = useScrollEdges();
   const [speciesQuery, setSpeciesQuery] = useState('');
   const [activeSpeciesPage, setActiveSpeciesPage] = useState(0);
   const speciesPagerRef = useRef<HTMLDivElement>(null);
@@ -193,8 +195,8 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
           }}
           className="max-h-[92%] bg-bg sm:mx-auto sm:max-w-[520px]"
         >
-          {/* Header: Spectral 23px title + 36px circular close button */}
-          <div className="flex shrink-0 items-center justify-between border-b border-line2 px-[24px] pb-[14px] pt-[20px]">
+          {/* Header: Spectral 23px title + 36px circular close button; hairline/shadow appear on scroll */}
+          <div className={`flex shrink-0 items-center justify-between px-[24px] pb-[14px] pt-[20px] ${headerEdgeClass(atTop)}`}>
             <SheetTitle className="text-[23px] font-semibold leading-none text-ink">
               {isEdit ? 'Redigér fund' : 'Nyt fund'}
             </SheetTitle>
@@ -209,8 +211,12 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
           </div>
 
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-            {/* Scrollable content — the CTA lives inside so it stays reachable with the keyboard open */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[24px] pt-[20px]">
+            {/* Scrollable content between the pinned header and footer */}
+            <div
+              ref={bodyRef}
+              className="flex-1 overflow-y-auto overflow-x-hidden px-[24px] pb-[24px] pt-[20px]"
+              style={topMaskStyle(atTop)}
+            >
               {/* Species selector: search field + scrollable 4-column tile grid + page dots */}
               <MonoLabel className="mb-[12px] block">Vælg art</MonoLabel>
               <div className="mb-[14px] flex h-[46px] items-center gap-[9px] rounded-[13px] border border-line bg-surface px-[14px]">
@@ -363,13 +369,17 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
                 />
               </div>
 
-              {/* Accent CTA — inert and dimmed until a location exists (design
-                  addSaveOpacity/.45 + not-allowed cursor, so it stays hit-testable) */}
+            </div>
+
+            {/* Pinned footer inside the form (button stays type=submit). The accent
+                CTA is inert and dimmed until a location exists (design
+                addSaveOpacity/.45 + not-allowed cursor, so it stays hit-testable) */}
+            <div className={`shrink-0 px-[24px] pb-[24px] pt-[14px] ${footerEdgeClass(atBottom)}`}>
               <Button
                 type="submit"
                 size="lg"
                 disabled={!currentCoordinates}
-                className="mt-[20px] w-full disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-[.45]"
+                className="w-full disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-[.45]"
               >
                 {isEdit ? 'Gem ændringer' : 'Gem fund'}
               </Button>

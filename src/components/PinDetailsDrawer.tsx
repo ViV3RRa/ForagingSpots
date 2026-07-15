@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
-import { Edit, Trash2, Share, Plus, X, WifiOff } from 'lucide-react';
+import { Edit, Trash2, Plus, X, WifiOff } from 'lucide-react';
 import type { ForagingSpot, User, ForagingSpotWithPending, Coordinates } from '../lib/types';
 import TypeBadge from './TypeBadge';
 import { getDanishLabel } from '../utils/danishLabels';
@@ -16,6 +16,8 @@ import { PendingSyncBadge } from './PendingSyncBadge';
 import { getPendingImageUrls } from '../hooks/usePendingSpots';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
+import { useScrollEdges, footerEdgeClass } from '../hooks/useScrollEdges';
+import { isWebKitEngine } from '../utils/platform';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot | null;
@@ -58,8 +60,7 @@ export default function PinDetailsDrawer({
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingImageUrls, setPendingImageUrls] = useState<string[]>([]);
-  const shareSectionRef = useRef<HTMLDivElement>(null);
-  const shareInputRef = useRef<HTMLInputElement>(null);
+  const { ref: bodyRef, atBottom, collapsed } = useScrollEdges();
   const { isOnline } = useNetworkStatus();
   const { position } = useUserLocation();
 
@@ -127,12 +128,6 @@ export default function PinDetailsDrawer({
     if (isOwner && spot) {
       onUnshare(spot.id, username);
     }
-  };
-
-  // Design's actShareClick semantics: scroll to the always-visible share input and focus it
-  const handleShareButtonClick = () => {
-    shareSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    shareInputRef.current?.focus({ preventScroll: true });
   };
 
   const handleImageClick = (index: number) => {
@@ -213,6 +208,12 @@ export default function PinDetailsDrawer({
     </button>
   );
 
+  // Two-state soft fade where content scrolls under the floating header
+  // (see the body's comment for the coordinate translation)
+  const bodyMask = collapsed
+    ? 'linear-gradient(to bottom, transparent 0, transparent 45px, #000 63px)'
+    : 'linear-gradient(to bottom, transparent 0, transparent 79px, #000 97px)';
+
   return (
     <>
       <Sheet open={isOpen} onOpenChange={handleClose}>
@@ -229,21 +230,142 @@ export default function PinDetailsDrawer({
           }}
         >
           {spot ? (
-            <div className="flex-1 overflow-y-auto overflow-x-hidden px-[26px] pb-[26px] pt-[14px]">
-              {/* Header: 72px badge + Spectral 26px name */}
-              <div className="flex items-center gap-[16px]">
-                <TypeBadge type={spot.type} size={72} />
-                <div className="min-w-0 flex-1">
-                  <SheetTitle className="truncate text-[26px] font-semibold leading-[1.15] text-ink">
-                    {getDanishLabel(spot.type)}
-                  </SheetTitle>
+            <>
+              {/* Floating header (design variant 1a): sits over the scroll body just
+                  below the drag handle and morphs into a surface pill once scrolled
+                  past 12px — badge 72→46, title 26→19, pending chip slides in.
+                  px-[25px]: the 1px (transparent) pill border lands the expanded
+                  badge on the body's 26px content inset.
+                  Pinned by its vertical CENTER (top 65 = the expanded badge's
+                  centerline, so the expanded state sits exactly at the design's
+                  top-28) — the badge scales around this fixed line and the pill
+                  box holds a constant height on it. */}
+              <div className="pointer-events-none absolute inset-x-0 top-[65px] z-[5] -translate-y-1/2 px-[25px]">
+                {/* The pill's box is CONSTANT height (46 + 14 padding + border) in
+                    both states — it is invisible when expanded, so it simply fades
+                    in at its final size. No vertical dimension is ever animated in
+                    layout: WebKit runs layout transitions on the main thread and
+                    the badge scale on the compositor, and reconciles the two with
+                    a visible size-snap at transitionend (the iOS settle jerk). The
+                    only vertical motion left is the compositor-driven badge scale. */}
+                <div
+                  className={`pointer-events-auto flex items-center rounded-full border py-[7px] pr-[16px] ${
+                    collapsed
+                      ? 'gap-[12px] border-line bg-surface pl-[7px] shadow-[0_3px_10px_-4px_rgba(20,15,8,0.18)]'
+                      : 'gap-[16px] border-transparent bg-transparent pl-0'
+                  }`}
+                  style={{
+                    transition:
+                      'background-color .22s ease, border-color .22s ease, box-shadow .22s ease, padding-left .22s ease, gap .22s ease',
+                  }}
+                >
+                  {/* Badge box: fixed 46px tall; only its WIDTH animates (it drives
+                      the title's horizontal slide). The badge morph is engine-
+                      dependent: WebKit re-rasterizes scaled layers when the
+                      animation ends, popping the settled pill by ~1px — so it gets
+                      a cross-fade between two natively-rendered badges on
+                      permanently-composited (will-change) layers, which never
+                      re-rasterize. Blink/Gecko render the continuous transform
+                      scale cleanly and keep the smoother geometric morph. */}
+                  <div
+                    className="relative h-[46px] shrink-0"
+                    style={{ width: collapsed ? 46 : 72, transition: 'width .22s ease' }}
+                  >
+                    {isWebKitEngine ? (
+                      <>
+                        <TypeBadge
+                          type={spot.type}
+                          size={72}
+                          className="absolute left-1/2 top-1/2 -ml-[36px] -mt-[36px] will-change-[opacity]"
+                          style={{ opacity: collapsed ? 0 : 1, transition: 'opacity .22s ease' }}
+                        />
+                        <TypeBadge
+                          type={spot.type}
+                          size={46}
+                          className="absolute left-1/2 top-1/2 -ml-[23px] -mt-[23px] will-change-[opacity]"
+                          style={{ opacity: collapsed ? 1 : 0, transition: 'opacity .22s ease' }}
+                        />
+                      </>
+                    ) : (
+                      <TypeBadge
+                        type={spot.type}
+                        size={72}
+                        className="absolute left-1/2 top-1/2 -ml-[36px] -mt-[36px]"
+                        style={{
+                          transform: collapsed ? 'scale(0.639)' : 'scale(1)',
+                          transition: 'transform .22s ease',
+                        }}
+                      />
+                    )}
+                  </div>
+                  {/* Title: same engine split (font-size animation re-rasterizes
+                      text at settle on WebKit). On WebKit the 26px title stays in
+                      flow so the column height is constant and a 19px twin fades
+                      in over it; elsewhere the font-size animates directly. */}
+                  <div className="relative min-w-0 flex-1">
+                    {isWebKitEngine ? (
+                      <>
+                        <SheetTitle
+                          className="truncate text-[26px] font-semibold leading-[1.15] text-ink will-change-[opacity]"
+                          style={{ opacity: collapsed ? 0 : 1, transition: 'opacity .22s ease' }}
+                        >
+                          {getDanishLabel(spot.type)}
+                        </SheetTitle>
+                        <div
+                          aria-hidden
+                          className="absolute inset-x-0 top-1/2 -translate-y-1/2 truncate font-serif text-[19px] font-semibold leading-[1.15] text-ink will-change-[opacity]"
+                          style={{ opacity: collapsed ? 1 : 0, transition: 'opacity .22s ease' }}
+                        >
+                          {getDanishLabel(spot.type)}
+                        </div>
+                      </>
+                    ) : (
+                      <SheetTitle
+                        className="truncate font-semibold leading-[1.15] text-ink"
+                        style={{ fontSize: collapsed ? 19 : 26, transition: 'font-size .22s ease' }}
+                      >
+                        {getDanishLabel(spot.type)}
+                      </SheetTitle>
+                    )}
+                    {/* Long sync badge floats below the title (over the body's
+                        masked zone) instead of stacking in flow — in-flow it would
+                        make the pill's height state-dependent again */}
+                    {isPending && (
+                      <div
+                        className="pointer-events-none absolute left-0 top-full pt-[7px]"
+                        style={{ opacity: collapsed ? 0 : 1, transition: 'opacity .18s ease' }}
+                      >
+                        <PendingSyncBadge hasError={hasError} long className="whitespace-nowrap" />
+                      </div>
+                    )}
+                  </div>
                   {isPending && (
-                    <div className="mt-[7px]">
-                      <PendingSyncBadge hasError={hasError} long />
+                    <div
+                      className="shrink-0 overflow-hidden"
+                      style={{
+                        maxWidth: collapsed ? 150 : 0,
+                        opacity: collapsed ? 1 : 0,
+                        transition: 'max-width .22s ease, opacity .18s ease',
+                      }}
+                    >
+                      <PendingSyncBadge hasError={hasError} className="whitespace-nowrap" />
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Scroll body under the floating header. Mask stops are the design's
+                  sheet-relative 100/118 (expanded) and 66/84 (collapsed) shifted by
+                  the 21px drag-handle strip above this box; pt lands the first
+                  content block (mt-20) right at the mask's end. */}
+              <div
+                ref={bodyRef}
+                className="min-h-[200px] flex-1 overflow-y-auto overflow-x-hidden px-[26px] pb-[26px] pt-[79px]"
+                style={{
+                  WebkitMaskImage: bodyMask,
+                  maskImage: bodyMask,
+                }}
+              >
 
               {/* Photo gallery buckets (design g0–g5): the count chip carries 3rd/4th
                   photos; at max (5) the third tile gets a "+N" overlay instead of an add tile */}
@@ -336,7 +458,7 @@ export default function PinDetailsDrawer({
 
               {/* Sharing section: user rows / "Kun dig" empty card + always-visible @-input */}
               {isOwner && (
-                <div ref={shareSectionRef} className="mt-[24px]">
+                <div className="mt-[24px]">
                   <div className="mb-[12px] flex items-center justify-between">
                     <MonoLabel>Delt med</MonoLabel>
                     {sharedWith.length > 0 && (
@@ -383,7 +505,6 @@ export default function PinDetailsDrawer({
                     <div className="flex h-[48px] min-w-0 flex-1 items-center gap-[8px] rounded-[13px] border border-line bg-surface px-[14px]">
                       <span className="font-serif text-[16px] text-mono">@</span>
                       <input
-                        ref={shareInputRef}
                         type="text"
                         value={shareUsername}
                         onChange={(e) => setShareUsername(e.target.value)}
@@ -418,50 +539,45 @@ export default function PinDetailsDrawer({
                 </div>
               )}
 
-              {/* Action row: wide primary + 52px square icon buttons; dims to .5 and
-                  goes inert when offline-locked (buttons keep disabled semantics, so
-                  cancel their own disabled:opacity to avoid double dimming) */}
-              {isOwner && (
-                <div className={`mt-[20px] flex gap-[10px] ${isEditDisabled ? 'opacity-50' : ''}`}>
-                  <Button
-                    variant="brand"
-                    disabled={isEditDisabled}
-                    onClick={onEdit}
-                    className="min-w-0 flex-1 disabled:opacity-100"
-                  >
-                    <Edit />
-                    Redigér
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon-lg"
-                    disabled={isEditDisabled}
-                    onClick={handleShareButtonClick}
-                    aria-label="Del fund"
-                    className="disabled:opacity-100"
-                  >
-                    <Share />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon-lg"
-                    disabled={isEditDisabled}
-                    onClick={handleDeleteClick}
-                    aria-label="Slet fund"
-                    className="text-accent hover:text-accent disabled:opacity-100"
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              )}
-
               {/* Non-owner view */}
               {!isOwner && (
                 <div className="mt-[24px] rounded-[14px] border border-line bg-surface px-[16px] py-[14px] text-center text-[13.5px] text-ink2">
                   Denne lokation er delt med dig
                 </div>
               )}
-            </div>
+              </div>
+
+              {/* Pinned action footer: wide primary + square delete (the share icon
+                  moved out — the share section lives in the body); dims to .5 and
+                  goes inert when offline-locked (buttons keep disabled semantics, so
+                  cancel their own disabled:opacity to avoid double dimming). The top
+                  hairline/shadow show only while content remains below. */}
+              {isOwner && (
+                <div className={`shrink-0 px-[24px] pb-[24px] pt-[14px] ${footerEdgeClass(atBottom)}`}>
+                  <div className={`flex gap-[10px] ${isEditDisabled ? 'opacity-50' : ''}`}>
+                    <Button
+                      variant="brand"
+                      disabled={isEditDisabled}
+                      onClick={onEdit}
+                      className="min-w-0 flex-1 disabled:opacity-100"
+                    >
+                      <Edit />
+                      Redigér
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon-lg"
+                      disabled={isEditDisabled}
+                      onClick={handleDeleteClick}
+                      aria-label="Slet fund"
+                      className="text-accent hover:text-accent disabled:opacity-100"
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : null}
         </SheetContent>
       </Sheet>
