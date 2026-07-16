@@ -13,7 +13,7 @@ import { Search, Filter, LogOut, Sun, Moon, Monitor, ChevronRight } from 'lucide
 import { useTheme } from '../hooks/useTheme';
 import type { ThemePreference } from '../contexts/ThemeContext';
 import type { User } from '../lib/types';
-import pb from '../lib/pocketbase';
+import { getAvatarUrl } from '../lib/pocketbase';
 
 interface TopBarProps {
   user: User;
@@ -51,9 +51,7 @@ export default function TopBar({
 }: TopBarProps) {
   const { preference, setPreference } = useTheme();
 
-  const avatarUrl = user.avatar
-    ? `${pb.baseURL}/api/files/users/${user.id}/${user.avatar}?thumb=96x96`
-    : null;
+  const avatarUrl = getAvatarUrl(user);
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-bg to-transparent pb-[24px] pt-[max(14px,env(safe-area-inset-top))]">

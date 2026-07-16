@@ -136,6 +136,20 @@
   }
 }
 
+/* Blur-up loading shimmer (BlurImage): a cream band sweeping the tile,
+   compositor-only (transform). The keyframes only exist under no-preference —
+   with reduced motion the band stays parked offscreen (static blur only). */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ss-shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -6,15 +6,21 @@ export interface CompressionOptions {
   useWebWorker?: boolean;
   fileType?: string;
   initialQuality?: number;
+  preserveExif?: boolean;
 }
 
-// Default compression settings optimized for foraging spot images
+// Default compression settings optimized for foraging spot images.
+// preserveExif keeps the capture date (DateTimeOriginal) so the lightbox can
+// show when each photo was taken; the library copies the EXIF block WITHOUT
+// the orientation tag (rotation is baked into the pixels), so no
+// double-rotation. Only applies to JPEG-in/JPEG-out — PNG/HEIC inputs skip it.
 export const DEFAULT_COMPRESSION_OPTIONS: CompressionOptions = {
   maxSizeMB: 1, // 1MB maximum file size
   maxWidthOrHeight: 1920, // Full HD resolution - aspect ratio preserved
   useWebWorker: true, // Better performance
   fileType: 'image/jpeg', // JPEG for better compression
   initialQuality: 0.8, // Good quality with reasonable compression
+  preserveExif: true,
 };
 
 // Mobile-optimized settings for better upload success
@@ -24,6 +30,7 @@ export const MOBILE_COMPRESSION_OPTIONS: CompressionOptions = {
   useWebWorker: true,
   fileType: 'image/jpeg',
   initialQuality: 0.7,
+  preserveExif: true,
 };
 
 // High quality settings for important images
@@ -33,6 +40,7 @@ export const HIGH_QUALITY_OPTIONS: CompressionOptions = {
   useWebWorker: true,
   fileType: 'image/jpeg',
   initialQuality: 0.9, // Higher quality
+  preserveExif: true,
 };
 
 export const compressImageFile = async (

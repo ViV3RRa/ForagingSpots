@@ -59,6 +59,7 @@ function AppIconTile() {
       alt=""
       width={64}
       height={64}
+      decoding="async"
       className="h-[64px] w-[64px] shrink-0 rounded-[16px] shadow-[0_6px_16px_-4px_var(--shadow)]"
     />
   );

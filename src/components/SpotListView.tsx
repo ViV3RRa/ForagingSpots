@@ -125,6 +125,7 @@ export default function SpotListView({
               width={52}
               height={52}
               alt=""
+              decoding="async"
               className="opacity-50 [filter:grayscale(0.3)]"
             />
           </div>

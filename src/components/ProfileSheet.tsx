@@ -6,7 +6,7 @@ import { Camera, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUpdateProfile } from '../hooks/useUpdateProfile';
 import { WrongPasswordError } from '../lib/api';
-import pb from '../lib/pocketbase';
+import { getAvatarUrl } from '../lib/pocketbase';
 import AvatarCropOverlay from './AvatarCropOverlay';
 import DiscardChangesDialog from './DiscardChangesDialog';
 import PhotoSourceSheet from './PhotoSourceSheet';
@@ -173,11 +173,7 @@ export default function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) 
 
   if (!user) return null;
 
-  // No ?thumb= param: users.avatar declares no thumb sizes (PB would silently
-  // serve the original anyway), and cropped uploads are already 512px.
-  const storedAvatarUrl = user.avatar
-    ? `${pb.baseURL}/api/files/users/${user.id}/${user.avatar}`
-    : null;
+  const storedAvatarUrl = getAvatarUrl(user);
   const displayedSrc = avatar instanceof File ? previewUrl : avatar === null ? null : storedAvatarUrl;
   const hasPhoto = displayedSrc !== null;
 

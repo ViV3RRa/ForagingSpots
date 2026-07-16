@@ -6,7 +6,8 @@ import { Edit, Trash2, Plus, X, WifiOff } from 'lucide-react';
 import type { ForagingSpot, User, ForagingSpotWithPending, Coordinates } from '../lib/types';
 import TypeBadge from './TypeBadge';
 import { getDanishLabel } from '../utils/danishLabels';
-import { getSpotImageUrls, getSpotImageThumbnailUrls } from '../lib/pocketbase';
+import { getSpotImageUrls, getSpotImageThumbnailUrls, getSpotImagePlaceholderUrls } from '../lib/pocketbase';
+import BlurImage from './ui/blur-image';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { distanceToSpot } from '../utils/distance';
 import ImageViewer from './ImageViewer';
@@ -18,6 +19,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
 import { useScrollEdges, footerEdgeClass } from '../hooks/useScrollEdges';
 import { isWebKitEngine } from '../utils/platform';
+import { formatFoundDate } from '../utils/formatDate';
 
 interface PinDetailsDrawerProps {
   spot: ForagingSpot | null;
@@ -34,13 +36,6 @@ const MAX_IMAGES = 5;
 
 const formatCoordinates = (lat: number, lng: number) =>
   `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
-
-// The design's "2. okt 2026" format (da-DK month abbreviation without the trailing dot)
-const formatFoundDate = (iso: string) => {
-  const date = new Date(iso);
-  const month = date.toLocaleDateString('da-DK', { month: 'short' }).replace('.', '');
-  return `${date.getDate()}. ${month} ${date.getFullYear()}`;
-};
 
 export default function PinDetailsDrawer({
   spot,
@@ -77,6 +72,8 @@ export default function PinDetailsDrawer({
 
   const thumbnailUrls = isPending ? pendingImageUrls : spot ? getSpotImageThumbnailUrls(spot) : [];
   const fullImageUrls = isPending ? pendingImageUrls : spot ? getSpotImageUrls(spot) : [];
+  // Pending spots are local object URLs with no thumb variants — no blur-up
+  const placeholderUrls = !isPending && spot ? getSpotImagePlaceholderUrls(spot) : [];
   const imageCount = thumbnailUrls.length;
   const canAddImage = isOwner && !isEditDisabled && imageCount < MAX_IMAGES;
 
@@ -171,13 +168,14 @@ export default function PinDetailsDrawer({
     <button
       type="button"
       onClick={() => handleImageClick(index)}
-      className={`relative overflow-hidden bg-line2 ${className}`}
+      className={`relative overflow-hidden ${className}`}
     >
-      <img
+      <BlurImage
         src={thumbnailUrls[index]}
+        placeholderSrc={placeholderUrls[index]}
         alt={`Foto ${index + 1} af ${imageCount}`}
-        className="h-full w-full object-cover"
-        loading="lazy"
+        className="h-full w-full bg-line2"
+        blurPlaceholder="sm"
         onError={(e) => {
           (e.target as HTMLImageElement).src = fullImageUrls[index];
         }}
@@ -587,12 +585,12 @@ export default function PinDetailsDrawer({
         <ImageViewer
           images={fullImageUrls.map(url => ({ url }))}
           thumbnailUrls={thumbnailUrls}
+          placeholderUrls={placeholderUrls}
           initialIndex={selectedImageIndex}
           isOpen={imageViewerOpen}
           onClose={() => setImageViewerOpen(false)}
           spotName={getDanishLabel(spot.type)}
           spotDate={formatFoundDate(spot.created)}
-          spotCoordinates={formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
         />
       )}
 

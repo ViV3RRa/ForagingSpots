@@ -91,6 +91,8 @@ module.exports = {
         "ss-rise": "ss-rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)",
         "ss-fade": "ss-fade 0.2s ease",
         "ss-spin": "ss-spin 0.8s linear infinite",
+        // Keyframes live in tokens.css, gated behind prefers-reduced-motion
+        "ss-shimmer": "ss-shimmer 1.4s linear infinite",
       },
     },
   },

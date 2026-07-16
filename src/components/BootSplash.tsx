@@ -33,6 +33,7 @@ export default function BootSplash() {
           alt=""
           width={104}
           height={104}
+          decoding="async"
           className="h-[104px] w-[104px] rounded-[26px] shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
         />
         <h1 className="mt-[22px] font-serif text-[26px] font-semibold tracking-[0.01em] text-brand-ink">

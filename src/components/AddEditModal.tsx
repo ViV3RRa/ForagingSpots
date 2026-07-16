@@ -105,7 +105,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   const [images, setImages] = useState<SpotImage[]>(() => {
     // Initialize images from existing server spot (not pending)
     if (!isPendingSpot && spot?.images && spot.images.length > 0) {
-      const existingImageUrls = getSpotImageThumbnailUrls(spot, { width: 200, height: 200 });
+      const existingImageUrls = getSpotImageThumbnailUrls(spot);
       return spot.images.map((filename, index) => ({
         id: `existing-${index}`,
         url: existingImageUrls[index] || '',

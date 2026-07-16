@@ -2,18 +2,25 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { SpotImage } from './ImageCapture';
+import BlurImage from './ui/blur-image';
+import { getExifCaptureDate } from '../utils/exifDate';
+import { formatFoundDate } from '../utils/formatDate';
 
 interface ImageViewerProps {
   images: SpotImage[];
   /** Thumbnail URLs matching `images` by index; falls back to the full-size URL. */
   thumbnailUrls?: string[];
+  /** Tiny blur-up placeholders matching `images` by index — the same 32x0 URLs
+      the gallery tiles already fetched, so they're served from cache. */
+  placeholderUrls?: string[];
   initialIndex?: number;
   isOpen: boolean;
   onClose: () => void;
-  /** Caption overlay: Danish type label, formatted date, and formatted coordinates. */
+  /** Used for the images' alt text — not displayed. */
   spotName: string;
+  /** Fallback caption date (the spot's "Fundet" date) for photos without an
+      EXIF capture date. */
   spotDate: string;
-  spotCoordinates: string;
 }
 
 // Minimum horizontal travel (px) for a swipe to commit to the next/prev photo
@@ -27,15 +34,20 @@ const SWIPE_THRESHOLD = 60;
 export default function ImageViewer({
   images,
   thumbnailUrls,
+  placeholderUrls,
   initialIndex = 0,
   isOpen,
   onClose,
   spotName,
   spotDate,
-  spotCoordinates,
 }: ImageViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
+  // Natural photo dimensions per URL, reported by BlurImage (placeholder first,
+  // refined by the full image) — the card adopts each photo's own aspect ratio
+  const [naturalSizes, setNaturalSizes] = useState<Record<string, { w: number; h: number }>>({});
+  // Per-photo EXIF capture date (null = parsed, none found → spotDate fallback)
+  const [captureDates, setCaptureDates] = useState<Record<string, Date | null>>({});
+  const requestedExif = useRef(new Set<string>());
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const touchState = useRef<{ x: number; y: number; axis: 'h' | 'v' | null } | null>(null);
@@ -83,13 +95,30 @@ export default function ImageViewer({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, goPrev, goNext, onClose]);
 
+  // Read each photo's EXIF capture date once the lightbox opens — all up
+  // front (≤5 photos, chunked Range reads) so swiping never swaps the caption
+  useEffect(() => {
+    if (!isOpen) return;
+    images.forEach(({ url }) => {
+      if (requestedExif.current.has(url)) return;
+      requestedExif.current.add(url);
+      getExifCaptureDate(url).then((date) =>
+        setCaptureDates((prev) => ({ ...prev, [url]: date }))
+      );
+    });
+  }, [isOpen, images]);
+
   if (!isOpen || !images.length) return null;
 
   const safeIndex = Math.min(currentIndex, images.length - 1);
   const hasMultiple = images.length > 1;
 
-  const markLoaded = (url: string) =>
-    setLoadedUrls((prev) => (prev.has(url) ? prev : new Set(prev).add(url)));
+  const reportNaturalSize = (url: string) => (w: number, h: number) =>
+    setNaturalSizes((prev) => {
+      const existing = prev[url];
+      if (existing && existing.w === w && existing.h === h) return prev;
+      return { ...prev, [url]: { w, h } };
+    });
 
   const handleTouchStart = (event: React.TouchEvent) => {
     touchState.current = { x: event.touches[0].clientX, y: event.touches[0].clientY, axis: null };
@@ -179,38 +208,43 @@ export default function ImageViewer({
           }}
         >
           {images.map((image, index) => {
-            const isLoaded = loadedUrls.has(image.url);
+            /* The card hugs the photo's own aspect ratio (known from the tiny
+               placeholder almost immediately; 3:4 only until then). Sized via
+               container-query units: the largest box of that ratio that fits
+               the padded slide, capped at 430px wide. */
+            const size = naturalSizes[image.url];
             return (
               <div
                 key={image.url}
-                className="flex h-full w-full shrink-0 items-center justify-center p-[20px]"
+                className="flex h-full w-full shrink-0 items-center justify-center p-[20px] [container-type:size]"
                 aria-hidden={index !== safeIndex}
               >
                 <div
                   className="relative w-full max-w-[430px] overflow-hidden rounded-[20px] bg-[#241d12] shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
-                  style={{ aspectRatio: '3 / 4', maxHeight: '100%' }}
+                  style={
+                    size
+                      ? {
+                          aspectRatio: `${size.w} / ${size.h}`,
+                          width: `min(100cqw, 430px, calc(100cqh * ${size.w / size.h}))`,
+                        }
+                      : { aspectRatio: '3 / 4', maxHeight: '100%' }
+                  }
                 >
-                  {!isLoaded && (
-                    <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
-                      <div className="size-[28px] animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
-                    </div>
-                  )}
-                  <img
+                  <BlurImage
                     src={image.url}
+                    placeholderSrc={placeholderUrls?.[index]}
                     alt={`Foto ${index + 1} af ${spotName}`}
-                    className="absolute inset-0 h-full w-full object-cover transition-opacity duration-200"
-                    style={{ opacity: isLoaded ? 1 : 0 }}
+                    className="absolute inset-0"
+                    blurPlaceholder="base"
+                    onNaturalSize={reportNaturalSize(image.url)}
                     draggable={false}
-                    onLoad={() => markLoaded(image.url)}
-                    onError={() => markLoaded(image.url)}
                   />
                   <div
-                    className="absolute inset-x-0 bottom-0 px-[18px] pb-[16px] pt-[42px]"
+                    className="absolute inset-x-0 bottom-0 px-[18px] pb-[14px] pt-[36px]"
                     style={{ background: 'linear-gradient(rgba(0,0,0,0), rgba(20,15,8,0.6))' }}
                   >
-                    <div className="font-serif text-[19px] font-semibold text-white">{spotName}</div>
-                    <div className="mt-[2px] font-mono text-[11px] text-white/80">
-                      {spotDate} · {spotCoordinates}
+                    <div className="font-mono text-[11px] text-white/80">
+                      {captureDates[image.url] ? formatFoundDate(captureDates[image.url]!) : spotDate}
                     </div>
                   </div>
                 </div>
@@ -242,6 +276,7 @@ export default function ImageViewer({
                 alt=""
                 className="h-full w-full object-cover"
                 loading="lazy"
+                decoding="async"
               />
             </button>
           ))}
