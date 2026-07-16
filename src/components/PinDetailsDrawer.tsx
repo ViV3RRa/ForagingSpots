@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
-import { Edit, Trash2, Plus, X, WifiOff } from 'lucide-react';
+import { Edit, Trash2, WifiOff } from 'lucide-react';
 import type { ForagingSpot, User, ForagingSpotWithPending, Coordinates } from '../lib/types';
 import TypeBadge from './TypeBadge';
 import { getDanishLabel } from '../utils/danishLabels';
@@ -27,12 +27,8 @@ interface PinDetailsDrawerProps {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onShare: (spotId: string, username: string) => void;
-  onUnshare: (spotId: string, username: string) => void;
   onUpdateLocation: (spotId: string, coordinates: Coordinates) => void;
 }
-
-const MAX_IMAGES = 5;
 
 const formatCoordinates = (lat: number, lng: number) =>
   `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
@@ -43,11 +39,8 @@ export default function PinDetailsDrawer({
   onClose,
   onEdit,
   onDelete,
-  onShare,
-  onUnshare,
   onUpdateLocation
 }: PinDetailsDrawerProps) {
-  const [shareUsername, setShareUsername] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -75,7 +68,6 @@ export default function PinDetailsDrawer({
   // Pending spots are local object URLs with no thumb variants — no blur-up
   const placeholderUrls = !isPending && spot ? getSpotImagePlaceholderUrls(spot) : [];
   const imageCount = thumbnailUrls.length;
-  const canAddImage = isOwner && !isEditDisabled && imageCount < MAX_IMAGES;
 
   const distance = spot ? distanceToSpot(position, spot.coordinates) : null;
 
@@ -102,7 +94,6 @@ export default function PinDetailsDrawer({
       setIsOpen(true);
     } else {
       setIsOpen(false);
-      setShareUsername('');
     }
   }, [spot]);
 
@@ -112,19 +103,6 @@ export default function PinDetailsDrawer({
     setTimeout(() => {
       onClose();
     }, 300);
-  };
-
-  const handleShare = () => {
-    if (shareUsername.trim() && isOwner && spot) {
-      onShare(spot.id, shareUsername.trim());
-      setShareUsername('');
-    }
-  };
-
-  const handleUnshare = (username: string) => {
-    if (isOwner && spot) {
-      onUnshare(spot.id, username);
-    }
   };
 
   const handleImageClick = (index: number) => {
@@ -190,19 +168,6 @@ export default function PinDetailsDrawer({
           {overlayLabel}
         </span>
       )}
-    </button>
-  );
-
-  // Dashed "+" tile — hooks into the existing add-image flow (ImageCapture lives in the edit sheet)
-  const addTile = (className: string, label?: string) => (
-    <button
-      type="button"
-      onClick={onEdit}
-      aria-label="Tilføj foto"
-      className={`flex flex-col items-center justify-center gap-[4px] border-[1.5px] border-dashed border-line bg-surface text-faint transition-colors hover:border-mono hover:text-mono ${className}`}
-    >
-      <Plus className="size-[20px]" strokeWidth={1.9} />
-      {label && <span className="font-serif text-[12px]">{label}</span>}
     </button>
   );
 
@@ -365,48 +330,25 @@ export default function PinDetailsDrawer({
                 }}
               >
 
-              {/* Photo gallery buckets (design g0–g5): the count chip carries 3rd/4th
-                  photos; at max (5) the third tile gets a "+N" overlay instead of an add tile */}
-              {(imageCount > 0 || canAddImage) && (
+              {/* Photo gallery buckets — display only, no edit shortcuts (adding
+                  photos happens in the edit sheet via "Redigér"). 3+ photos fill
+                  the small column; beyond 3 the last tile gets a "+N" overlay. */}
+              {imageCount > 0 && (
                 <div className="mt-[20px]">
-                  {imageCount === 0 ? (
-                    <button
-                      type="button"
-                      onClick={onEdit}
-                      className="flex h-[120px] w-full flex-col items-center justify-center gap-[6px] rounded-[14px] border-[1.5px] border-dashed border-line bg-surface text-muted transition-colors hover:border-mono hover:text-mono"
-                    >
-                      <svg
-                        width="26"
-                        height="26"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M3 8h3l1.5-2h9L18 8h3v11H3z" />
-                        <circle cx="12" cy="13" r="3.2" />
-                        <path d="M12 11v4M10 13h4" />
-                      </svg>
-                      <span className="font-serif text-[14.5px]">Tilføj foto</span>
-                    </button>
-                  ) : (
-                    <div className="flex h-[130px] gap-[8px]">
-                      {photoTile(0, 'flex-[1.7] rounded-[14px]')}
-                      {imageCount === 1 ? (
-                        canAddImage && addTile('flex-1 rounded-[12px]', 'Foto')
-                      ) : (
-                        <div className="flex flex-1 flex-col gap-[8px]">
-                          {photoTile(1, 'flex-1 rounded-[12px]')}
-                          {imageCount >= MAX_IMAGES
-                            ? photoTile(2, 'flex-1 rounded-[12px]', `+${imageCount - 3}`)
-                            : canAddImage && addTile('flex-1 rounded-[12px]')}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex h-[130px] gap-[8px]">
+                    {photoTile(0, imageCount === 1 ? 'flex-1 rounded-[14px]' : 'flex-[1.7] rounded-[14px]')}
+                    {imageCount === 2 && photoTile(1, 'flex-1 rounded-[12px]')}
+                    {imageCount >= 3 && (
+                      <div className="flex flex-1 flex-col gap-[8px]">
+                        {photoTile(1, 'flex-1 rounded-[12px]')}
+                        {photoTile(
+                          2,
+                          'flex-1 rounded-[12px]',
+                          imageCount > 3 ? `+${imageCount - 3}` : undefined
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -454,7 +396,8 @@ export default function PinDetailsDrawer({
                 </div>
               )}
 
-              {/* Sharing section: user rows / "Kun dig" empty card + always-visible @-input */}
+              {/* Sharing section — display only (managed in the edit sheet):
+                  user rows or the "Kun dig" empty card */}
               {isOwner && (
                 <div className="mt-[24px]">
                   <div className="mb-[12px] flex items-center justify-between">
@@ -467,7 +410,7 @@ export default function PinDetailsDrawer({
                   </div>
 
                   {sharedWith.length > 0 ? (
-                    <div className="mb-[12px] flex flex-col gap-[8px]">
+                    <div className="flex flex-col gap-[8px]">
                       {sharedWith.map((username) => (
                         <div
                           key={username}
@@ -479,51 +422,17 @@ export default function PinDetailsDrawer({
                           <span className="min-w-0 flex-1 truncate font-serif text-[15.5px] text-ink">
                             @{username}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleUnshare(username)}
-                            aria-label={`Fjern deling med ${username}`}
-                            className="flex size-[28px] shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-line2 hover:text-accent"
-                          >
-                            <X className="size-[15px]" strokeWidth={1.9} />
-                          </button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="mb-[12px] rounded-[13px] border border-dashed border-line bg-surface p-[14px] text-center">
+                    <div className="rounded-[13px] border border-dashed border-line bg-surface p-[14px] text-center">
                       <div className="font-serif text-[14.5px] text-ink2">Kun dig</div>
                       <div className="mt-[2px] text-[12.5px] text-muted">
                         Dette fund er privat. Del det med en ven for at give adgang.
                       </div>
                     </div>
                   )}
-
-                  <div className="flex gap-[8px]">
-                    <div className="flex h-[48px] min-w-0 flex-1 items-center gap-[8px] rounded-[13px] border border-line bg-surface px-[14px]">
-                      <span className="font-serif text-[16px] text-mono">@</span>
-                      <input
-                        type="text"
-                        value={shareUsername}
-                        onChange={(e) => setShareUsername(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleShare();
-                        }}
-                        placeholder="Del med brugernavn…"
-                        aria-label="Del med brugernavn"
-                        className="min-w-0 flex-1 bg-transparent font-serif text-[15px] text-ink outline-none placeholder:text-muted"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      disabled={!shareUsername.trim()}
-                      aria-label="Del fund"
-                      className="flex size-[48px] shrink-0 items-center justify-center rounded-[13px] bg-brand text-brand-ink transition-opacity hover:opacity-90 disabled:opacity-50"
-                    >
-                      <Plus className="size-[20px]" strokeWidth={1.9} />
-                    </button>
-                  </div>
                 </div>
               )}
 

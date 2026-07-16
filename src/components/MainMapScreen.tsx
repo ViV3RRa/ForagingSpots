@@ -86,20 +86,20 @@ export default function MainMapScreen({
   }, [currentPosition, hasInitializedUserPosition]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleAddSpot = (type: ForagingType, notes: string, coordinates: Coordinates, images: File[], _existingImageFilenames?: string[]) => {
+  const handleAddSpot = (type: ForagingType, notes: string, coordinates: Coordinates, images: File[], sharedWith: string[], _existingImageFilenames?: string[]) => {
     // For new spots, existingImageFilenames should be undefined/empty (unused for new spots)
     onAddSpot({
       type,
       coordinates,
       notes,
       images,
-      sharedWith: []
+      sharedWith
     });
     setShowAddModal(false);
   };
 
-  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string, coordinates: Coordinates, images: File[], existingImageFilenames?: string[]) => {
-    onUpdateSpot(spot.id, { type, notes, coordinates, images, existingImageFilenames });
+  const handleEditSpot = (spot: ForagingSpot, type: ForagingType, notes: string, coordinates: Coordinates, images: File[], sharedWith: string[], existingImageFilenames?: string[]) => {
+    onUpdateSpot(spot.id, { type, notes, coordinates, images, sharedWith, existingImageFilenames });
     setEditingSpot(null);
   };
 
@@ -131,75 +131,6 @@ export default function MainMapScreen({
     // Deleted, or mid-refetch between sync and reload — keep the snapshot
     return selectedSpot;
   }, [selectedSpot, foragingSpots]);
-
-  // Simple sharing functions with optimistic updates
-  const handleShare = (spotId: string, username: string) => {
-    const spot = foragingSpots.find(s => s.id === spotId);
-    if (spot && !spot.sharedWith?.includes(username)) {
-      const updatedSharedWith = [...(spot.sharedWith || []), username];
-      const updatedSpot = { ...spot, sharedWith: updatedSharedWith };
-      
-      // Optimistically update the cache
-      queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, (oldData) => {
-        if (!oldData) return oldData;
-        return oldData.map(s => 
-          s.id === spotId 
-            ? updatedSpot
-            : s
-        );
-      });
-      
-      // Update the selected spot state if it's the same spot
-      if (selectedSpot?.id === spotId) {
-        setSelectedSpot(updatedSpot);
-      }
-      
-      // Update via mutation and invalidate
-      updateSpotMutation.mutate(
-        { id: spotId, data: { sharedWith: updatedSharedWith } },
-        {
-          onSettled: () => {
-            // Invalidate to refetch from backend
-            queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-          }
-        }
-      );
-    }
-  };
-
-  const handleUnshare = (spotId: string, username: string) => {
-    const spot = foragingSpots.find(s => s.id === spotId);
-    if (spot && spot.sharedWith?.includes(username)) {
-      const updatedSharedWith = spot.sharedWith.filter(u => u !== username);
-      const updatedSpot = { ...spot, sharedWith: updatedSharedWith };
-      
-      // Optimistically update the cache
-      queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, (oldData) => {
-        if (!oldData) return oldData;
-        return oldData.map(s => 
-          s.id === spotId 
-            ? updatedSpot
-            : s
-        );
-      });
-      
-      // Update the selected spot state if it's the same spot
-      if (selectedSpot?.id === spotId) {
-        setSelectedSpot(updatedSpot);
-      }
-      
-      // Update via mutation and invalidate
-      updateSpotMutation.mutate(
-        { id: spotId, data: { sharedWith: updatedSharedWith } },
-        {
-          onSettled: () => {
-            // Invalidate to refetch from backend
-            queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-          }
-        }
-      );
-    }
-  };
 
   // Coordinate-only update from the detail drawer's "Redigér ›" location editor
   const handleUpdateLocation = (spotId: string, coordinates: Coordinates) => {
@@ -286,7 +217,8 @@ export default function MainMapScreen({
             onSpotClick={handleSpotClick}
             onEdit={(spot) => setEditingSpot(spot)}
             onDelete={onDeleteSpot}
-            onShare={handleSpotClick}
+            // Sharing is managed in the edit sheet (the drawer only displays it)
+            onShare={(spot) => setEditingSpot(spot)}
             onViewOnMap={handleViewOnMap}
             onFilterClick={() => setShowFilterDialog(true)}
             onAddClick={() => setShowAddModal(true)}
@@ -344,7 +276,7 @@ export default function MainMapScreen({
         <AddEditModal
           coordinates={currentPosition}
           editorFallbackCenter={{ lat: mapViewState.latitude, lng: mapViewState.longitude }}
-          onSave={(type, notes, coordinates, images, existingImageFilenames) => handleAddSpot(type, notes, coordinates, images, existingImageFilenames)}
+          onSave={(type, notes, coordinates, images, sharedWith, existingImageFilenames) => handleAddSpot(type, notes, coordinates, images, sharedWith, existingImageFilenames)}
           onClose={() => setShowAddModal(false)}
         />
       )}
@@ -353,7 +285,7 @@ export default function MainMapScreen({
         <AddEditModal
           spot={editingSpot}
           coordinates={editingSpot.coordinates}
-          onSave={(type, notes, coordinates, images, existingImageFilenames) => handleEditSpot(editingSpot, type, notes, coordinates, images, existingImageFilenames)}
+          onSave={(type, notes, coordinates, images, sharedWith, existingImageFilenames) => handleEditSpot(editingSpot, type, notes, coordinates, images, sharedWith, existingImageFilenames)}
           onClose={() => setEditingSpot(null)}
         />
       )}
@@ -372,8 +304,6 @@ export default function MainMapScreen({
             onDeleteSpot(liveSelectedSpot.id);
             setSelectedSpot(null);
           }}
-          onShare={handleShare}
-          onUnshare={handleUnshare}
           onUpdateLocation={handleUpdateLocation}
         />
       {/* )} */}

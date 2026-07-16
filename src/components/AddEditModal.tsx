@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
-import { Search, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import LocationEditorScreen from './LocationEditorScreen';
 import DiscardChangesDialog from './DiscardChangesDialog';
@@ -26,7 +26,7 @@ interface AddEditModalProps {
   /** Where the location editor opens when there are no coordinates yet
       (typically the map's current center). */
   editorFallbackCenter?: Coordinates;
-  onSave: (type: ForagingType, notes: string, coordinates: Coordinates, newImages: File[], existingImageFilenames?: string[]) => void;
+  onSave: (type: ForagingType, notes: string, coordinates: Coordinates, newImages: File[], sharedWith: string[], existingImageFilenames?: string[]) => void;
   onClose: () => void;
 }
 
@@ -37,6 +37,10 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   const isEdit = spot !== undefined;
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
   const [notes, setNotes] = useState(spot?.notes || '');
+  // Sharing is edited here and applied on save, like every other field —
+  // the detail drawer only displays the resulting list
+  const [sharedWith, setSharedWith] = useState<string[]>(spot?.sharedWith || []);
+  const [shareUsername, setShareUsername] = useState('');
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates | null>(coordinates);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [manuallyPicked, setManuallyPicked] = useState(false);
@@ -100,6 +104,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   const initialFormRef = useRef({
     type: spot?.type || ('chanterelle' as ForagingType),
     notes: spot?.notes || '',
+    sharedWith: (spot?.sharedWith || []).join('\n'),
   });
 
   const [images, setImages] = useState<SpotImage[]>(() => {
@@ -165,6 +170,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
     selectedType !== initialFormRef.current.type ||
     notes !== initialFormRef.current.notes ||
     manuallyPicked ||
+    sharedWith.join('\n') !== initialFormRef.current.sharedWith ||
     images.map((img) => img.id ?? img.url).join('\n') !== baselineImageIdsRef.current.join('\n');
 
   /** Guarded close (issues/004 §8): scrim, header X and Escape all land here —
@@ -197,7 +203,18 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
       existingFilenames: existingImageFilenames
     });
 
-    onSave(selectedType, notes, currentCoordinates, newImageFiles, existingImageFilenames);
+    onSave(selectedType, notes, currentCoordinates, newImageFiles, sharedWith, existingImageFilenames);
+  };
+
+  const handleAddShare = () => {
+    const username = shareUsername.trim();
+    if (!username || sharedWith.includes(username)) return;
+    setSharedWith([...sharedWith, username]);
+    setShareUsername('');
+  };
+
+  const handleRemoveShare = (username: string) => {
+    setSharedWith(sharedWith.filter((u) => u !== username));
   };
 
   const handleLocationUpdate = (newCoordinates: Coordinates) => {
@@ -397,6 +414,75 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
                   onImagesChange={setImages}
                   maxImages={5}
                 />
+              </div>
+
+              {/* Delt med: user rows with remove + @-input; applied on save like
+                  every other field (moved here from the detail drawer, which now
+                  only displays the list) */}
+              <div className="mt-[24px]">
+                <div className="mb-[12px] flex items-center justify-between">
+                  <MonoLabel>Delt med</MonoLabel>
+                  {sharedWith.length > 0 && (
+                    <span className="font-mono text-[11px] text-faint">
+                      {sharedWith.length === 1 ? '1 person' : `${sharedWith.length} personer`}
+                    </span>
+                  )}
+                </div>
+
+                {sharedWith.length > 0 && (
+                  <div className="mb-[12px] flex flex-col gap-[8px]">
+                    {sharedWith.map((username) => (
+                      <div
+                        key={username}
+                        className="flex items-center gap-[12px] rounded-[13px] border border-line bg-surface px-[12px] py-[9px]"
+                      >
+                        <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-brand font-serif text-[14px] font-semibold text-brand-ink">
+                          {username.charAt(0).toUpperCase()}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-serif text-[15.5px] text-ink">
+                          @{username}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveShare(username)}
+                          aria-label={`Fjern deling med ${username}`}
+                          className="flex size-[28px] shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-line2 hover:text-accent"
+                        >
+                          <X className="size-[15px]" strokeWidth={1.9} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-[8px]">
+                  <div className="flex h-[48px] min-w-0 flex-1 items-center gap-[8px] rounded-[13px] border border-line bg-surface px-[14px]">
+                    <span className="font-serif text-[16px] text-mono">@</span>
+                    <input
+                      type="text"
+                      value={shareUsername}
+                      onChange={(e) => setShareUsername(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddShare();
+                        }
+                      }}
+                      placeholder="Del med brugernavn…"
+                      aria-label="Del med brugernavn"
+                      className="min-w-0 flex-1 bg-transparent font-serif text-[15px] text-ink outline-none placeholder:text-muted"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddShare}
+                    disabled={!shareUsername.trim()}
+                    aria-label="Del fund"
+                    className="flex size-[48px] shrink-0 items-center justify-center rounded-[13px] bg-brand text-brand-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    <Plus className="size-[20px]" strokeWidth={1.9} />
+                  </button>
+                </div>
               </div>
 
             </div>

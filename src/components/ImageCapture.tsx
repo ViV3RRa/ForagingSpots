@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Camera, Upload, X } from 'lucide-react';
 import { compressImageFile, validateImageFile, getOptimalCompressionOptions } from '../utils/imageCompression';
@@ -46,6 +46,17 @@ export default function ImageCapture({ images, onImagesChange, maxImages = 5 }: 
       fileInputRef.current.click();
     }
   };
+
+  // The `cancel` event fires when the native camera/picker is dismissed
+  // without a selection — without this the "Åbner kamera…" state sticks and
+  // locks both buttons (no change event ever fires on cancel). Attached via
+  // addEventListener since React's input typings don't expose onCancel.
+  useEffect(() => {
+    const inputs = [cameraInputRef.current, fileInputRef.current];
+    const handleCancel = () => setIsCapturing(false);
+    inputs.forEach((input) => input?.addEventListener('cancel', handleCancel));
+    return () => inputs.forEach((input) => input?.removeEventListener('cancel', handleCancel));
+  }, []);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
