@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
+import { cn } from './ui/utils';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -20,6 +21,10 @@ interface ConfirmationDialogProps {
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
+  /** Extra classes on the panel — e.g. a z-lift above fullscreen overlays. */
+  className?: string;
+  /** Matching z-lift for the scrim (see DialogContent.overlayClassName). */
+  overlayClassName?: string;
 }
 
 const trashIcon = (
@@ -48,12 +53,18 @@ export default function ConfirmationDialog({
   confirmText = 'Bekræft',
   cancelText = 'Annullér',
   isLoading = false,
+  className,
+  overlayClassName,
 }: ConfirmationDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         showCloseButton={false}
-        className="block w-[calc(100%-68px)] max-w-[340px] rounded-[24px] border-none bg-bg px-[26px] pb-[22px] pt-[28px] text-center shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:max-w-[340px]"
+        overlayClassName={overlayClassName}
+        className={cn(
+          'block w-[calc(100%-68px)] max-w-[340px] rounded-[24px] border-none bg-bg px-[26px] pb-[22px] pt-[28px] text-center shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:max-w-[340px]',
+          className,
+        )}
       >
         {/* delTint circle — accent at low opacity, per theme */}
         <div className="mx-auto mb-[16px] flex size-[60px] items-center justify-center rounded-full bg-[rgba(181,80,47,0.12)] text-accent dark:bg-[rgba(201,162,75,0.16)]">

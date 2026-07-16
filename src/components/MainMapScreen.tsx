@@ -20,15 +20,17 @@ interface MainMapScreenProps {
   user: NewUser;
   foragingSpots: ForagingSpot[];
   onSignOut: () => void;
+  onOpenProfile: () => void;
   onAddSpot: (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated' | 'images'> & { images: File[] }) => void;
   onUpdateSpot: (spotId: string, updates: Partial<Omit<ForagingSpot, 'images'>> & { images?: File[]; existingImageFilenames?: string[] }) => void;
   onDeleteSpot: (spotId: string) => void;
 }
 
-export default function MainMapScreen({ 
-  user, 
-  foragingSpots, 
-  onSignOut, 
+export default function MainMapScreen({
+  user,
+  foragingSpots,
+  onSignOut,
+  onOpenProfile,
   onAddSpot, 
   onUpdateSpot, 
   onDeleteSpot 
@@ -296,6 +298,7 @@ export default function MainMapScreen({
       <TopBar
         user={user}
         onSignOut={onSignOut}
+        onOpenProfile={onOpenProfile}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onFilterClick={() => setShowFilterDialog(true)}

@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useAuth } from './hooks/useAuth';
 import LocationPermissionScreen from './components/LocationPermissionScreen';
+import ProfileSheet from './components/ProfileSheet';
 import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from './hooks/useForagingSpots';
 import { queryGeolocationPermission, startUserLocation } from './hooks/useUserLocation';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
@@ -43,6 +44,7 @@ function AppContent() {
   const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'signin' | 'map' | 'icons'>('welcome');
   const [showLocationPriming, setShowLocationPriming] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // TanStack Query hooks for data management
@@ -131,6 +133,10 @@ function AppContent() {
     setCurrentScreen('welcome');
   };
 
+  // Entry point for the "Rediger profil" sheet (issues/004), reached from the
+  // avatar popover's profile row (issues/003) on both map and list views.
+  const handleOpenProfile = () => setProfileOpen(true);
+
   // TanStack Query mutation functions
   const addForagingSpot = (spot: Omit<ForagingSpot, 'id' | 'user' | 'created' | 'updated' | 'images'> & { images: File[] }) => {
     if (!user) return;
@@ -186,11 +192,13 @@ function AppContent() {
             user={user}
             foragingSpots={foragingSpots}
             onSignOut={handleSignOut}
+            onOpenProfile={handleOpenProfile}
             onAddSpot={addForagingSpot}
             onUpdateSpot={updateForagingSpot}
             onDeleteSpot={deleteForagingSpot}
           />
         </Suspense>
+        <ProfileSheet open={profileOpen} onOpenChange={setProfileOpen} />
         {showLocationPriming && (
           <LocationPermissionScreen
             onAllow={() => dismissLocationPriming(true)}

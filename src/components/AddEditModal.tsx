@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import { Search, X } from 'lucide-react';
 import type { ForagingSpot, ForagingType, Coordinates, ForagingSpotWithPending } from '../lib/types';
 import LocationEditorScreen from './LocationEditorScreen';
+import DiscardChangesDialog from './DiscardChangesDialog';
 import { FORAGING_TYPES } from './types';
 import { getForagingSpotConfig } from './icons';
 import { getDanishLabel } from '../utils/danishLabels';
@@ -50,6 +51,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
     }
   }, [currentCoordinates, livePosition]);
   const [isOpen, setIsOpen] = useState(true);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const { ref: bodyRef, atTop, atBottom } = useScrollEdges();
   const [speciesQuery, setSpeciesQuery] = useState('');
   const [activeSpeciesPage, setActiveSpeciesPage] = useState(0);
@@ -93,6 +95,13 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   // Check if this is a pending spot
   const isPendingSpot = spot?.id?.startsWith('pending-') || (spot as ForagingSpotWithPending)?._pending;
 
+  // Snapshots of the state the sheet opened with, for the dirty check
+  // (issues/004 §8). The type/notes defaults mirror the useState initializers.
+  const initialFormRef = useRef({
+    type: spot?.type || ('chanterelle' as ForagingType),
+    notes: spot?.notes || '',
+  });
+
   const [images, setImages] = useState<SpotImage[]>(() => {
     // Initialize images from existing server spot (not pending)
     if (!isPendingSpot && spot?.images && spot.images.length > 0) {
@@ -108,6 +117,10 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
     return [];
   });
 
+  // Image baseline for the dirty check: ids of the set the sheet opened with.
+  // A pending spot's images arrive async below, so the baseline moves with them.
+  const baselineImageIdsRef = useRef<string[]>(images.map((img) => img.id ?? img.url));
+
   // Load images from IndexedDB for pending spots
   useEffect(() => {
     if (isPendingSpot && spot?.id) {
@@ -119,6 +132,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
           isExisting: false, // These are "new" files that need to be uploaded when synced
           timestamp: new Date(),
         }));
+        baselineImageIdsRef.current = pendingImages.map((img) => img.id ?? img.url);
         setImages(pendingImages);
       });
     }
@@ -142,6 +156,22 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
     setTimeout(() => {
       onClose();
     }, 300);
+  };
+
+  // Dirty = any difference from the state the sheet opened with. Coordinates
+  // only change through the location editor, which sets manuallyPicked — the
+  // auto GPS fill in the add flow doesn't count.
+  const isDirty =
+    selectedType !== initialFormRef.current.type ||
+    notes !== initialFormRef.current.notes ||
+    manuallyPicked ||
+    images.map((img) => img.id ?? img.url).join('\n') !== baselineImageIdsRef.current.join('\n');
+
+  /** Guarded close (issues/004 §8): scrim, header X and Escape all land here —
+      a dirty form opens the discard dialog instead of silently dropping input. */
+  const attemptClose = () => {
+    if (isDirty) setShowDiscardConfirm(true);
+    else handleClose();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -183,7 +213,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) attemptClose(); }}>
         <SheetContent
           side="bottom"
           handle={false}
@@ -202,7 +232,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
             </SheetTitle>
             <button
               type="button"
-              onClick={handleClose}
+              onClick={attemptClose}
               aria-label="Luk"
               className="flex size-[36px] shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink2 transition-colors hover:bg-line2"
             >
@@ -387,6 +417,17 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
           </form>
         </SheetContent>
       </Sheet>
+
+      {/* Discard-changes guard (issues/004 §8) */}
+      <DiscardChangesDialog
+        isOpen={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={() => {
+          setShowDiscardConfirm(false);
+          handleClose();
+        }}
+        description={isEdit ? 'Dine ændringer bliver ikke gemt.' : 'Dit nye fund bliver ikke gemt.'}
+      />
 
       {/* Fullscreen location editor. Without coordinates it opens on the map's
           current center (Denmark center as a last resort); backing out returns

@@ -121,6 +121,12 @@ function SheetContent({
       // Keep the dragged offset — the slide-out-to-bottom exit animation
       // continues from the sheet's current position.
       closeRef.current?.click();
+      // A dirty-guard may refuse the close (onOpenChange keeps open=true, e.g.
+      // the profile sheet's discard dialog): if the sheet is still open after
+      // the click's re-render, snap it back up via the class transition.
+      requestAnimationFrame(() => {
+        if (el.getAttribute("data-state") === "open") el.style.transform = "";
+      });
     } else {
       el.style.transform = ""; // the class transition animates the snap-back
     }

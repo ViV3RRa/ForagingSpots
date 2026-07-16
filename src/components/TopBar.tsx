@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Search, Filter, LogOut, Sun, Moon, Monitor } from 'lucide-react';
+import { Search, Filter, LogOut, Sun, Moon, Monitor, ChevronRight } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import type { ThemePreference } from '../contexts/ThemeContext';
 import type { User } from '../lib/types';
@@ -18,11 +18,22 @@ import pb from '../lib/pocketbase';
 interface TopBarProps {
   user: User;
   onSignOut: () => void;
+  onOpenProfile: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onFilterClick: () => void;
   hasActiveFilters: boolean;
 }
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Sun }[] = [
+  { value: 'light', label: 'Lyst', Icon: Sun },
+  { value: 'dark', label: 'Mørkt', Icon: Moon },
+  { value: 'system', label: 'Følg system', Icon: Monitor },
+];
+
+/** Active-row tint shared by the menu rows (same pair as the list sort menu). */
+const ROW_TINT = 'bg-[rgba(181,80,47,.07)] dark:bg-[rgba(201,162,75,.12)]';
+const ROW_FOCUS_TINT = 'focus:bg-[rgba(181,80,47,.07)] dark:focus:bg-[rgba(201,162,75,.12)]';
 
 /**
  * Floating top bar over the map/list: search field, square filter button and
@@ -32,6 +43,7 @@ interface TopBarProps {
 export default function TopBar({
   user,
   onSignOut,
+  onOpenProfile,
   searchQuery,
   onSearchChange,
   onFilterClick,
@@ -91,33 +103,67 @@ export default function TopBar({
               </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end">
-            <div className="px-2 py-1.5">
-              <p className="text-sm font-medium text-ink">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="label-mono">Tema</DropdownMenuLabel>
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="w-[250px] animate-[ss-fade_.16s_ease] rounded-[18px] border-line bg-surface p-[6px] shadow-[0_16px_40px_-10px_rgba(0,0,0,.34)]"
+          >
+            {/* Profile row — entry point for the "Rediger profil" sheet */}
+            <DropdownMenuItem
+              onSelect={onOpenProfile}
+              className={`cursor-pointer gap-[12px] rounded-[13px] px-[12px] pb-[13px] pt-[12px] ${ROW_FOCUS_TINT}`}
+            >
+              <Avatar className="size-[44px] shrink-0 border-2 border-pin-ring shadow-[0_0_0_1px_var(--line)]">
+                {avatarUrl && (
+                  <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />
+                )}
+                <AvatarFallback className="bg-brand font-serif text-[17px] font-semibold text-brand-ink">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-serif text-[16px] font-semibold text-ink">
+                  {user.name}
+                </p>
+                <p className="truncate text-[13px] text-muted">{user.email}</p>
+              </div>
+              <ChevronRight className="size-[16px] shrink-0 text-mono" strokeWidth={1.9} />
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator className="mx-[8px] my-[4px] bg-line2" />
+            <DropdownMenuLabel className="px-[12px] pb-[6px] pt-[10px] font-mono text-[10.5px] font-normal uppercase tracking-[.16em] text-mono">
+              Tema
+            </DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={preference}
               onValueChange={(value) => setPreference(value as ThemePreference)}
             >
-              <DropdownMenuRadioItem value="light">
-                <Sun className="mr-2 h-4 w-4" />
-                Lyst
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="dark">
-                <Moon className="mr-2 h-4 w-4" />
-                Mørkt
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="system">
-                <Monitor className="mr-2 h-4 w-4" />
-                Følg system
-              </DropdownMenuRadioItem>
+              {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                <DropdownMenuRadioItem
+                  key={value}
+                  value={value}
+                  className={`cursor-pointer gap-[11px] rounded-[12px] px-[12px] py-[10px] [&>span:first-child]:hidden ${ROW_FOCUS_TINT} ${
+                    preference === value ? ROW_TINT : ''
+                  }`}
+                >
+                  {/* Fixed dot column replaces Radix's default radio indicator */}
+                  <span className="flex w-[8px] shrink-0 justify-center">
+                    {preference === value && (
+                      <span className="block size-[7px] rounded-full bg-accent" />
+                    )}
+                  </span>
+                  <Icon className="size-[18px] shrink-0 text-ink2" strokeWidth={1.7} />
+                  <span className="font-serif text-[15px] text-ink">{label}</span>
+                </DropdownMenuRadioItem>
+              ))}
             </DropdownMenuRadioGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onSignOut} className="text-accent focus:text-accent">
-              <LogOut className="mr-2 h-4 w-4" />
+
+            <DropdownMenuSeparator className="mx-[8px] my-[4px] bg-line2" />
+            <DropdownMenuItem
+              onSelect={onSignOut}
+              className={`cursor-pointer gap-[11px] rounded-[12px] p-[12px] font-serif text-[15px] font-medium text-accent focus:text-accent ${ROW_FOCUS_TINT}`}
+            >
+              <LogOut className="size-[18px] shrink-0 text-accent" strokeWidth={1.8} />
               Log ud
             </DropdownMenuItem>
           </DropdownMenuContent>

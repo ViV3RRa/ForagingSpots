@@ -13,3 +13,12 @@
 export const isWebKitEngine =
   /AppleWebKit/.test(navigator.userAgent) &&
   !/Chrome\/|Chromium|Edg\/|OPR\//.test(navigator.userAgent)
+
+/**
+ * iOS/iPadOS detection (OS, not engine — macOS Safari is WebKit but not iOS).
+ * iPadOS 13+ masquerades as macOS ("MacIntel") but is the only Mac with a
+ * multi-touch screen, hence the maxTouchPoints check.
+ */
+export const isIOS =
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)

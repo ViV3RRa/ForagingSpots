@@ -601,6 +601,10 @@ export default function PinDetailsDrawer({
         <LocationEditorScreen
           initialCoordinates={spot.coordinates}
           type={spot.type}
+          // Standalone move flow: backing out with a moved, unconfirmed pin
+          // discards it — guard that path (issues/004 §8). The add/edit sheet's
+          // editor stays unguarded (backing out returns to the sheet).
+          guardDiscard
           onSave={handleLocationSave}
           onClose={() => setShowLocationPicker(false)}
         />

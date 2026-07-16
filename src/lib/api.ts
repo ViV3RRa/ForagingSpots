@@ -1,3 +1,4 @@
+import { ClientResponseError } from 'pocketbase';
 import pb, { Collections } from './pocketbase';
 import { ForagingSpotSchema, ForagingSpotCreateSchema, ForagingSpotUpdateSchema } from './schemas';
 import type { ForagingSpot, ForagingSpotCreate, ForagingSpotUpdate, PocketBaseListResult } from './types';
@@ -243,6 +244,69 @@ export const foragingSpotsApi = {
       console.error('Failed to fetch filtered foraging spots:', error);
       throw new Error('Failed to fetch filtered foraging spots');
     }
+  },
+};
+
+/** The current password given for a password change was wrong (PB 400 on
+    oldPassword) — the profile sheet shows this inline instead of the generic
+    error toast. */
+export class WrongPasswordError extends Error {
+  constructor() {
+    super('Forkert nuværende adgangskode');
+    this.name = 'WrongPasswordError';
+  }
+}
+
+export const usersApi = {
+  /** Update name and/or avatar. `avatar` cases: File → replace, null → delete
+      the stored file, undefined → leave untouched. */
+  async updateProfile(
+    userId: string,
+    data: { name?: string; avatar?: File | null }
+  ): Promise<void> {
+    try {
+      const formData = new FormData();
+      if (data.name !== undefined) {
+        formData.append('name', data.name);
+      }
+      if (data.avatar instanceof File) {
+        formData.append('avatar', data.avatar);
+      } else if (data.avatar === null) {
+        formData.append('avatar', ''); // Empty string removes the stored file
+      }
+      await pb.collection(Collections.USERS).update(userId, formData);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw new Error('Kunne ikke gemme — prøv igen');
+    }
+  },
+
+  /** Change the password, then silently re-authenticate: PocketBase invalidates
+      the auth token on password change and the SDK clears the auth store —
+      without the re-auth the app would bounce to sign-in. */
+  async changePassword(
+    userId: string,
+    email: string,
+    data: { oldPassword: string; password: string }
+  ): Promise<void> {
+    try {
+      await pb.collection(Collections.USERS).update(userId, {
+        oldPassword: data.oldPassword,
+        password: data.password,
+        passwordConfirm: data.password,
+      });
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      if (
+        error instanceof ClientResponseError &&
+        error.status === 400 &&
+        error.data?.data?.oldPassword
+      ) {
+        throw new WrongPasswordError();
+      }
+      throw new Error('Kunne ikke gemme — prøv igen');
+    }
+    await pb.collection(Collections.USERS).authWithPassword(email, data.password);
   },
 };
 
