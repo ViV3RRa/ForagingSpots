@@ -3,7 +3,7 @@ import ConfirmationDialog from './ConfirmationDialog';
 /*
  * The designed discard-changes guard dialog (issues/004 §7): ConfirmationDialog
  * with the alert-circle glyph and fixed title/buttons — only the body copy
- * varies per surface (profile sheet, add/edit sheet, location editor).
+ * varies per surface (profile sheet, add/edit sheet).
  */
 
 const alertCircleIcon = (
@@ -30,8 +30,6 @@ interface DiscardChangesDialogProps {
   onConfirm: () => void;
   /** Surface-specific body, e.g. "Dine profilændringer bliver ikke gemt." */
   description: string;
-  /** Lift dialog + scrim above a fullscreen overlay (location editor, z-60). */
-  elevated?: boolean;
 }
 
 export default function DiscardChangesDialog({
@@ -39,7 +37,6 @@ export default function DiscardChangesDialog({
   onClose,
   onConfirm,
   description,
-  elevated = false,
 }: DiscardChangesDialogProps) {
   return (
     <ConfirmationDialog
@@ -51,8 +48,6 @@ export default function DiscardChangesDialog({
       confirmText="Kassér ændringer"
       cancelText="Bliv og rediger"
       icon={alertCircleIcon}
-      className={elevated ? 'z-[80]' : undefined}
-      overlayClassName={elevated ? 'z-[80]' : undefined}
     />
   );
 }

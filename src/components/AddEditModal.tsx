@@ -183,9 +183,10 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // No location yet — the save button is disabled, but guard the form's
-    // implicit submit (Enter key) too
+    // The save button is disabled without a location (and, when editing,
+    // without changes) — guard the form's implicit submit (Enter key) too
     if (!currentCoordinates) return;
+    if (isEdit && !isDirty) return;
 
     // Extract files from images (only new images that have files)
     const newImageFiles = images
@@ -226,7 +227,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   // "Nuværende" while the add flow still holds the live GPS fix; otherwise
   // indicate where the coordinates came from. Only the live fix pulses the dot.
   const isAutoLocation = !manuallyPicked && !isEdit;
-  const locationHint = manuallyPicked ? 'Manuel' : isEdit ? 'Gemt placering' : 'Nuværende';
+  const locationHint = manuallyPicked ? 'Manuel' : isEdit ? 'Redigér placering' : 'Nuværende';
 
   return (
     <>
@@ -489,12 +490,13 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
 
             {/* Pinned footer inside the form (button stays type=submit). The accent
                 CTA is inert and dimmed until a location exists (design
-                addSaveOpacity/.45 + not-allowed cursor, so it stays hit-testable) */}
+                addSaveOpacity/.45 + not-allowed cursor, so it stays hit-testable) —
+                and, when editing, until something actually changed */}
             <div className={`shrink-0 px-[24px] pb-[24px] pt-[14px] ${footerEdgeClass(atBottom)}`}>
               <Button
                 type="submit"
                 size="lg"
-                disabled={!currentCoordinates}
+                disabled={!currentCoordinates || (isEdit && !isDirty)}
                 className="w-full disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-[.45]"
               >
                 {isEdit ? 'Gem ændringer' : 'Gem fund'}

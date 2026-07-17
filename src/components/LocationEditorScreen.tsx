@@ -5,7 +5,6 @@ import { ChevronLeft, MapPin } from 'lucide-react';
 import type { Coordinates } from '../lib/types';
 import type { ForagingType } from './types';
 import TypeBadge from './TypeBadge';
-import DiscardChangesDialog from './DiscardChangesDialog';
 import { Button } from './ui/button';
 import { getMapStyle, MAPBOX_ACCESS_TOKEN } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
@@ -16,10 +15,6 @@ interface LocationEditorScreenProps {
   type?: ForagingType;
   /** GPS accuracy in meters; the "± N m" hint is omitted when unknown. */
   accuracy?: number;
-  /** Guard the back path with the discard dialog when the pin has moved and
-      is unconfirmed (issues/004 §8). Off when opened from the add/edit sheet —
-      backing out returns to the sheet without discarding anything. */
-  guardDiscard?: boolean;
   onSave: (coordinates: Coordinates) => void;
   onClose: () => void;
 }
@@ -31,13 +26,14 @@ const formatCoordinates = (lat: number, lng: number) =>
  * Fullscreen "Flyt placering" editor from the design: the map pans underneath
  * a fixed center pin that lifts while dragging. The confirmed position is
  * always the map center. Replaces the old dialog-based LocationPickerModal
- * but keeps its callback contract.
+ * but keeps its callback contract. Only reachable from the add/edit sheet's
+ * Placering field, so backing out needs no discard guard — it just returns
+ * to the sheet without applying anything.
  */
 export default function LocationEditorScreen({
   initialCoordinates,
   type,
   accuracy,
-  guardDiscard = false,
   onSave,
   onClose,
 }: LocationEditorScreenProps) {
@@ -45,34 +41,19 @@ export default function LocationEditorScreen({
   const [coordinates, setCoordinates] = useState<Coordinates>(initialCoordinates);
   const [dragging, setDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-
-  // The pin position is always the map center — moved means the center left
-  // the coordinates the editor opened on.
-  const pinMoved =
-    coordinates.lat !== initialCoordinates.lat || coordinates.lng !== initialCoordinates.lng;
-
-  /** Guarded back path (issues/004 §8): a moved, unconfirmed pin opens the
-      discard dialog when guarding is on; otherwise the editor closes freely. */
-  const attemptClose = () => {
-    if (guardDiscard && pinMoved) setShowDiscardConfirm(true);
-    else onClose();
-  };
 
   // Close on Escape without letting Radix dismiss the sheet underneath
-  // (capture phase runs before Radix's document-level listener). While the
-  // discard dialog is up, Escape is its to handle — it closes itself.
+  // (capture phase runs before Radix's document-level listener).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !showDiscardConfirm) {
+      if (event.key === 'Escape') {
         event.stopPropagation();
-        if (guardDiscard && pinMoved) setShowDiscardConfirm(true);
-        else onClose();
+        onClose();
       }
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [onClose, guardDiscard, pinMoved, showDiscardConfirm]);
+  }, [onClose]);
 
   /* Portaled to <body>: the bottom sheets are body-level Radix portals (z-50)
      while #root is a fixed layer with its own stacking context — rendered
@@ -143,7 +124,7 @@ export default function LocationEditorScreen({
         <div className="flex items-center gap-[12px] px-[18px] pb-[10px] pt-[14px]">
           <button
             type="button"
-            onClick={attemptClose}
+            onClick={onClose}
             aria-label="Annullér"
             className="pointer-events-auto flex size-[44px] shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-[0_3px_10px_var(--shadow)] transition-colors hover:bg-line2"
           >
@@ -186,18 +167,6 @@ export default function LocationEditorScreen({
           Bekræft placering
         </Button>
       </div>
-
-      {/* Discard guard for the back path — elevated above this z-[60] screen */}
-      <DiscardChangesDialog
-        isOpen={showDiscardConfirm}
-        onClose={() => setShowDiscardConfirm(false)}
-        onConfirm={() => {
-          setShowDiscardConfirm(false);
-          onClose();
-        }}
-        description="Den nye placering bliver ikke gemt."
-        elevated
-      />
     </div>,
     document.body,
   );

@@ -12,9 +12,6 @@ import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foraging
 import { getForagingSpotConfig } from './icons';
 import { useUserLocation } from '../hooks/useUserLocation';
 import type { MapMode } from '../utils/mapbox';
-import { useUpdateSpot } from '../hooks/useForagingSpots';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../lib/queryClient';
 
 interface MainMapScreenProps {
   user: NewUser;
@@ -53,11 +50,7 @@ export default function MainMapScreen({
   // it survives Kort/Liste switches and sheets because this component stays
   // mounted, and a reload boots back in base mode
   const [mapMode, setMapMode] = useState<MapMode>('base');
-  
-  // TanStack Query hooks for optimistic updates
-  const queryClient = useQueryClient();
-  const updateSpotMutation = useUpdateSpot();
-  
+
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
   const denmarkZoom = 6;
@@ -131,35 +124,6 @@ export default function MainMapScreen({
     // Deleted, or mid-refetch between sync and reload — keep the snapshot
     return selectedSpot;
   }, [selectedSpot, foragingSpots]);
-
-  // Coordinate-only update from the detail drawer's "Redigér ›" location editor
-  const handleUpdateLocation = (spotId: string, coordinates: Coordinates) => {
-    const spot = foragingSpots.find(s => s.id === spotId);
-    if (!spot) return;
-
-    const updatedSpot = { ...spot, coordinates };
-
-    // Optimistically update the cache (pending spots live in their own store
-    // and are handled by the mutation itself)
-    queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, (oldData) => {
-      if (!oldData) return oldData;
-      return oldData.map(s => (s.id === spotId ? updatedSpot : s));
-    });
-
-    // Update the selected spot state so the open drawer reflects the change
-    if (selectedSpot?.id === spotId) {
-      setSelectedSpot(updatedSpot);
-    }
-
-    updateSpotMutation.mutate(
-      { id: spotId, data: { coordinates } },
-      {
-        onSettled: () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.foragingSpots.all });
-        }
-      }
-    );
-  };
 
   const handleApplyFilters = (filters: Set<ForagingType>) => {
     setActiveFilters(filters);
@@ -295,16 +259,15 @@ export default function MainMapScreen({
           spot={liveSelectedSpot}
           currentUser={user}
           onClose={() => setSelectedSpot(null)}
-          onEdit={() => {
-            setEditingSpot(liveSelectedSpot);
-            setSelectedSpot(null);
-          }}
+          // The drawer stays open behind the edit sheet — closing the edit
+          // sheet reveals it again with no sheet-less gap in between
+          onEdit={() => setEditingSpot(liveSelectedSpot)}
+          lockOpen={editingSpot !== null}
           onDelete={() => {
             if (!liveSelectedSpot) return;
             onDeleteSpot(liveSelectedSpot.id);
             setSelectedSpot(null);
           }}
-          onUpdateLocation={handleUpdateLocation}
         />
       {/* )} */}
 

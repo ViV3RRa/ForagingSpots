@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { MonoLabel } from './ui/MonoLabel';
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import { Edit, Trash2, WifiOff } from 'lucide-react';
-import type { ForagingSpot, User, ForagingSpotWithPending, Coordinates } from '../lib/types';
+import type { ForagingSpot, User, ForagingSpotWithPending } from '../lib/types';
 import TypeBadge from './TypeBadge';
 import { getDanishLabel } from '../utils/danishLabels';
 import { getSpotImageUrls, getSpotImageThumbnailUrls, getSpotImagePlaceholderUrls } from '../lib/pocketbase';
@@ -12,7 +12,6 @@ import { useUserLocation } from '../hooks/useUserLocation';
 import { distanceToSpot } from '../utils/distance';
 import ImageViewer from './ImageViewer';
 import ConfirmationDialog from './ConfirmationDialog';
-import LocationEditorScreen from './LocationEditorScreen';
 import { PendingSyncBadge } from './PendingSyncBadge';
 import { getPendingImageUrls } from '../hooks/usePendingSpots';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
@@ -27,7 +26,10 @@ interface PinDetailsDrawerProps {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onUpdateLocation: (spotId: string, coordinates: Coordinates) => void;
+  /** True while the edit sheet is stacked on top: the drawer stays open
+      behind it (no sheet-less gap when the edit sheet closes), so every
+      dismissal path is ignored until the edit sheet is gone. */
+  lockOpen?: boolean;
 }
 
 const formatCoordinates = (lat: number, lng: number) =>
@@ -39,13 +41,12 @@ export default function PinDetailsDrawer({
   onClose,
   onEdit,
   onDelete,
-  onUpdateLocation
+  lockOpen = false
 }: PinDetailsDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [pendingImageUrls, setPendingImageUrls] = useState<string[]>([]);
   const { ref: bodyRef, atBottom, collapsed } = useScrollEdges();
@@ -98,6 +99,9 @@ export default function PinDetailsDrawer({
   }, [spot]);
 
   const handleClose = () => {
+    // Dismissal belongs to the edit sheet while it is stacked on top (Radix
+    // routes Escape/outside-taps to the top layer, but guard deterministically)
+    if (lockOpen) return;
     setIsOpen(false);
     // Wait for animation to complete before calling onClose
     setTimeout(() => {
@@ -131,13 +135,6 @@ export default function PinDetailsDrawer({
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirmation(false);
-  };
-
-  const handleLocationSave = (coordinates: Coordinates) => {
-    if (spot) {
-      onUpdateLocation(spot.id, coordinates);
-    }
-    setShowLocationPicker(false);
   };
 
   // Gallery tile showing a real thumbnail; opens the lightbox at its index.
@@ -183,11 +180,11 @@ export default function PinDetailsDrawer({
         <SheetContent
           side="bottom"
           className="max-h-[88%] bg-bg sm:mx-auto sm:max-w-[520px]"
-          // The lightbox and location editor are plain overlays outside this Radix
-          // layer — interacting with them must not dismiss the sheet underneath
-          // (see the helper for why the open-flags alone are not enough on touch)
+          // The lightbox is a plain overlay outside this Radix layer —
+          // interacting with it must not dismiss the sheet underneath (see
+          // the helper for why the open-flag alone is not enough on touch)
           onInteractOutside={(e) => {
-            if (imageViewerOpen || showLocationPicker || outsideInteractionStartedInOverlay(e)) {
+            if (lockOpen || imageViewerOpen || outsideInteractionStartedInOverlay(e)) {
               e.preventDefault();
             }
           }}
@@ -352,30 +349,16 @@ export default function PinDetailsDrawer({
                 </div>
               )}
 
-              {/* Meta rows: Space Mono labels, hairline dividers */}
+              {/* Meta rows: Space Mono labels, hairline dividers. Display only —
+                  the position (like everything else) is edited via the edit
+                  sheet's Placering field. */}
               <div className="mt-[22px]">
-                {isOwner && !isEditDisabled ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowLocationPicker(true)}
-                    className="flex w-full items-center justify-between gap-[12px] border-b border-line2 py-[13px] text-left"
-                  >
-                    <MonoLabel>Koordinater</MonoLabel>
-                    <span className="flex min-w-0 items-center gap-[8px]">
-                      <span className="truncate font-mono text-[13px] text-ink">
-                        {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
-                      </span>
-                      <span className="shrink-0 font-serif text-[12px] text-accent">Redigér ›</span>
-                    </span>
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-between gap-[12px] border-b border-line2 py-[13px]">
-                    <MonoLabel>Koordinater</MonoLabel>
-                    <span className="truncate font-mono text-[13px] text-ink">
-                      {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between gap-[12px] border-b border-line2 py-[13px]">
+                  <MonoLabel>Koordinater</MonoLabel>
+                  <span className="truncate font-mono text-[13px] text-ink">
+                    {formatCoordinates(spot.coordinates.lat, spot.coordinates.lng)}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between gap-[12px] border-b border-line2 py-[13px]">
                   <MonoLabel>Fundet</MonoLabel>
                   <span className="font-serif text-[15px] text-ink">{formatFoundDate(spot.created)}</span>
@@ -500,20 +483,6 @@ export default function PinDetailsDrawer({
           onClose={() => setImageViewerOpen(false)}
           spotName={getDanishLabel(spot.type)}
           spotDate={formatFoundDate(spot.created)}
-        />
-      )}
-
-      {/* Fullscreen location editor */}
-      {showLocationPicker && spot && (
-        <LocationEditorScreen
-          initialCoordinates={spot.coordinates}
-          type={spot.type}
-          // Standalone move flow: backing out with a moved, unconfirmed pin
-          // discards it — guard that path (issues/004 §8). The add/edit sheet's
-          // editor stays unguarded (backing out returns to the sheet).
-          guardDiscard
-          onSave={handleLocationSave}
-          onClose={() => setShowLocationPicker(false)}
         />
       )}
 
