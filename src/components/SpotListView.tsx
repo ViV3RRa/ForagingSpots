@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { distanceToSpot, haversineDistance } from '../utils/distance';
 import { formatRelativeDate } from '../utils/relativeDate';
+import { getLatinLabel } from '../utils/latinLabels';
 import ConfirmationDialog from './ConfirmationDialog';
 import { PendingSyncBadge } from './PendingSyncBadge';
 import SpotActionSheet from './SpotActionSheet';
@@ -206,6 +207,7 @@ export default function SpotListView({
         {sortedSpots.length > 0 ? (
           sortedSpots.map((spot) => {
             const config = getForagingSpotConfig(spot.type);
+            const latinName = getLatinLabel(spot.type);
             const sharedWith = spot.sharedWith ?? [];
             const spotWithPending = spot as ForagingSpotWithPending;
             const isPending = spotWithPending._pending;
@@ -229,6 +231,12 @@ export default function SpotListView({
                       {formatRelativeDate(new Date(spot.created))}
                     </span>
                   </div>
+
+                  {latinName && (
+                    <p className="mb-[8px] mt-[2px] truncate font-serif text-[13.5px] italic text-muted">
+                      {latinName}
+                    </p>
+                  )}
 
                   {spot.notes && (
                     <p className="mt-[3px] truncate text-[13.5px] leading-[1.5] text-ink2">{spot.notes}</p>

@@ -6,6 +6,7 @@ import { Edit, Trash2, WifiOff } from 'lucide-react';
 import type { ForagingSpot, User, ForagingSpotWithPending } from '../lib/types';
 import TypeBadge from './TypeBadge';
 import { getDanishLabel } from '../utils/danishLabels';
+import { getLatinLabel } from '../utils/latinLabels';
 import { getSpotImageUrls, getSpotImageThumbnailUrls, getSpotImagePlaceholderUrls } from '../lib/pocketbase';
 import BlurImage from './ui/blur-image';
 import { useUserLocation } from '../hooks/useUserLocation';
@@ -72,6 +73,7 @@ export default function PinDetailsDrawer({
   const imageCount = thumbnailUrls.length;
 
   const distance = spot ? distanceToSpot(position, spot.coordinates) : null;
+  const latinName = spot ? getLatinLabel(spot.type) : null;
 
   // Load pending images from IndexedDB
   useEffect(() => {
@@ -298,15 +300,25 @@ export default function PinDetailsDrawer({
                         {getDanishLabel(spot.type)}
                       </SheetTitle>
                     )}
-                    {/* Long sync badge floats below the title (over the body's
-                        masked zone) instead of stacking in flow — in-flow it would
-                        make the pill's height state-dependent again */}
-                    {isPending && (
+                    {/* Subline (italic latin name + long sync badge) floats below
+                        the title (over the body's masked zone) instead of stacking
+                        in flow — in-flow it would make the pill's height
+                        state-dependent again. Fades out as the pill collapses. */}
+                    {(latinName || isPending) && (
                       <div
-                        className="pointer-events-none absolute left-0 top-full pt-[7px]"
+                        className="pointer-events-none absolute inset-x-0 top-full pt-[2px]"
                         style={{ opacity: collapsed ? 0 : 1, transition: 'opacity .18s ease' }}
                       >
-                        <PendingSyncBadge hasError={hasError} long className="whitespace-nowrap" />
+                        {latinName && (
+                          <p className="truncate font-serif text-[14px] italic leading-[1.3] text-muted">
+                            {latinName}
+                          </p>
+                        )}
+                        {isPending && (
+                          <div className={latinName ? 'pt-[4px]' : 'pt-[5px]'}>
+                            <PendingSyncBadge hasError={hasError} long className="whitespace-nowrap" />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
