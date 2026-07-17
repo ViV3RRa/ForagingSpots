@@ -8,6 +8,7 @@ import TypeBadge from './TypeBadge';
 import { Button } from './ui/button';
 import { getMapStyle, MAPBOX_ACCESS_TOKEN } from '../utils/mapbox';
 import { useTheme } from '../hooks/useTheme';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface LocationEditorScreenProps {
   initialCoordinates: Coordinates;
@@ -41,6 +42,9 @@ export default function LocationEditorScreen({
   const [coordinates, setCoordinates] = useState<Coordinates>(initialCoordinates);
   const [dragging, setDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
+
+  // Native back = the back button (mounted only while open)
+  useHistoryLayer(true, onClose);
 
   // Close on Escape without letting Radix dismiss the sheet underneath
   // (capture phase runs before Radix's document-level listener).

@@ -17,6 +17,7 @@ import { getPendingImageUrls } from '../hooks/usePendingSpots';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
 import { useScrollEdges, footerEdgeClass } from '../hooks/useScrollEdges';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 import { isWebKitEngine } from '../utils/platform';
 import { formatFoundDate } from '../utils/formatDate';
 
@@ -98,16 +99,26 @@ export default function PinDetailsDrawer({
     }
   }, [spot]);
 
-  const handleClose = () => {
-    // Dismissal belongs to the edit sheet while it is stacked on top (Radix
-    // routes Escape/outside-taps to the top layer, but guard deterministically)
-    if (lockOpen) return;
+  const closeNow = () => {
     setIsOpen(false);
     // Wait for animation to complete before calling onClose
     setTimeout(() => {
       onClose();
     }, 300);
   };
+
+  const handleClose = () => {
+    // Dismissal belongs to the edit sheet while it is stacked on top (Radix
+    // routes Escape/outside-taps to the top layer, but guard deterministically)
+    if (lockOpen) return;
+    closeNow();
+  };
+
+  // Native back closes the drawer like the X. No lockOpen guard here: our
+  // history entry sits below the edit sheet's, so a back press reaching us
+  // means the edit sheet is already closed (or animating out, lockOpen's
+  // 300ms tail) — and then closing the drawer too is exactly the intent
+  useHistoryLayer(isOpen, closeNow);
 
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);

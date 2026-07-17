@@ -7,6 +7,7 @@ import {
 } from './ui/dialog';
 import { Button } from './ui/button';
 import { cn } from './ui/utils';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -56,6 +57,13 @@ export default function ConfirmationDialog({
   className,
   overlayClassName,
 }: ConfirmationDialogProps) {
+  // Native back dismisses the dialog (cancel path); vetoed mid-action so a
+  // running delete/save isn't left without its dialog
+  useHistoryLayer(isOpen, () => {
+    if (isLoading) return false;
+    onClose();
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent

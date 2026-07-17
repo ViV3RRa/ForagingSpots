@@ -1,4 +1,5 @@
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 /*
  * Small bottom sheet asking where a photo should come from (issues/004 §2):
@@ -54,6 +55,9 @@ export default function PhotoSourceSheet({
   onPickCamera,
   onPickGallery,
 }: PhotoSourceSheetProps) {
+  // Native back dismisses the chooser like a scrim tap
+  useHistoryLayer(open, () => onOpenChange(false));
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="bg-bg sm:mx-auto sm:max-w-[520px]">

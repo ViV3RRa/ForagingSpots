@@ -21,11 +21,16 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import './styles/tokens.css'
 import { registerSW } from 'virtual:pwa-register'
 import { initAppHeight } from './utils/appHeight'
+import { initHistoryLayers } from './lib/historyLayers'
 import App from './App.tsx'
 
 // Measure the real viewport into --app-height before first paint — the app
 // shell's size depends on it (tokens.css #root; issues/002).
 initAppHeight()
+
+// Native back navigation closes open sheets/overlays instead of leaving the
+// app, with the Android double-back exit guard (lib/historyLayers).
+initHistoryLayers()
 
 // Register service worker for PWA functionality. The virtual module resolves
 // the correct SW URL per environment (/dev-sw.js?dev-sw in dev, /sw.js in prod);

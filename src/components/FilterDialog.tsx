@@ -9,6 +9,7 @@ import type { ForagingSpot } from '../lib/types';
 import { getDanishLabel } from '../utils/danishLabels';
 import { getAllForagingTypesSet, getTypesInCategory, type ForagingCategory } from '../utils/foragingTypes';
 import { useScrollEdges, headerEdgeClass, footerEdgeClass, topMaskStyle } from '../hooks/useScrollEdges';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface FilterDialogProps {
   open: boolean;
@@ -99,6 +100,9 @@ export default function FilterDialog({
   const handleCancel = () => {
     onOpenChange(false);
   };
+
+  // Native back dismisses the filter sheet like a scrim tap
+  useHistoryLayer(open, handleCancel);
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>

@@ -13,6 +13,7 @@ import PhotoSourceSheet from './PhotoSourceSheet';
 import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
 import { isIOS } from '../utils/platform';
 import { useScrollEdges, headerEdgeClass, footerEdgeClass, topMaskStyle } from '../hooks/useScrollEdges';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface ProfileSheetProps {
   open: boolean;
@@ -171,25 +172,34 @@ export default function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) 
     };
   }, [previewUrl]);
 
+  const pwDirty = pwCur !== '' || pwNew !== '' || pwConf !== '';
+  const isDirty = user !== null && (name !== user.name || avatar !== undefined || pwDirty);
+
+  /** Scrim, header X, swipe, Escape and native back all land here (§7) —
+      a dirty form vetoes into the discard dialog (false = back press vetoed). */
+  const requestClose = () => {
+    if (isDirty) {
+      setShowDiscard(true);
+      return false;
+    }
+    onOpenChange(false);
+    return true;
+  };
+
+  // Before the !user early return — hooks must run unconditionally
+  useHistoryLayer(open, requestClose);
+
   if (!user) return null;
 
   const storedAvatarUrl = getAvatarUrl(user);
   const displayedSrc = avatar instanceof File ? previewUrl : avatar === null ? null : storedAvatarUrl;
   const hasPhoto = displayedSrc !== null;
 
-  const pwDirty = pwCur !== '' || pwNew !== '' || pwConf !== '';
   const pwValid = pwCur !== '' && pwNew.length >= 8 && pwConf === pwNew;
   const pwMismatch = pwConf !== '' && pwConf !== pwNew;
   const canSave = name.trim() !== '' && (!pwDirty || pwValid);
-  const isDirty = name !== user.name || avatar !== undefined || pwDirty;
 
   const strength = STRENGTH_LEVELS[passwordScore(pwNew) - 1];
-
-  /** Scrim, header X, swipe and Escape all land here (§7). */
-  const requestClose = () => {
-    if (isDirty) setShowDiscard(true);
-    else onOpenChange(false);
-  };
 
   /** "Skift billede" / camera badge. iOS's plain file input already presents
       a native Take Photo / Photo Library chooser, so the custom drawer would

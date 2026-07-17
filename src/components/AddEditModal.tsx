@@ -17,6 +17,7 @@ import { getPendingImages } from '../hooks/usePendingSpots';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { outsideInteractionStartedInOverlay } from '../utils/sheetInteractOutside';
 import { useScrollEdges, headerEdgeClass, footerEdgeClass, topMaskStyle } from '../hooks/useScrollEdges';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface AddEditModalProps {
   spot?: ForagingSpot;
@@ -28,12 +29,15 @@ interface AddEditModalProps {
   editorFallbackCenter?: Coordinates;
   onSave: (type: ForagingType, notes: string, coordinates: Coordinates, newImages: File[], sharedWith: string[], existingImageFilenames?: string[]) => void;
   onClose: () => void;
+  /** Open scrolled to the "Delt med" section with the share input focused —
+      the list view's "Del" action lands the user right where they can type. */
+  autoFocusShare?: boolean;
 }
 
 const formatCoordinates = (lat: number, lng: number) =>
   `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
 
-export default function AddEditModal({ spot, coordinates, editorFallbackCenter, onSave, onClose }: AddEditModalProps) {
+export default function AddEditModal({ spot, coordinates, editorFallbackCenter, onSave, onClose, autoFocusShare = false }: AddEditModalProps) {
   const isEdit = spot !== undefined;
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
   const [notes, setNotes] = useState(spot?.notes || '');
@@ -60,6 +64,22 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
   const [speciesQuery, setSpeciesQuery] = useState('');
   const [activeSpeciesPage, setActiveSpeciesPage] = useState(0);
   const speciesPagerRef = useRef<HTMLDivElement>(null);
+  const shareInputRef = useRef<HTMLInputElement>(null);
+
+  // "Del" entry point: focus the share input right away (in the tap's task,
+  // so iOS brings up the keyboard), then — once the sheet's 300ms entrance
+  // has finished — smooth-scroll the share section into view. One scroll,
+  // after the animation, keeps every engine happy; scrolling during the
+  // entrance fought Radix's mount work and Chrome's animation handling.
+  // Radix's own open-autofocus is suppressed via onOpenAutoFocus.
+  useEffect(() => {
+    if (!autoFocusShare) return;
+    shareInputRef.current?.focus({ preventScroll: true });
+    const timer = setTimeout(() => {
+      shareInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [autoFocusShare]);
 
   const matchingTypes = FORAGING_TYPES.filter((type) =>
     getDanishLabel(type).toLowerCase().includes(speciesQuery.trim().toLowerCase())
@@ -173,12 +193,19 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
     sharedWith.join('\n') !== initialFormRef.current.sharedWith ||
     images.map((img) => img.id ?? img.url).join('\n') !== baselineImageIdsRef.current.join('\n');
 
-  /** Guarded close (issues/004 §8): scrim, header X and Escape all land here —
-      a dirty form opens the discard dialog instead of silently dropping input. */
+  /** Guarded close (issues/004 §8): scrim, header X, Escape and native back
+      all land here — a dirty form opens the discard dialog instead of
+      silently dropping input (false = the back press is vetoed). */
   const attemptClose = () => {
-    if (isDirty) setShowDiscardConfirm(true);
-    else handleClose();
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+      return false;
+    }
+    handleClose();
+    return true;
   };
+
+  useHistoryLayer(isOpen, attemptClose);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,6 +267,12 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
           // why the open-flag alone is not enough on touch)
           onInteractOutside={(e) => {
             if (showLocationPicker || outsideInteractionStartedInOverlay(e)) e.preventDefault();
+          }}
+          // Radix's default open-autofocus targets the first tabbable element,
+          // scrolling the body back to the top — it must stand down when the
+          // share input is the landing point
+          onOpenAutoFocus={(e) => {
+            if (autoFocusShare) e.preventDefault();
           }}
           className="max-h-[92%] bg-bg sm:mx-auto sm:max-w-[520px]"
         >
@@ -460,6 +493,7 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
                   <div className="flex h-[48px] min-w-0 flex-1 items-center gap-[8px] rounded-[13px] border border-line bg-surface px-[14px]">
                     <span className="font-serif text-[16px] text-mono">@</span>
                     <input
+                      ref={shareInputRef}
                       type="text"
                       value={shareUsername}
                       onChange={(e) => setShareUsername(e.target.value)}

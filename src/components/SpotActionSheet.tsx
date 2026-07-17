@@ -1,6 +1,7 @@
 import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 import type { ForagingSpot } from '../lib/types';
 import { getForagingSpotConfig } from './icons';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface SpotActionSheetProps {
   /** Spot the menu was opened for; null keeps the sheet closed. */
@@ -63,6 +64,9 @@ export default function SpotActionSheet({
     onClose();
     action(spot);
   };
+
+  // Native back dismisses the action menu like a scrim tap
+  useHistoryLayer(spot !== null, onClose);
 
   return (
     <Sheet open={spot !== null} onOpenChange={(open) => { if (!open) onClose(); }}>

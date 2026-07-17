@@ -12,6 +12,7 @@ import { getAllForagingTypesSet, getTotalForagingTypes } from '../utils/foraging
 import { getForagingSpotConfig } from './icons';
 import { useUserLocation } from '../hooks/useUserLocation';
 import type { MapMode } from '../utils/mapbox';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface MainMapScreenProps {
   user: NewUser;
@@ -35,9 +36,27 @@ export default function MainMapScreen({
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<ForagingSpot | null>(null);
   const [editingSpot, setEditingSpot] = useState<ForagingSpot | null>(null);
+  // True when the edit sheet was opened via the list's "Del" action — it then
+  // opens scrolled to the share section with the share input focused
+  const [editFocusShare, setEditFocusShare] = useState(false);
   const { position: currentPosition, status: locationStatus } = useUserLocation();
   const { isOnline } = useNetworkStatus();
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  // The list view occupies a history entry like a sheet: native back returns
+  // to the map (the app's home view) instead of leaving the app
+  useHistoryLayer(viewMode === 'list', () => setViewMode('map'));
+  // The list is an overlay sliding in over the always-mounted map — it stays
+  // mounted through its 300ms slide-out, then unmounts (fresh on next open)
+  const [listMounted, setListMounted] = useState(false);
+  const listLeaving = listMounted && viewMode !== 'list';
+  useEffect(() => {
+    if (viewMode === 'list') {
+      setListMounted(true);
+    } else if (listMounted) {
+      const timer = setTimeout(() => setListMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, listMounted]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterDialog, setShowFilterDialog] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<ForagingType>>(getAllForagingTypesSet());
@@ -161,33 +180,49 @@ export default function MainMapScreen({
   return (
     <div className="relative h-full overflow-hidden bg-bg">
       <div className="absolute inset-0">
-        {viewMode === 'map' ? (
-          <MapView
-            foragingSpots={filteredSpots}
-            onPinClick={setSelectedSpot}
-            centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
-            initialViewState={mapViewState}
-            onViewStateChange={handleMapViewStateChange}
-            onShowList={() => setViewMode('list')}
-            onMapErrorChange={setMapError}
-            mapMode={mapMode}
-          />
-        ) : (
-          <SpotListView
-            foragingSpots={filteredSpots}
-            activeFilters={activeFilters}
-            searchQuery={searchQuery}
-            totalSpots={foragingSpots.length}
-            onSpotClick={handleSpotClick}
-            onEdit={(spot) => setEditingSpot(spot)}
-            onDelete={onDeleteSpot}
-            // Sharing is managed in the edit sheet (the drawer only displays it)
-            onShare={(spot) => setEditingSpot(spot)}
-            onViewOnMap={handleViewOnMap}
-            onFilterClick={() => setShowFilterDialog(true)}
-            onAddClick={() => setShowAddModal(true)}
-            totalTypes={getTotalForagingTypes()}
-          />
+        {/* The map stays mounted beneath the list overlay: the camera survives
+            view toggles and the slide-out reveals it already in place */}
+        <MapView
+          foragingSpots={filteredSpots}
+          onPinClick={setSelectedSpot}
+          centerOnSpot={centerOnSpot ? foragingSpots.find(s => s.id === centerOnSpot.id) ?? null : null}
+          initialViewState={mapViewState}
+          onViewStateChange={handleMapViewStateChange}
+          onShowList={() => setViewMode('list')}
+          onMapErrorChange={setMapError}
+          mapMode={mapMode}
+        />
+        {listMounted && (
+          <div
+            className={`absolute inset-0 bg-bg ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+              listLeaving
+                ? 'animate-out slide-out-to-right fill-mode-forwards duration-300'
+                : 'animate-in slide-in-from-right duration-300'
+            }`}
+          >
+            <SpotListView
+              foragingSpots={filteredSpots}
+              activeFilters={activeFilters}
+              searchQuery={searchQuery}
+              totalSpots={foragingSpots.length}
+              onSpotClick={handleSpotClick}
+              onEdit={(spot) => {
+                setEditFocusShare(false);
+                setEditingSpot(spot);
+              }}
+              onDelete={onDeleteSpot}
+              // Sharing is managed in the edit sheet: "Del" opens it landed
+              // on the share section (the drawer only displays the list)
+              onShare={(spot) => {
+                setEditFocusShare(true);
+                setEditingSpot(spot);
+              }}
+              onViewOnMap={handleViewOnMap}
+              onFilterClick={() => setShowFilterDialog(true)}
+              onAddClick={() => setShowAddModal(true)}
+              totalTypes={getTotalForagingTypes()}
+            />
+          </div>
         )}
       </div>
 
@@ -209,14 +244,14 @@ export default function MainMapScreen({
       {/* No-location badge sits in the offline banner's slot under the search
           field (stacking below the banner when both show); hides on the
           map-error card, and disappears live when a fix arrives */}
-      {viewMode === 'map' && !mapError && locationStatus === 'unavailable' && (
+      {viewMode === 'map' && !listMounted && !mapError && locationStatus === 'unavailable' && (
         <NoLocationBadge offline={!isOnline} />
       )}
 
       {/* Basemap toggle gates on the design's isMapReady (map view, no sheet,
           no map error) — deliberately not on location: it stays visible in the
           no-location state, unlike the locate button */}
-      {viewMode === 'map' && !mapError && !sheetOpen && (
+      {viewMode === 'map' && !listMounted && !mapError && !sheetOpen && (
         <MapStyleToggle
           satellite={mapMode === 'satellite'}
           onToggle={() => setMapMode((mode) => (mode === 'satellite' ? 'base' : 'satellite'))}
@@ -249,6 +284,7 @@ export default function MainMapScreen({
         <AddEditModal
           spot={editingSpot}
           coordinates={editingSpot.coordinates}
+          autoFocusShare={editFocusShare}
           onSave={(type, notes, coordinates, images, sharedWith, existingImageFilenames) => handleEditSpot(editingSpot, type, notes, coordinates, images, sharedWith, existingImageFilenames)}
           onClose={() => setEditingSpot(null)}
         />
@@ -261,7 +297,10 @@ export default function MainMapScreen({
           onClose={() => setSelectedSpot(null)}
           // The drawer stays open behind the edit sheet — closing the edit
           // sheet reveals it again with no sheet-less gap in between
-          onEdit={() => setEditingSpot(liveSelectedSpot)}
+          onEdit={() => {
+            setEditFocusShare(false);
+            setEditingSpot(liveSelectedSpot);
+          }}
           lockOpen={editingSpot !== null}
           onDelete={() => {
             if (!liveSelectedSpot) return;

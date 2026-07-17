@@ -5,6 +5,7 @@ import type { SpotImage } from './ImageCapture';
 import BlurImage from './ui/blur-image';
 import { getExifCaptureDate } from '../utils/exifDate';
 import { formatFoundDate } from '../utils/formatDate';
+import { useHistoryLayer } from '../hooks/useHistoryLayer';
 
 interface ImageViewerProps {
   images: SpotImage[];
@@ -234,6 +235,9 @@ export default function ImageViewer({
     track.addEventListener('wheel', handleWheel, { passive: false });
     return () => track.removeEventListener('wheel', handleWheel);
   }, [isOpen, applyZoom, zoomAt]);
+
+  // Native back closes the lightbox before any sheet beneath it
+  useHistoryLayer(isOpen, onClose);
 
   if (!isOpen || !images.length) return null;
 
