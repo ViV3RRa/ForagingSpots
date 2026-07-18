@@ -358,6 +358,21 @@ export default function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) 
                 className="h-[54px] w-full rounded-[14px] border border-line bg-surface px-[16px] font-serif text-[16px] text-ink outline-none placeholder:text-muted focus:border-mono"
               />
 
+              {/* Brugernavn — read-only, same locked treatment as e-mail */}
+              {user.username && (
+                <>
+                  <div className="mb-[8px] mt-[16px]">
+                    <MonoLabel>Brugernavn</MonoLabel>
+                  </div>
+                  <div className="flex h-[54px] items-center gap-[10px] rounded-[14px] border border-dashed border-line bg-line2 px-[16px]">
+                    <span className="min-w-0 flex-1 truncate font-serif text-[16px] text-muted">
+                      {user.username}
+                    </span>
+                    <Lock className="size-[16px] shrink-0 text-mono" strokeWidth={1.8} />
+                  </div>
+                </>
+              )}
+
               {/* E-mail — read-only: recessed line2 bg + dashed border + lock */}
               <div className="mb-[8px] mt-[16px]">
                 <MonoLabel>E-mail</MonoLabel>

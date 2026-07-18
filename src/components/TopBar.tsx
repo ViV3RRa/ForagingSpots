@@ -123,7 +123,18 @@ export default function TopBar({
                 <p className="truncate font-serif text-[16px] font-semibold text-ink">
                   {user.name}
                 </p>
-                <p className="truncate text-[13px] text-muted">{user.email}</p>
+                <p className="truncate text-[13px] text-muted">
+                  {user.username ? (
+                    <>
+                      {/* The @ glyph draws below the baseline — raised 1px so its
+                          bowl centers optically on the lowercase username */}
+                      <span className="mr-[1px] inline-block -translate-y-px opacity-50">@</span>
+                      {user.username}
+                    </>
+                  ) : (
+                    user.email
+                  )}
+                </p>
               </div>
               <ChevronRight className="size-[16px] shrink-0 text-mono" strokeWidth={1.9} />
             </DropdownMenuItem>
