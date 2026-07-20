@@ -13,6 +13,7 @@ import { useForagingSpots, useCreateSpot, useUpdateSpot, useDeleteSpot } from '.
 import { queryGeolocationPermission, startUserLocation } from './hooks/useUserLocation';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { usePendingSpots } from './hooks/usePendingSpots';
+import { usePreloadSpotPlaceholders } from './hooks/usePreloadSpotPlaceholders';
 import type { ForagingSpot } from './lib/types';
 import './styles/tokens.css'
 import { useQueryClient } from '@tanstack/react-query';
@@ -50,6 +51,9 @@ function AppContent() {
   // TanStack Query hooks for data management
   const { data: foragingSpots = [], isLoading: spotsLoading } = useForagingSpots(isAuthenticated);
   const createSpotMutation = useCreateSpot();
+  // Warm the drawer's 32px blur-up placeholders while the map is idle, so
+  // opening a spot on a slow connection never shimmers over an empty tile
+  usePreloadSpotPlaceholders(foragingSpots);
   const updateSpotMutation = useUpdateSpot();
   const deleteSpotMutation = useDeleteSpot();
 

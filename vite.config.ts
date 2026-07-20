@@ -24,18 +24,25 @@ export default defineConfig({
               cacheName: 'mapbox-cache',
               expiration: {
                 maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365 * 2 // <== 2 years
               }
             }
           },
           {
-            urlPattern: /^https:\/\/.*\.pocketbase\.io\/.*/i,
-            handler: 'NetworkFirst',
+            // Spot image thumbs (32px blur-up placeholders + 600px gallery
+            // tiles). PocketBase appends a random suffix to every uploaded
+            // filename, so a file URL is immutable and CacheFirst can never
+            // serve stale content. Full-size originals (no ?thumb=) are
+            // deliberately excluded — they run to several hundred KB each.
+            // Host-agnostic match so dev (127.0.0.1:8090) and prod
+            // (foraging.viverra.dk) both hit the same route.
+            urlPattern: ({ url }) => url.pathname.includes('/api/files/') && url.searchParams.has('thumb'),
+            handler: 'CacheFirst',
             options: {
-              cacheName: 'pocketbase-cache',
+              cacheName: 'pb-thumbs',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // <== 24 hours
+                maxEntries: 1500,
+                maxAgeSeconds: 60 * 60 * 24 * 365 * 2 // <== 2 years
               }
             }
           }
@@ -50,7 +57,7 @@ export default defineConfig({
       manifest: {
         name: 'Skovens Skatte',
         short_name: 'Skovens Skatte',
-        description: 'Markér og genfind dine svampe- og bærsteder i Danmark',
+        description: 'Markér og genfind dine svampe- og bærsteder',
         lang: 'da',
         // Matches the light-theme --bg chrome (src/styles/tokens.css); the
         // ThemeContext keeps the in-app theme-color meta in sync after boot
