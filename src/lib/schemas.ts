@@ -13,7 +13,13 @@ export const ForagingTypeSchema = z.enum(FORAGING_TYPES);
 // User schema (for Pocketbase users collection)
 export const UserSchema = z.object({
   id: z.string(),
-  email: z.string().email(),
+  // PocketBase omits `email` for other users when their emailVisibility is
+  // false. This schema doubles as the shape of `expand.user` on a spot shared
+  // by someone else (see ForagingSpotSchema) — where the owner's email is
+  // hidden — so email must be optional or the whole spot fails to parse and
+  // gets silently dropped from the map/list. The auth user's own record always
+  // includes their email, so AuthContext is unaffected.
+  email: z.string().email().optional(),
   name: z.string().min(1),
   username: z.string().optional(),
   avatar: z.string().optional(),

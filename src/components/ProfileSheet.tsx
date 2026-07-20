@@ -232,7 +232,9 @@ export default function ProfileSheet({ open, onOpenChange }: ProfileSheetProps) 
     updateProfile.mutate(
       {
         userId: user.id,
-        email: user.email,
+        // UserSchema.email is optional (hidden on other users' expand records),
+        // but the authenticated user's own email is always returned by PB.
+        email: user.email ?? '',
         profile: profileChanged ? { name, avatar } : undefined,
         password: pwDirty ? { oldPassword: pwCur, password: pwNew } : undefined,
       },
