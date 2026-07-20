@@ -65,6 +65,8 @@ export default function PinDetailsDrawer({
 
   const isOwner = spot?.user === currentUser.id || isPending; // Pending spots are always "owned"
   const sharedWith = spot?.sharedWith || [];
+  const ownerName =
+    spot?.expand?.user?.username || spot?.expand?.user?.name || 'en ven';
 
   const thumbnailUrls = isPending ? pendingImageUrls : spot ? getSpotImageThumbnailUrls(spot) : [];
   const fullImageUrls = isPending ? pendingImageUrls : spot ? getSpotImageUrls(spot) : [];
@@ -452,10 +454,19 @@ export default function PinDetailsDrawer({
                 </div>
               )}
 
-              {/* Non-owner view */}
+              {/* Non-owner view: attribution card for a find shared *with* me */}
               {!isOwner && (
-                <div className="mt-[24px] rounded-[14px] border border-line bg-surface px-[16px] py-[14px] text-center text-[13.5px] text-ink2">
-                  Denne lokation er delt med dig
+                <div className="mt-[24px]">
+                  <MonoLabel className="mb-[12px] block">Delt med mig af</MonoLabel>
+                  <div className="flex items-center gap-[12px] rounded-[13px] border border-line bg-surface px-[14px] py-[11px]">
+                    <span className="flex size-[38px] shrink-0 items-center justify-center rounded-full bg-brand font-serif text-[15px] font-semibold text-brand-ink">
+                      {ownerName.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-serif text-[15.5px] text-ink">{ownerName}</div>
+                      <div className="mt-[1px] text-[12.5px] text-muted">Delte denne lokation med dig</div>
+                    </div>
+                  </div>
                 </div>
               )}
               </div>

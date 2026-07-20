@@ -213,6 +213,11 @@ export default function SpotListView({
             const isPending = spotWithPending._pending;
             const hasError = !!spotWithPending._syncError;
             const distance = distanceToSpot(position, spot.coordinates);
+            // A guest find (shared *with* me) is one someone else owns; its
+            // sharedWith contains my own username, so it must not read "Delt · N".
+            const isOwner = isPending || user?.id === spot.user;
+            const ownerName =
+              spot.expand?.user?.username || spot.expand?.user?.name || 'en ven';
 
             return (
               <div
@@ -247,10 +252,10 @@ export default function SpotListView({
                     {distance && ` · ${distance}`}
                   </div>
 
-                  {(isPending || sharedWith.length > 0) && (
+                  {(isPending || !isOwner || sharedWith.length > 0) && (
                     <div className="mt-[9px] flex flex-wrap items-center gap-[6px]">
                       {isPending && <PendingSyncBadge hasError={hasError} />}
-                      {sharedWith.length > 0 && (
+                      {isOwner && sharedWith.length > 0 && (
                         <span className="inline-flex items-center gap-[5px] rounded-[8px] bg-line2 px-[9px] py-[3px] text-[11px] font-semibold text-ink2">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                             <circle cx="18" cy="6" r="2.5" />
@@ -259,6 +264,15 @@ export default function SpotListView({
                             <path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6" />
                           </svg>
                           Delt · {sharedWith.length}
+                        </span>
+                      )}
+                      {!isOwner && (
+                        <span className="inline-flex items-center gap-[5px] rounded-[8px] bg-offline-bg px-[9px] py-[3px] text-[11px] font-semibold text-offline-ink">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M20 21a8 8 0 0 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                          Delt af {ownerName}
                         </span>
                       )}
                     </div>
