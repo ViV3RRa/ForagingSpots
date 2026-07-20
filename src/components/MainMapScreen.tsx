@@ -13,6 +13,7 @@ import { getForagingSpotConfig } from './icons';
 import { useUserLocation } from '../hooks/useUserLocation';
 import type { MapMode } from '../utils/mapbox';
 import { useHistoryLayer } from '../hooks/useHistoryLayer';
+import { useShareContacts } from '../hooks/useShareContacts';
 
 interface MainMapScreenProps {
   user: NewUser;
@@ -41,6 +42,8 @@ export default function MainMapScreen({
   const [editFocusShare, setEditFocusShare] = useState(false);
   const { position: currentPosition, status: locationStatus } = useUserLocation();
   const { isOnline } = useNetworkStatus();
+  // "Delt med før" suggestions for the add/edit sheet — own spots only
+  const shareSuggestions = useShareContacts(foragingSpots, user.id);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   // The list view occupies a history entry like a sheet: native back returns
   // to the map (the app's home view) instead of leaving the app
@@ -275,6 +278,7 @@ export default function MainMapScreen({
         <AddEditModal
           coordinates={currentPosition}
           editorFallbackCenter={{ lat: mapViewState.latitude, lng: mapViewState.longitude }}
+          shareSuggestions={shareSuggestions}
           onSave={(type, notes, coordinates, images, sharedWith, existingImageFilenames) => handleAddSpot(type, notes, coordinates, images, sharedWith, existingImageFilenames)}
           onClose={() => setShowAddModal(false)}
         />
@@ -285,6 +289,7 @@ export default function MainMapScreen({
           spot={editingSpot}
           coordinates={editingSpot.coordinates}
           autoFocusShare={editFocusShare}
+          shareSuggestions={shareSuggestions}
           onSave={(type, notes, coordinates, images, sharedWith, existingImageFilenames) => handleEditSpot(editingSpot, type, notes, coordinates, images, sharedWith, existingImageFilenames)}
           onClose={() => setEditingSpot(null)}
         />

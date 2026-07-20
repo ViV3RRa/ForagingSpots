@@ -38,7 +38,9 @@ export function getFileUrl(
   thumb?: string,
   collection: string = Collections.FORAGING_SPOTS
 ): string {
-  if (!filename || filename.trim() === '') {
+  // Non-strings (e.g. a File awaiting upload leaking out of a mutation
+  // payload) must never reach the URL — degrade to "no image", not a crash
+  if (typeof filename !== 'string' || filename.trim() === '') {
     return '';
   }
   const base = `${pb.baseURL}/api/files/${collection}/${record.id}/${encodeURIComponent(filename)}`;

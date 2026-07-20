@@ -32,12 +32,15 @@ interface AddEditModalProps {
   /** Open scrolled to the "Delt med" section with the share input focused —
       the list view's "Del" action lands the user right where they can type. */
   autoFocusShare?: boolean;
+  /** "Delt med før" quick picks: usernames from the user's own spots, ranked
+      by frequency (useShareContacts). Already-added names are hidden here. */
+  shareSuggestions?: string[];
 }
 
 const formatCoordinates = (lat: number, lng: number) =>
   `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'Ø' : 'V'}`;
 
-export default function AddEditModal({ spot, coordinates, editorFallbackCenter, onSave, onClose, autoFocusShare = false }: AddEditModalProps) {
+export default function AddEditModal({ spot, coordinates, editorFallbackCenter, onSave, onClose, autoFocusShare = false, shareSuggestions = [] }: AddEditModalProps) {
   const isEdit = spot !== undefined;
   const [selectedType, setSelectedType] = useState<ForagingType>(spot?.type || 'chanterelle');
   const [notes, setNotes] = useState(spot?.notes || '');
@@ -243,6 +246,22 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
 
   const handleRemoveShare = (username: string) => {
     setSharedWith(sharedWith.filter((u) => u !== username));
+  };
+
+  // Chips offer only names not already added (removing a row re-suggests it);
+  // typing in the share input narrows them, so filtering and free text feed
+  // the same field
+  const shareQuery = shareUsername.trim().toLowerCase();
+  const visibleSuggestions = shareSuggestions.filter(
+    (username) =>
+      !sharedWith.includes(username) &&
+      (!shareQuery || username.toLowerCase().includes(shareQuery))
+  );
+
+  const handleAddSuggestion = (username: string) => {
+    if (sharedWith.includes(username)) return;
+    setSharedWith([...sharedWith, username]);
+    setShareUsername('');
   };
 
   const handleLocationUpdate = (newCoordinates: Coordinates) => {
@@ -518,6 +537,34 @@ export default function AddEditModal({ spot, coordinates, editorFallbackCenter, 
                     <Plus className="size-[20px]" strokeWidth={1.9} />
                   </button>
                 </div>
+
+                {/* Delt med før: quick-pick chips, visually lighter than the
+                    committed rows above (smaller avatar, no @). Collapses to
+                    nothing without history/matches */}
+                {visibleSuggestions.length > 0 && (
+                  <div className="mt-[14px]">
+                    <div className="mb-[9px]">
+                      <MonoLabel className="text-[10.5px] text-faint">Delt med før</MonoLabel>
+                    </div>
+                    <div className="flex flex-wrap gap-[8px]">
+                      {visibleSuggestions.map((username) => (
+                        <button
+                          key={username}
+                          type="button"
+                          onClick={() => handleAddSuggestion(username)}
+                          aria-label={`Del med ${username}`}
+                          className="flex h-[38px] items-center gap-[8px] rounded-full border border-line bg-surface pl-[5px] pr-[12px] transition-colors hover:border-brand"
+                        >
+                          <span className="flex size-[28px] shrink-0 items-center justify-center rounded-full bg-brand font-serif text-[12.5px] font-semibold text-brand-ink">
+                            {username.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="font-serif text-[14.5px] text-ink">{username}</span>
+                          <Plus className="size-[15px] shrink-0 text-brand" strokeWidth={2} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>

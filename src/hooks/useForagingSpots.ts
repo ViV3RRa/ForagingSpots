@@ -157,20 +157,35 @@ export function useUpdateSpot() {
       const previousSpots = queryClient.getQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all);
       const previousSpot = queryClient.getQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(id));
 
+      // The payload's image keys must not be spread into cached spots: `images`
+      // holds File objects for upload and a cached spot's `images` holds server
+      // filenames (components render them through getFileUrl — a File there
+      // crashes the detail drawer, which stays mounted behind the edit sheet).
+      // Optimistically a spot shows the kept existing images; the new uploads
+      // appear when onSuccess writes the server record.
+      const { images: newImageFiles, existingImageFilenames, ...fields } = data;
+      const patch = {
+        ...fields,
+        ...(newImageFiles !== undefined || existingImageFilenames !== undefined
+          ? { images: existingImageFilenames ?? [] }
+          : {}),
+        updated: new Date().toISOString(),
+      };
+
       // Optimistically update the list
       if (previousSpots) {
         const updatedSpots = previousSpots.map(spot =>
-          spot.id === id
-            ? { ...spot, ...data, updated: new Date().toISOString() }
-            : spot
+          spot.id === id ? { ...spot, ...patch } : spot
         );
         queryClient.setQueryData<ForagingSpot[]>(queryKeys.foragingSpots.all, updatedSpots);
       }
 
       // Optimistically update the individual spot
       if (previousSpot) {
-        const updatedSpot = { ...previousSpot, ...data, updated: new Date().toISOString() };
-        queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(id), updatedSpot);
+        queryClient.setQueryData<ForagingSpot>(queryKeys.foragingSpots.detail(id), {
+          ...previousSpot,
+          ...patch,
+        });
       }
 
       return { previousSpots, previousSpot };
