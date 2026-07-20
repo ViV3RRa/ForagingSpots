@@ -1,5 +1,11 @@
 # Offline spot list via TanStack Query persistence
 
+> ## ✅ DONE — implemented 2026-07-20
+> Shipped via **`plans/007-offline-spot-list-persistence.md`**. This document is
+> kept for context/rationale; the plan is the source of truth for the final
+> implementation (2-year `maxAge`, `gcTime: Infinity`, `PERSIST_BUSTER`). All
+> four out-of-sync risks below are handled there.
+
 **Idea:** persist the spots query cache to IndexedDB so a cold app start with
 no signal still shows the user's pins — the real "check my spots in the
 forest" scenario a foraging app exists for.

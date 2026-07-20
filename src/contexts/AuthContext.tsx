@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import pb from '../lib/pocketbase';
 import type { User, AuthState } from '../lib/types';
 import { UserSchema } from '../lib/schemas';
+import { queryClient, queryKeys } from '../lib/queryClient';
+import { removePersistedQueryCache } from '../lib/queryPersister';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<boolean>;
@@ -150,6 +152,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       pb.authStore.clear();
       setUser(null);
       setIsAuthenticated(false);
+      // Drop the live and persisted spot cache so the next user on this device
+      // starts clean (plan 007) — belt-and-suspenders with the restore-time id
+      // check in queryPersister.
+      queryClient.removeQueries({ queryKey: queryKeys.foragingSpots.all });
+      await removePersistedQueryCache();
     } catch (error) {
       console.error('Sign out failed:', error);
     }

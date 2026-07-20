@@ -29,7 +29,10 @@ export const UserLoginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-// Foraging spot schema (for Pocketbase foraging_spots collection)
+// Foraging spot schema (for Pocketbase foraging_spots collection).
+// ⚠️ This shape is persisted to IndexedDB for up to 2 years (plan 007). If you
+// change it in a way old cached data can't satisfy, bump PERSIST_BUSTER in
+// src/lib/queryPersister.ts so stale-shaped payloads are dropped, not restored.
 export const ForagingSpotSchema = z.object({
   id: z.string(),
   user: z.string(), // Pocketbase relation field

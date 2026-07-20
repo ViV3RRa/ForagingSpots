@@ -16,7 +16,7 @@ import { usePendingSpots } from './hooks/usePendingSpots';
 import { usePreloadSpotPlaceholders } from './hooks/usePreloadSpotPlaceholders';
 import type { ForagingSpot } from './lib/types';
 import './styles/tokens.css'
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { queryKeys } from './lib/queryClient';
 
 // Dev-only living style reference (master plan 1.3) — lazy so it stays out of
@@ -47,6 +47,10 @@ function AppContent() {
   const [showLocationPriming, setShowLocationPriming] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const queryClient = useQueryClient();
+  // True while the persisted query cache (plan 007) is being read back from
+  // IndexedDB on boot — gate the splash on it so the map never paints "0 pins"
+  // for a frame before the restore lands.
+  const isRestoring = useIsRestoring();
 
   // TanStack Query hooks for data management
   const { data: foragingSpots = [], isLoading: spotsLoading } = useForagingSpots(isAuthenticated);
@@ -155,8 +159,11 @@ function AppContent() {
     deleteSpotMutation.mutate(spotId);
   };
 
-  // Branded boot splash while restoring auth or loading the first spots
-  if (isLoading || (isAuthenticated && spotsLoading)) {
+  // Branded boot splash while restoring auth, rehydrating the persisted cache,
+  // or loading the first spots. Once the cache restores, the spots query is
+  // status:'success' with data, so spotsLoading is false even during a doomed
+  // offline background refetch — the map shows restored pins, not the splash.
+  if (isLoading || isRestoring || (isAuthenticated && spotsLoading)) {
     return <BootSplash />;
   }
 

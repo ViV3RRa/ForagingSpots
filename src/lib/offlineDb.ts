@@ -19,15 +19,32 @@ export interface PendingImage {
   filename: string;
 }
 
+// Single-row snapshot of the dehydrated TanStack Query client (plan 007).
+// Scoped to one user so a restore can never leak another user's spots.
+export interface PersistedQueryCache {
+  key: string;      // fixed 'reactQuery' — only ever one row
+  userId: string;   // owner scope; restore rejects a mismatch
+  buster: string;   // schema version tag; a change drops the old payload
+  savedAt: number;  // Date.now() at write, for maxAge gc
+  client: unknown;  // dehydrated client JSON
+}
+
 class OfflineDatabase extends Dexie {
   pendingSpots!: Table<PendingSpot, string>;
   pendingImages!: Table<PendingImage, string>;
+  persistedQueryCache!: Table<PersistedQueryCache, string>;
 
   constructor() {
     super('ForagingSpotsOffline');
     this.version(1).stores({
       pendingSpots: 'localId',
       pendingImages: 'id, spotId'
+    });
+    // v2 adds the query-cache row (additive — existing offline data untouched)
+    this.version(2).stores({
+      pendingSpots: 'localId',
+      pendingImages: 'id, spotId',
+      persistedQueryCache: 'key'
     });
   }
 }

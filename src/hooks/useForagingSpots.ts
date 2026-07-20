@@ -14,7 +14,12 @@ export function useForagingSpots(isAuthenticated: boolean = true) {
     queryKey: queryKeys.foragingSpots.all,
     queryFn: foragingSpotsApi.getAll,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    // A query's persisted copy (plan 007) is meaningless once gcTime evicts it,
+    // so gcTime must stay >= PERSIST_MAX_AGE (2 years). Infinity trivially
+    // satisfies that; the query is observed for the whole authed session so it
+    // never lingers wastefully, and staleTime stays 2 min so online behaviour
+    // is unchanged — restore instantly, refetch in background.
+    gcTime: Infinity,
     enabled: isAuthenticated, // Only fetch when authenticated
   });
 

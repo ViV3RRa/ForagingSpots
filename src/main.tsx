@@ -1,8 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from './lib/queryClient'
+import { queryPersister, PERSIST_BUSTER, PERSIST_MAX_AGE } from './lib/queryPersister'
 // Self-hosted fonts (offline PWA — no Google Fonts CDN). Latin subset covers Danish (æ/ø/å).
 // Weights match the design's font link: Spectral 400/500/600/700 + italic 400/500,
 // Work Sans 400/500/600, Space Mono 400/700.
@@ -51,9 +52,30 @@ registerSW({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: PERSIST_MAX_AGE,
+        buster: PERSIST_BUSTER,
+        dehydrateOptions: {
+          // Risk #1: persist ONLY the all-spots list (['foraging-spots'], length
+          // 1). pendingSpotsQueryKey (['pendingSpots']) mirrors Dexie — the real
+          // source of truth — so persisting it would freeze a second copy that
+          // drifts into ghost pins. Filtered lists / details extend the key and
+          // are excluded too. Never persist a non-success snapshot.
+          shouldDehydrateQuery: (query) =>
+            query.queryKey.length === 1 &&
+            query.queryKey[0] === 'foraging-spots' &&
+            query.state.status === 'success',
+          // Risk #2: don't persist mutations at all — the background refetch
+          // reconciles instead.
+          shouldDehydrateMutation: () => false,
+        },
+      }}
+    >
       <App />
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </StrictMode>
 )
