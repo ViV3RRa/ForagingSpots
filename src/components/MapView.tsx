@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import Map, { Marker, type MapRef } from 'react-map-gl';
 import Supercluster from 'supercluster';
 import type { ForagingSpot, ForagingSpotWithPending } from '../lib/types';
@@ -60,7 +60,27 @@ export default function MapView({
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [bearing, setBearing] = useState(0);
-  
+
+  // Reconcile mapLoaded from the live map instance rather than trusting the
+  // <Map onLoad> prop alone. react-map-gl can drop that callback when the
+  // map's `load` event fires before React binds the handler — which happens
+  // when the style is served synchronously from cache (SW-cached basemap, or
+  // StrictMode's dev double-mount). A missed onLoad used to leave mapLoaded
+  // stuck false, silently disabling every camera move gated on it (auto-follow
+  // on the first GPS fix, the follow effect, centerOnSpot) while the Locate
+  // button — not gated on it — still worked. That was the "map won't zoom to
+  // my position on load, but the Locate button does" bug.
+  const attachMapRef = useCallback((instance: MapRef | null) => {
+    mapRef.current = instance;
+    if (!instance) return;
+    const map = instance.getMap();
+    if (map.loaded()) {
+      setMapLoaded(true);
+    } else {
+      map.once('load', () => setMapLoaded(true));
+    }
+  }, []);
+
   // Denmark center coordinates for when no location is available
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
   const denmarkZoom = 6;
@@ -120,7 +140,19 @@ export default function MapView({
         Math.pow(currentPosition.lat - currentCenter.lat, 2)
       ) * 111000; // Convert to meters approximately
 
-      if (distance > 10) { // 10 meter threshold
+      if (distance > 500) {
+        // Large jump — the first fix arriving while the map sits on the Denmark
+        // overview, or re-locating after the user panned far away. Fly in so
+        // the zoom-in reads as a deliberate "here you are" transition rather
+        // than an instant jump.
+        mapRef.current.flyTo({
+          center: [currentPosition.lng, currentPosition.lat],
+          zoom: 18,
+          duration: 2200
+        });
+      } else if (distance > 10) { // 10 meter threshold
+        // Small drift while already zoomed in on the user — gently ease to keep
+        // them centered without a jarring re-fly.
         mapRef.current.easeTo({
           center: [currentPosition.lng, currentPosition.lat],
           zoom: 18,
@@ -310,7 +342,7 @@ export default function MapView({
   return (
     <div className="h-full relative">
       <Map
-        ref={mapRef}
+        ref={attachMapRef}
         {...viewState}
         onMove={evt => {
           setViewState(evt.viewState);
@@ -342,6 +374,8 @@ export default function MapView({
             setIsFollowingUser(false);
           }
         }}
+        // mapLoaded is driven by attachMapRef (see above); onLoad is kept as a
+        // redundant, idempotent signal for the normal async-style-load path.
         onLoad={() => setMapLoaded(true)}
         onError={() => {
           // Tile hiccups while browsing an already-loaded map are transient;
@@ -374,16 +408,10 @@ export default function MapView({
             // native prompt directly. No-op when already active.
             startUserLocation();
 
-            if (mapRef.current && currentPosition) {
-              mapRef.current.flyTo({
-                center: [currentPosition.lng, currentPosition.lat],
-                zoom: 18,
-                duration: 1500
-              });
-            }
-
-            // Enable following — with no fix yet, the auto-follow effect flies
-            // to the position as soon as one arrives
+            // Enable following; the follow effect does the actual camera move
+            // (fly-in for a large jump, ease for small drift) so there's a
+            // single animation. With no fix yet, it flies as soon as one
+            // arrives.
             setIsFollowingUser(true);
           }}
           className={`absolute bottom-[calc(env(safe-area-inset-bottom,0px)+108px)] right-[max(16px,env(safe-area-inset-right))] z-10 flex size-[52px] items-center justify-center rounded-full border border-line shadow-[0_6px_16px_var(--shadow)] transition-colors duration-200 active:scale-95 ${

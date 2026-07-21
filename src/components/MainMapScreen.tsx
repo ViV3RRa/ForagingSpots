@@ -77,28 +77,15 @@ export default function MainMapScreen({
   const denmarkCenter = { lat: 56.0, lng: 10.0 };
   const denmarkZoom = 6;
   
-  // Persistent map view state
+  // Persistent map view state. It starts on the Denmark overview (the "no
+  // location" view) on purpose: MapView animates a fly-in to the user's
+  // position on the first GPS fix, so seeding this with the position here
+  // would make the map open already zoomed in, skipping that transition.
   const [mapViewState, setMapViewState] = useState({
     longitude: denmarkCenter.lng,
     latitude: denmarkCenter.lat,
     zoom: denmarkZoom
   });
-  
-  // Track if we've initialized the map position with user's location
-  const [hasInitializedUserPosition, setHasInitializedUserPosition] = useState(false);
-
-  // Center the map on the user the first time a GPS fix arrives (position
-  // tracking itself lives in the shared useUserLocation hook)
-  useEffect(() => {
-    if (currentPosition && !hasInitializedUserPosition) {
-      setMapViewState({
-        longitude: currentPosition.lng,
-        latitude: currentPosition.lat,
-        zoom: 18 // Use a reasonable zoom level for user location
-      });
-      setHasInitializedUserPosition(true);
-    }
-  }, [currentPosition, hasInitializedUserPosition]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAddSpot = (type: ForagingType, notes: string, coordinates: Coordinates, images: File[], sharedWith: string[], _existingImageFilenames?: string[]) => {
