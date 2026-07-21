@@ -88,7 +88,21 @@ export default function BlurImage({
   );
 
   return (
-    <div className={cn('relative overflow-hidden', className)}>
+    /* rounded-[inherit] pulls the corner radius from whichever ancestor rounds
+       the tile (the detail-sheet button, the lightbox card) down onto this
+       wrapper — the box that actually contains the blurred placeholder and the
+       shimmer. translateZ(0) then promotes that wrapper to its own compositing
+       layer: iOS/WebKit only applies a rounded overflow clip to composited
+       descendants (filter:blur placeholder, transform shimmer) when the
+       clipping box is itself composited — otherwise those back layers show
+       square corners past the rounded photo. twMerge lets a caller override the
+       radius via className. */
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-[inherit] [transform:translateZ(0)]',
+        className
+      )}
+    >
       {placeholderSrc && !instant && (
         <img
           ref={placeholderRef}
