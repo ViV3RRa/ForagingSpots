@@ -33,7 +33,15 @@ dev-dist
 *.sln
 *.sw?
 
-/pocketbase
+# PocketBase: track schema (pb_migrations) + hooks + dev runner; ignore
+# runtime state, the downloaded binary, and vendored docs. The `/*` + `!`
+# idiom keeps everything ignored by default and opts only source back in, so
+# pb_data (a prod copy: user data, password hashes, secrets) can't be added.
+/pocketbase/*
+!/pocketbase/pb_migrations/
+!/pocketbase/pb_hooks/
+!/pocketbase/serve.sh
+/pocketbase/pb_data/
 /icons
 
 # Claude Code
